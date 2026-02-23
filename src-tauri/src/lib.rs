@@ -1,0 +1,79 @@
+mod commands;
+mod data;
+mod models;
+mod utils;
+mod watcher;
+
+use commands::pty::PtyState;
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_store::Builder::default().build())
+        .manage(PtyState(std::sync::Arc::new(std::sync::Mutex::new(
+            std::collections::HashMap::new(),
+        ))))
+        .setup(|app| {
+            // Auto-install hooks on every launch (idempotent — skips if already present)
+            if let Err(e) = commands::hooks::cmd_setup_hooks() {
+                eprintln!("[ide] hook setup failed: {}", e);
+            }
+            watcher::claude_watcher::start_claude_watcher(app.handle().clone());
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![
+            commands::sessions::cmd_load_sessions,
+            commands::sessions::cmd_load_transcript,
+            commands::teams::cmd_load_teams,
+            commands::tasks::cmd_load_tasks,
+            commands::inbox::cmd_load_inbox,
+            commands::inbox::cmd_send_inbox_message,
+            commands::todos::cmd_load_todos,
+            commands::plans::cmd_load_plans,
+            commands::plans::cmd_read_plan,
+            commands::plans::cmd_save_plan,
+            commands::git::cmd_git_status,
+            commands::git::cmd_git_diff,
+            commands::git::cmd_git_branches,
+            commands::git::cmd_create_worktree,
+            commands::git::cmd_list_worktrees,
+            commands::git::cmd_get_worktree_copy,
+            commands::git::cmd_set_worktree_copy,
+            commands::pty::pty_spawn,
+            commands::pty::pty_resize,
+            commands::pty::pty_write,
+            commands::pty::pty_kill,
+            commands::pty::pty_list,
+            commands::issues::cmd_list_prs,
+            commands::issues::cmd_list_issues,
+            commands::integrations::cmd_load_integration_secrets,
+            commands::integrations::cmd_github_auth_status,
+            commands::integrations::cmd_github_device_flow_start,
+            commands::integrations::cmd_github_device_flow_poll,
+            commands::integrations::cmd_github_set_token,
+            commands::integrations::cmd_github_logout,
+            commands::integrations::cmd_linear_verify_key,
+            commands::integrations::cmd_linear_logout,
+            commands::integrations::cmd_jira_verify_token,
+            commands::integrations::cmd_jira_logout,
+            commands::hooks::cmd_setup_hooks,
+            commands::hooks::cmd_remove_hooks,
+            commands::hooks::cmd_get_active_sessions,
+            commands::hooks::cmd_hooks_configured,
+            commands::projects::cmd_list_projects,
+            commands::projects::cmd_list_orphaned_projects,
+            commands::projects::cmd_pick_folder,
+            commands::projects::cmd_delete_project,
+            commands::projects::cmd_get_home_dir,
+            commands::projects::cmd_read_file,
+            commands::projects::cmd_write_file,
+            commands::projects::cmd_run_claude_init,
+            commands::projects::cmd_run_readme_gen,
+            commands::files::cmd_list_dir,
+        ])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}

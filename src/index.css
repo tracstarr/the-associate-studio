@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+@theme {
+  /* Background layers */
+  --color-bg-base: #0D1117;
+  --color-bg-surface: #161B22;
+  --color-bg-raised: #1C2128;
+  --color-bg-overlay: #21262D;
+  --color-bg-input: #0D1117;
+  --color-bg-terminal: #0A0E14;
+
+  /* Border colors */
+  --color-border-default: #30363D;
+  --color-border-muted: #21262D;
+  --color-border-focus: #58A6FF;
+
+  /* Text colors */
+  --color-text-primary: #E6EDF3;
+  --color-text-secondary: #8B949E;
+  --color-text-muted: #484F58;
+  --color-text-link: #58A6FF;
+  --color-text-inverse: #0D1117;
+
+  /* Accent colors */
+  --color-accent-primary: #58A6FF;
+  --color-accent-secondary: #BC8CFF;
+  --color-accent-tertiary: #79C0FF;
+
+  /* Status colors */
+  --color-status-success: #3FB950;
+  --color-status-error: #F85149;
+  --color-status-warning: #D29922;
+  --color-status-info: #58A6FF;
+
+  /* Agent status colors */
+  --color-agent-running: #3FB950;
+  --color-agent-idle: #D29922;
+  --color-agent-completed: #8B949E;
+  --color-agent-error: #F85149;
+  --color-agent-pending: #484F58;
+
+  /* Session status colors */
+  --color-session-running: #3FB950;
+  --color-session-idle: #D29922;
+  --color-session-completed: #8B949E;
+  --color-session-error: #F85149;
+
+  /* Git diff colors */
+  --color-diff-add-bg: #12261E;
+  --color-diff-add-text: #3FB950;
+  --color-diff-add-highlight: #1B4332;
+  --color-diff-remove-bg: #2D1215;
+  --color-diff-remove-text: #F85149;
+  --color-diff-remove-highlight: #5C1D24;
+  --color-diff-modified-bg: #2A1F0B;
+  --color-diff-modified-text: #D29922;
+  --color-diff-hunk-header: #1C2128;
+  --color-diff-hunk-text: #BC8CFF;
+
+  /* Activity bar colors */
+  --color-actbar-bg: #0D1117;
+  --color-actbar-icon-default: #484F58;
+  --color-actbar-icon-active: #E6EDF3;
+  --color-actbar-indicator: #58A6FF;
+  --color-actbar-badge: #F85149;
+
+  /* Font families */
+  --font-mono: "Cascadia Code", "JetBrains Mono", "Fira Code", monospace;
+  --font-ui: "Inter", -apple-system, system-ui, sans-serif;
+}
+
+body {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  background-color: var(--color-bg-base);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-default);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* Panel resize handle styling */
+[data-panel-resize-handle-id] {
+  background: transparent;
+  transition: background-color 150ms ease;
+}
+
+[data-panel-resize-handle-id]:hover,
+[data-panel-resize-handle-id][data-resize-handle-active] {
+  background: var(--color-accent-primary);
+}
