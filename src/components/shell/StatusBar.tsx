@@ -4,6 +4,8 @@ import { cn } from "@/lib/utils";
 import { useProjectsStore } from "@/stores/projectsStore";
 import { useActiveProjectTabs } from "@/hooks/useActiveProjectTabs";
 import { useGitCurrentBranch, useGitStatus } from "@/hooks/useClaudeData";
+import { useSessionStore } from "@/stores/sessionStore";
+import { useUIStore } from "@/stores/uiStore";
 
 function getParentDir(path: string): string {
   return path.replace(/\\/g, "/").split("/").slice(0, -1).join("/");
@@ -17,6 +19,12 @@ function StatusBarComponent() {
   const setActiveProject = useProjectsStore((s) => s.setActiveProject);
   const { openTabs, activeTabId } = useActiveProjectTabs();
   const activeTab = openTabs.find((t) => t.id === activeTabId);
+  const toggleNeuralField = useUIStore((s) => s.toggleNeuralField);
+  const activeSubagents = useSessionStore((s) => s.activeSubagents);
+  const runningAgents = Object.values(activeSubagents).reduce(
+    (sum, agents) => sum + agents.length,
+    0
+  );
 
   const projectPath = activeProject?.path ?? "";
   const projectName = activeProject?.name ?? "No project";
@@ -76,7 +84,13 @@ function StatusBarComponent() {
 
       {/* Right items */}
       <div className="flex items-center gap-3">
-        <span>0 agents</span>
+        <button
+          onClick={toggleNeuralField}
+          className="hover:text-accent-primary transition-colors"
+          title="Neural Field (Ctrl+Shift+Space)"
+        >
+          {runningAgents} agents
+        </button>
         <span>0 unread</span>
         <span className="text-status-success">&#x25CF;</span>
         <span>Ready</span>

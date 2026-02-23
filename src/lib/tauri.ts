@@ -299,6 +299,34 @@ export async function claudeGitAction(
   return invoke("cmd_claude_git_action", { cwd, action });
 }
 
+export async function gitFetch(cwd: string): Promise<string> {
+  return invoke("cmd_git_fetch", { cwd });
+}
+
+export async function gitPull(cwd: string): Promise<string> {
+  return invoke("cmd_git_pull", { cwd });
+}
+
+export async function gitCreateBranch(
+  cwd: string,
+  branchName: string,
+  fromBranch: string
+): Promise<string> {
+  return invoke("cmd_git_create_branch", { cwd, branchName, fromBranch });
+}
+
+export async function gitRebase(cwd: string, ontoBranch: string): Promise<string> {
+  return invoke("cmd_git_rebase", { cwd, ontoBranch });
+}
+
+export async function gitAdd(cwd: string, path: string): Promise<string> {
+  return invoke("cmd_git_add", { cwd, path });
+}
+
+export async function gitIgnore(cwd: string, filePath: string): Promise<string> {
+  return invoke("cmd_git_ignore", { cwd, filePath });
+}
+
 // ─── PR / Issues Types ────────────────────────────────────────────────────────
 
 export interface PullRequest {

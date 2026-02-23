@@ -7,6 +7,7 @@ import type { HookEvent } from "../lib/tauri";
 import { pathToProjectId } from "../lib/utils";
 import { useSessionStore } from "../stores/sessionStore";
 import { useProjectsStore } from "../stores/projectsStore";
+import { useNotificationStore } from "../stores/notificationStore";
 
 // ---- Session Hooks ----
 
@@ -388,6 +389,25 @@ export function useClaudeWatcher() {
         const title = payload.filename.replace(/\.md$/, "");
         const pid = activeProjectIdRef.current ?? "";
         if (pid) openPlanTab(payload.filename, title, pid);
+      })
+    );
+
+    // Claude CLI question detected — notify user
+    unlisteners.push(
+      listen<{ tab_id: string; question: string }>("claude-question", ({ payload }) => {
+        const { tabsByProject } = useSessionStore.getState();
+        for (const [projectId, tabs] of Object.entries(tabsByProject)) {
+          const tab = tabs.find((t) => t.id === payload.tab_id);
+          if (tab) {
+            useNotificationStore.getState().addNotification({
+              tabId: payload.tab_id,
+              projectId,
+              sessionTitle: tab.title ?? "Session",
+              question: payload.question,
+            });
+            break;
+          }
+        }
       })
     );
 

@@ -117,6 +117,7 @@ pub async fn cmd_git_remote_branches(cwd: String) -> Result<Vec<RemoteBranch>, S
 // ─── Worktree Types ───────────────────────────────────────────────────────────
 
 #[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct WorktreeInfo {
     pub path: String,
     pub head: String,       // short SHA (first 8 chars)
@@ -331,6 +332,114 @@ pub async fn cmd_create_worktree(
     }
 
     Ok(worktree_path_str)
+}
+
+/// Helper: combine stdout+stderr and return Ok/Err based on exit status.
+fn git_output_result(output: std::process::Output) -> Result<String, String> {
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+    let combined = format!("{}{}", stdout, stderr);
+    if output.status.success() {
+        Ok(combined.trim().to_string())
+    } else {
+        Err(combined.trim().to_string())
+    }
+}
+
+#[tauri::command]
+pub async fn cmd_git_fetch(cwd: String) -> Result<String, String> {
+    let output = crate::utils::silent_command("git")
+        .args(["-C", &cwd, "fetch", "--all", "--prune"])
+        .output()
+        .map_err(|e| format!("Failed to run git fetch: {}", e))?;
+    git_output_result(output)
+}
+
+#[tauri::command]
+pub async fn cmd_git_pull(cwd: String) -> Result<String, String> {
+    let output = crate::utils::silent_command("git")
+        .args(["-C", &cwd, "pull"])
+        .output()
+        .map_err(|e| format!("Failed to run git pull: {}", e))?;
+    git_output_result(output)
+}
+
+#[tauri::command]
+pub async fn cmd_git_create_branch(
+    cwd: String,
+    branch_name: String,
+    from_branch: String,
+) -> Result<String, String> {
+    let output = crate::utils::silent_command("git")
+        .args(["-C", &cwd, "checkout", "-b", &branch_name, &from_branch])
+        .output()
+        .map_err(|e| format!("Failed to run git checkout: {}", e))?;
+    git_output_result(output)
+}
+
+#[tauri::command]
+pub async fn cmd_git_add(cwd: String, path: String) -> Result<String, String> {
+    let output = crate::utils::silent_command("git")
+        .args(["-C", &cwd, "add", "--", &path])
+        .output()
+        .map_err(|e| format!("Failed to run git add: {}", e))?;
+    git_output_result(output)
+}
+
+#[tauri::command]
+pub async fn cmd_git_ignore(cwd: String, file_path: String) -> Result<String, String> {
+    use std::io::Write;
+    let gitignore_path = std::path::PathBuf::from(&cwd).join(".gitignore");
+    let mut file = std::fs::OpenOptions::new()
+        .append(true)
+        .create(true)
+        .open(&gitignore_path)
+        .map_err(|e| format!("Failed to open .gitignore: {}", e))?;
+    writeln!(file, "{}", file_path)
+        .map_err(|e| format!("Failed to write to .gitignore: {}", e))?;
+    Ok("Added to .gitignore".to_string())
+}
+
+#[tauri::command]
+pub async fn cmd_git_rebase(cwd: String, onto_branch: String) -> Result<String, String> {
+    let dir = std::path::PathBuf::from(&cwd);
+    if !dir.exists() {
+        return Err(format!("Directory does not exist: {}", cwd));
+    }
+
+    let prompt = format!(
+        "Rebase the current branch onto '{}'. Run 'git rebase {}'. \
+         If there are merge conflicts, attempt to resolve them sensibly using git commands, \
+         then continue with 'git rebase --continue'. \
+         If rebase cannot be completed cleanly, abort with 'git rebase --abort' and clearly explain why. \
+         Output the final result.",
+        onto_branch, onto_branch
+    );
+
+    let output = tokio::task::spawn_blocking(move || {
+        crate::utils::silent_command("claude")
+            .args(["-p", &prompt, "--dangerously-skip-permissions"])
+            .current_dir(&dir)
+            .env_remove("CLAUDECODE")
+            .output()
+    })
+    .await
+    .map_err(|e| format!("Task join error: {}", e))?
+    .map_err(|e| format!("Failed to run claude: {}", e))?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+    let combined = format!("{}{}", stdout, stderr);
+
+    if output.status.success() {
+        Ok(combined.trim().to_string())
+    } else {
+        Err(if combined.trim().is_empty() {
+            format!("claude exited with code {}", output.status)
+        } else {
+            combined.trim().to_string()
+        })
+    }
 }
 
 #[tauri::command]

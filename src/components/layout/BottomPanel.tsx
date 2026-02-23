@@ -5,6 +5,7 @@ import { DiffViewer } from "@/components/git/DiffViewer";
 import { GitLogPanel } from "@/components/git/GitLogPanel";
 import { PRListPanel } from "@/components/issues/PRListPanel";
 import { IssueListPanel } from "@/components/issues/IssueListPanel";
+import { OutputPanel } from "@/components/layout/OutputPanel";
 
 const tabs: { id: BottomTab; label: string }[] = [
   { id: "log", label: "Log" },
@@ -67,6 +68,10 @@ function BottomPanelComponent() {
       ) : activeTab === "issues" ? (
         <div className="flex-1 overflow-hidden">
           <IssueListPanel />
+        </div>
+      ) : activeTab === "output" ? (
+        <div className="flex-1 overflow-hidden">
+          <OutputPanel />
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center p-4">

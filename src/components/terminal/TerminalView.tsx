@@ -20,6 +20,7 @@ export function TerminalView({ sessionId, resumeSessionId, cwd, isActive }: Term
   const termRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const spawnedRef = useRef(false);
+  const lastDimsRef = useRef({ rows: 24, cols: 80 });
   const fontSize = useSettingsStore((s) => s.fontSize);
   const fontFamily = useSettingsStore((s) => s.fontFamily);
   const fontSizeRef = useRef(fontSize);
@@ -124,6 +125,7 @@ export function TerminalView({ sessionId, resumeSessionId, cwd, isActive }: Term
       fitAddon.fit();
       const d = fitAddon.proposeDimensions();
       if (d) {
+        lastDimsRef.current = { rows: d.rows, cols: d.cols };
         invoke("pty_resize", { sessionId, rows: d.rows, cols: d.cols }).catch(() => {});
       }
     });
@@ -150,6 +152,26 @@ export function TerminalView({ sessionId, resumeSessionId, cwd, isActive }: Term
       termRef.current.focus();
     }
   }, [isActive]);
+
+  // When tab goes to background, periodically trigger a redraw by toggling the
+  // PTY height by +1 row and immediately restoring it.
+  // Rationale: Windows ConPTY (ResizePseudoConsole) only fires a
+  // WINDOW_BUFFER_SIZE_EVENT into the child process's input queue when the size
+  // *actually changes*. Sending the same dimensions repeatedly is a silent no-op,
+  // so enquirer never redraws. Toggling forces two real resize events per cycle.
+  useEffect(() => {
+    if (isActive) return;
+    const ping = () => {
+      const { rows, cols } = lastDimsRef.current;
+      invoke("pty_resize", { sessionId, rows: rows + 1, cols }).catch(() => {});
+      setTimeout(() => {
+        invoke("pty_resize", { sessionId, rows, cols }).catch(() => {});
+      }, 100);
+    };
+    ping();
+    const id = setInterval(ping, 5000);
+    return () => clearInterval(id);
+  }, [isActive, sessionId]);
 
   return (
     <div

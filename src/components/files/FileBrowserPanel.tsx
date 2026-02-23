@@ -110,7 +110,7 @@ export function FileBrowserPanel() {
             expanded={expandedDirs.has(entry.path)}
             onFileClick={handleFileClick}
             onToggle={handleToggle}
-            onAddToCopyList={handleAddToCopyList}
+            onAddToCopyList={!activeProject?.isWorktree ? handleAddToCopyList : undefined}
           />
           {entry.is_dir && expandedDirs.has(entry.path) && dirContents[entry.path] && (
             <div>

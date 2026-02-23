@@ -10,6 +10,7 @@ import { useSettingsStore } from "./stores/settingsStore";
 import { useProjectsStore } from "./stores/projectsStore";
 import { useEffect, Component, type ReactNode } from "react";
 import { DebugPanel } from "./components/debug/DebugPanel";
+import { NeuralFieldOverlay } from "./components/dashboard/NeuralFieldOverlay";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   constructor(props: { children: ReactNode }) {
@@ -57,6 +58,7 @@ function IDEShell() {
       <IDELayout />
       <StatusBar />
       <CommandPalette />
+      <NeuralFieldOverlay />
       {import.meta.env.DEV && <DebugPanel />}
     </div>
   );

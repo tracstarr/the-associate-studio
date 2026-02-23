@@ -80,6 +80,8 @@ pub async fn pty_spawn(
         // Track which plan filenames have already been emitted for this session
         // so we fire plan-linked exactly once per plan (Claude's TUI redraws continuously)
         let mut emitted_plans = std::collections::HashSet::<String>::new();
+        // Track last question to avoid spamming (same question across buffer reads)
+        let mut last_question: Option<(String, std::time::Instant)> = None;
         loop {
             match reader.read(&mut buf) {
                 Ok(0) => break,
@@ -92,6 +94,20 @@ pub async fn pty_spawn(
                                 "tab_id": sid,
                                 "filename": filename
                             }));
+                        }
+                    }
+                    // Detect Claude CLI question prompts and notify the frontend
+                    if let Some(question) = find_claude_question(&data) {
+                        let should_emit = match &last_question {
+                            None => true,
+                            Some((prev, t)) => prev != &question || t.elapsed().as_secs() > 10,
+                        };
+                        if should_emit {
+                            last_question = Some((question.clone(), std::time::Instant::now()));
+                            app.emit("claude-question", QuestionPayload {
+                                tab_id: sid.clone(),
+                                question,
+                            }).ok();
                         }
                     }
                     let _ = app.emit(&format!("pty-data-{}", sid), data);
@@ -162,6 +178,71 @@ pub async fn pty_kill(
 pub async fn pty_list(state: State<'_, PtyState>) -> Result<Vec<String>, String> {
     let sessions = state.0.lock().map_err(|e| e.to_string())?;
     Ok(sessions.keys().cloned().collect())
+}
+
+/// Strip ANSI escape sequences from a string.
+fn strip_ansi(s: &str) -> String {
+    let mut result = String::with_capacity(s.len());
+    let mut chars = s.chars().peekable();
+    while let Some(c) = chars.next() {
+        if c == '\x1b' {
+            match chars.next() {
+                Some('[') => { while let Some(c) = chars.next() { if c.is_ascii_alphabetic() { break; } } }
+                Some(']') => { while let Some(c) = chars.next() { if c == '\x07' || c == '\\' { break; } } }
+                _ => {}
+            }
+        } else {
+            result.push(c);
+        }
+    }
+    result
+}
+
+/// Detect Claude CLI question prompts (enquirer.js / Y/N style).
+/// Returns the extracted question text if found.
+fn find_claude_question(data: &str) -> Option<String> {
+    let clean = strip_ansi(data);
+    // Split on both \n and \r — PTY output uses \r\n and ANSI cursor codes
+    // leave bare \r characters that prevent clean line matching.
+    let lines: Vec<&str> = clean.split(|c: char| c == '\n' || c == '\r').collect();
+
+    for line in &lines {
+        let t = line.trim();
+        // enquirer.js / inquirer style: "? question text"
+        if t.starts_with("? ") && t.len() > 2 {
+            return Some(t[2..].to_string());
+        }
+        // Y/N confirmation prompts
+        if !t.is_empty()
+            && (t.ends_with("[Y/n]")
+                || t.ends_with("[y/N]")
+                || t.ends_with("(Y/n)")
+                || t.ends_with("(y/N)"))
+        {
+            return Some(t.to_string());
+        }
+    }
+
+    // Fallback: enquirer navigation hint is a reliable indicator of an interactive
+    // selection prompt (rendered as a full-screen TUI box without a leading "? ").
+    if clean.contains("Enter to select") && clean.contains("navigate") {
+        // Try to find the question text — look for a line ending with "?"
+        for line in &lines {
+            let t = line.trim();
+            if t.ends_with('?') && t.len() > 4 && !t.starts_with("Enter") {
+                return Some(t.to_string());
+            }
+        }
+        return Some("Interactive selection prompt".to_string());
+    }
+
+    None
+}
+
+#[derive(Clone, serde::Serialize)]
+struct QuestionPayload {
+    tab_id: String,
+    question: String,
 }
 
 /// Scan a PTY output chunk for a ~/.claude/plans/*.md file reference.

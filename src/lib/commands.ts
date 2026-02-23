@@ -137,6 +137,14 @@ export function buildCommands(): Command[] {
         if (!ui.bottomPanelOpen) ui.toggleBottomPanel();
       },
     },
+    {
+      id: "view.neural-field",
+      label: "Toggle Neural Field",
+      description: "Open mission control overlay",
+      category: "View",
+      keybinding: "Ctrl+Shift+Space",
+      action: () => ui.toggleNeuralField(),
+    },
 
     // -- Session --
     {

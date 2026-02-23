@@ -70,7 +70,8 @@ function TeamCard({ team }: { team: Team }) {
       await deleteTeam(team.dirName);
       queryClient.invalidateQueries({ queryKey: ["teams"] });
     } catch (e) {
-      console.error(e);
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("[deleteTeam] failed for", team.dirName, "—", msg, e);
       failed = true;
       setDeleteError("Delete failed");
     } finally {

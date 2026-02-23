@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { ActiveSubagent } from "../lib/tauri";
+import { useNotificationStore } from "./notificationStore";
 
 export interface SessionTab {
   id: string;
@@ -84,10 +85,12 @@ export const useSessionStore = create<SessionStore>((set) => ({
       };
     }),
 
-  setActiveTab: (tabId, projectId) =>
+  setActiveTab: (tabId, projectId) => {
     set((s) => ({
       activeTabByProject: { ...s.activeTabByProject, [projectId]: tabId },
-    })),
+    }));
+    useNotificationStore.getState().markReadByTabId(tabId);
+  },
 
   openPlanTab: (filename, title, projectId) => {
     const tabId = `plan:${filename}`;

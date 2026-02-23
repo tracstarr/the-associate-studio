@@ -33,8 +33,20 @@ export function useKeyBindings() {
         return;
       }
 
-      // Escape -- close palette
+      // Neural Field -- always intercept
+      if (ctrl && shift && e.key === " ") {
+        e.preventDefault();
+        ui.toggleNeuralField();
+        return;
+      }
+
+      // Escape -- close overlays in priority order
       if (e.key === "Escape") {
+        if (ui.neuralFieldOpen) {
+          e.preventDefault();
+          ui.toggleNeuralField();
+          return;
+        }
         if (ui.commandPaletteOpen) {
           e.preventDefault();
           ui.closeCommandPalette();

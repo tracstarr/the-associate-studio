@@ -1,10 +1,15 @@
 import { memo, useState, useRef, useEffect } from "react";
-import { Minus, Square, X, ChevronDown, GitBranch, FolderOpen, Plus } from "lucide-react";
+import { Minus, Square, X, ChevronDown, GitBranch, FolderOpen, Plus, RefreshCw, GitMerge, Radar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useActiveProjectTabs } from "@/hooks/useActiveProjectTabs";
 import { useProjectsStore } from "@/stores/projectsStore";
 import { useGitCurrentBranch, useGitBranches } from "@/hooks/useClaudeData";
+import { useQueryClient } from "@tanstack/react-query";
+import { useGitAction } from "@/hooks/useGitAction";
 import type { Project } from "@/lib/tauri";
+import { gitFetch, gitPull, gitCreateBranch, pickFolder as pickFolderFn } from "@/lib/tauri";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { useUIStore } from "@/stores/uiStore";
 
 // ─── Avatar color palette (deterministic from project name) ──────────────────
 
@@ -67,6 +72,11 @@ function BranchDropdown({
 }) {
   const { data: branches } = useGitBranches(cwd);
   const ref = useRef<HTMLDivElement>(null);
+  const runGitAction = useGitAction();
+  const queryClient = useQueryClient();
+  const [showNewBranchInput, setShowNewBranchInput] = useState(false);
+  const [newBranchName, setNewBranchName] = useState("");
+  const [newBranchLoading, setNewBranchLoading] = useState(false);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -78,11 +88,89 @@ function BranchDropdown({
     return () => document.removeEventListener("mousedown", handler);
   }, [onClose]);
 
+  const handleFetch = async () => {
+    onClose();
+    await runGitAction("git fetch", () => gitFetch(cwd));
+  };
+
+  const handlePull = async () => {
+    onClose();
+    await runGitAction("git pull", () => gitPull(cwd));
+  };
+
+  const handleCreateBranch = async () => {
+    if (!newBranchName.trim() || newBranchLoading) return;
+    setNewBranchLoading(true);
+    try {
+      await runGitAction(
+        `git checkout -b ${newBranchName.trim()}`,
+        () => gitCreateBranch(cwd, newBranchName.trim(), currentBranch)
+      );
+      queryClient.invalidateQueries({ queryKey: ["gitBranches", cwd] });
+    } finally {
+      setNewBranchLoading(false);
+      onClose();
+    }
+  };
+
   return (
     <div
       ref={ref}
       className="absolute left-0 top-full mt-1 z-50 min-w-52 bg-bg-overlay border border-border-default rounded shadow-lg py-1 text-xs"
     >
+      {/* Action toolbar */}
+      <div className="flex items-center gap-1 px-2 py-1.5 border-b border-border-default">
+        <button
+          onClick={handleFetch}
+          title="Fetch all remotes"
+          className="flex items-center gap-1 px-2 py-1 rounded text-text-secondary hover:bg-bg-raised hover:text-text-primary transition-colors"
+        >
+          <RefreshCw size={11} />
+          Fetch
+        </button>
+        <button
+          onClick={handlePull}
+          title="Pull current branch"
+          className="flex items-center gap-1 px-2 py-1 rounded text-text-secondary hover:bg-bg-raised hover:text-text-primary transition-colors"
+        >
+          <GitMerge size={11} />
+          Pull
+        </button>
+        <button
+          onClick={() => setShowNewBranchInput((v) => !v)}
+          title="New branch"
+          className={cn(
+            "flex items-center gap-1 px-2 py-1 rounded transition-colors",
+            showNewBranchInput
+              ? "text-accent-primary bg-accent-primary/10"
+              : "text-text-secondary hover:bg-bg-raised hover:text-text-primary"
+          )}
+        >
+          <Plus size={11} />
+          Branch
+        </button>
+      </div>
+
+      {/* New branch input */}
+      {showNewBranchInput && (
+        <div className="px-2 py-1.5 border-b border-border-default">
+          <input
+            autoFocus
+            type="text"
+            value={newBranchName}
+            onChange={(e) => setNewBranchName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleCreateBranch();
+              if (e.key === "Escape") setShowNewBranchInput(false);
+            }}
+            placeholder={`from ${currentBranch}`}
+            className="w-full bg-bg-surface border border-border-default rounded px-2 py-1 text-xs text-text-primary placeholder-text-muted outline-none focus:border-accent-primary"
+            disabled={newBranchLoading}
+          />
+        </div>
+      )}
+
+      {/* Branch list */}
       {(branches ?? []).map((b) => (
         <div
           key={b}
@@ -141,14 +229,12 @@ function ProjectDropdown({
       {/* Actions */}
       <button
         onClick={() => {
-          import("@/lib/tauri").then(({ pickFolder: pick }) =>
-            pick().then((path) => {
-              if (path) {
-                pickFolder(path);
-                onClose();
-              }
-            })
-          );
+          pickFolderFn().then((path) => {
+            if (path) {
+              pickFolder(path);
+              onClose();
+            }
+          });
         }}
         className="flex items-center gap-2 w-full px-3 py-1.5 text-text-secondary hover:bg-bg-raised hover:text-text-primary transition-colors"
       >
@@ -223,6 +309,7 @@ function ProjectDropdown({
 // ─── TitleBar ─────────────────────────────────────────────────────────────────
 
 function TitleBarComponent() {
+  const ui = useUIStore();
   const { openTabs, activeTabId } = useActiveProjectTabs();
   const projects = useProjectsStore((s) => s.projects);
   const activeProjectId = useProjectsStore((s) => s.activeProjectId);
@@ -359,8 +446,18 @@ function TitleBarComponent() {
         )}
       </div>
 
-      {/* Right: Window controls */}
+      {/* Right: Neural Field + NotificationBell + Window controls */}
       <div className="flex items-center h-full shrink-0">
+        <div className="flex items-center px-1 gap-1">
+          <button
+            onClick={() => ui.toggleNeuralField()}
+            title="Neural Field (Ctrl+Shift+Space)"
+            className="flex items-center justify-center w-7 h-7 rounded text-text-muted hover:text-accent-primary hover:bg-bg-overlay transition-colors"
+          >
+            <Radar size={14} />
+          </button>
+          <NotificationBell />
+        </div>
         <button
           onClick={handleMinimize}
           className="flex items-center justify-center w-12 h-full text-text-secondary hover:bg-bg-overlay transition-colors"

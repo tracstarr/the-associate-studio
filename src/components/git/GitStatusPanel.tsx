@@ -1,16 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   GitBranch, GitFork, RefreshCw, ChevronRight, ChevronDown,
-  Loader2, AlertTriangle, Plus, X, GitCommitHorizontal, Upload, GitPullRequest,
+  Loader2, AlertTriangle, X, GitCommitHorizontal, Upload, GitPullRequest, FolderSearch,
+  GitMerge, Plus,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGitStatus, useGitBranches, useGitCurrentBranch, useWorktrees, useWorktreeCopy } from "@/hooks/useClaudeData";
 import { useProjectsStore, pathToProjectId } from "@/stores/projectsStore";
 import { useUIStore } from "@/stores/uiStore";
 import { useSessionStore } from "@/stores/sessionStore";
-import type { GitFileEntry } from "@/lib/tauri";
-import { createWorktree, setWorktreeCopy, claudeGitAction } from "@/lib/tauri";
+import { useOutputStore } from "@/stores/outputStore";
+import { useGitAction } from "@/hooks/useGitAction";
+import type { GitFileEntry, FileEntry } from "@/lib/tauri";
+import { createWorktree, setWorktreeCopy, claudeGitAction, listDir, gitPull, gitCreateBranch } from "@/lib/tauri";
+import { UntrackedContextMenu } from "./UntrackedContextMenu";
 import { cn } from "@/lib/utils";
+import { FileTreeNode } from "@/components/files/FileTreeNode";
 
 export function GitStatusPanel() {
   const activeProjectDir = useProjectsStore((s) =>
@@ -24,7 +29,9 @@ export function GitStatusPanel() {
   const setBottomTab = useUIStore((s) => s.setBottomTab);
   const bottomPanelOpen = useUIStore((s) => s.bottomPanelOpen);
   const toggleBottomPanel = useUIStore((s) => s.toggleBottomPanel);
+  const addMessage = useOutputStore((s) => s.addMessage);
   const queryClient = useQueryClient();
+  const runGitAction = useGitAction();
 
   // File section collapse state
   const [stagedOpen, setStaggedOpen] = useState(true);
@@ -32,11 +39,24 @@ export function GitStatusPanel() {
   const [untrackedOpen, setUntrackedOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
 
+  // Untracked context menu state
+  const [fileContextMenu, setFileContextMenu] = useState<{
+    x: number;
+    y: number;
+    file: GitFileEntry | null;
+  } | null>(null);
+
   // Worktree creation form state
   const [showWorktreeForm, setShowWorktreeForm] = useState(false);
   const [worktreeBranch, setWorktreeBranch] = useState("");
   const [worktreeLoading, setWorktreeLoading] = useState(false);
   const [worktreeError, setWorktreeError] = useState<string | null>(null);
+
+  // New branch form state
+  const [showNewBranchForm, setShowNewBranchForm] = useState(false);
+  const [newBranchName, setNewBranchName] = useState("");
+  const [newBranchLoading, setNewBranchLoading] = useState(false);
+  const [newBranchError, setNewBranchError] = useState<string | null>(null);
 
   // Collapsible sections
   const [worktreesOpen, setWorktreesOpen] = useState(true);
@@ -46,10 +66,20 @@ export function GitStatusPanel() {
   const [gitActionLoading, setGitActionLoading] = useState<string | null>(null);
   const [gitActionResult, setGitActionResult] = useState<{ ok: boolean; msg: string } | null>(null);
 
-  // Copy-on-create inline input state
-  const [showCopyInput, setShowCopyInput] = useState(false);
-  const [copyInputValue, setCopyInputValue] = useState("");
-  const [copyMutating, setCopyMutating] = useState(false);
+  // File picker state for Copy on create
+  const [showFilePicker, setShowFilePicker] = useState(false);
+  const [pickerRootEntries, setPickerRootEntries] = useState<FileEntry[]>([]);
+  const [pickerExpandedDirs, setPickerExpandedDirs] = useState<Set<string>>(new Set());
+  const [pickerDirContents, setPickerDirContents] = useState<Record<string, FileEntry[]>>({});
+  const [pickerLoading, setPickerLoading] = useState(false);
+
+  // Reset picker when project changes
+  useEffect(() => {
+    setShowFilePicker(false);
+    setPickerRootEntries([]);
+    setPickerExpandedDirs(new Set());
+    setPickerDirContents({});
+  }, [activeProjectDir]);
 
   const { data: gitStatus, isLoading, refetch } = useGitStatus(activeProjectDir ?? "");
   const { data: branches } = useGitBranches(activeProjectDir ?? "");
@@ -76,14 +106,53 @@ export function GitStatusPanel() {
     if (!activeProjectDir || gitActionLoading) return;
     setGitActionLoading(action);
     setGitActionResult(null);
+    const label = action === "commit" ? "git commit" : action === "commit_push" ? "git commit+push" : "git commit+push+pr";
+    addMessage("info", `Running: ${label}…`, label);
+    setBottomTab("output");
+    if (!bottomPanelOpen) toggleBottomPanel();
     try {
       const result = await claudeGitAction(activeProjectDir, action);
       setGitActionResult({ ok: true, msg: result || "Done" });
-      queryClient.invalidateQueries({ queryKey: ["gitStatus", activeProjectDir] });
+      addMessage("success", result || "Done", label);
+      queryClient.invalidateQueries({ queryKey: ["git-status", activeProjectDir] });
     } catch (e) {
       setGitActionResult({ ok: false, msg: String(e) });
+      addMessage("error", String(e), label);
     } finally {
       setGitActionLoading(null);
+    }
+  };
+
+  const handlePull = async () => {
+    if (!activeProjectDir) return;
+    await runGitAction("git pull", () => gitPull(activeProjectDir));
+    queryClient.invalidateQueries({ queryKey: ["git-status", activeProjectDir] });
+    queryClient.invalidateQueries({ queryKey: ["gitCurrentBranch", activeProjectDir] });
+  };
+
+  const handleOpenNewBranchForm = () => {
+    setNewBranchName("");
+    setNewBranchError(null);
+    setShowNewBranchForm(true);
+    setShowWorktreeForm(false);
+  };
+
+  const handleCreateNewBranch = async () => {
+    if (!activeProjectDir || !newBranchName.trim()) return;
+    setNewBranchLoading(true);
+    setNewBranchError(null);
+    try {
+      await runGitAction(
+        `git create branch ${newBranchName.trim()}`,
+        () => gitCreateBranch(activeProjectDir, newBranchName.trim(), currentBranch)
+      );
+      queryClient.invalidateQueries({ queryKey: ["gitBranches", activeProjectDir] });
+      queryClient.invalidateQueries({ queryKey: ["gitCurrentBranch", activeProjectDir] });
+      setShowNewBranchForm(false);
+    } catch (e) {
+      setNewBranchError(String(e));
+    } finally {
+      setNewBranchLoading(false);
     }
   };
 
@@ -91,6 +160,7 @@ export function GitStatusPanel() {
     setWorktreeBranch(`feature/${currentBranch}-wt`);
     setWorktreeError(null);
     setShowWorktreeForm(true);
+    setShowNewBranchForm(false);
   };
 
   const handleCreateWorktree = async () => {
@@ -111,7 +181,6 @@ export function GitStatusPanel() {
         newProjectId
       );
       setShowWorktreeForm(false);
-      // Refresh worktree list
       queryClient.invalidateQueries({ queryKey: ["worktrees", activeProjectDir] });
     } catch (e) {
       setWorktreeError(String(e));
@@ -156,25 +225,61 @@ export function GitStatusPanel() {
     }
   };
 
-  const handleAddCopyEntry = async () => {
-    const value = copyInputValue.trim();
-    if (!value || !activeProjectDir) return;
+  const handleAddCopyEntry = async (relativePath: string) => {
+    if (!relativePath || !activeProjectDir) return;
     const current = copyEntries ?? [];
-    if (current.includes(value)) {
-      setShowCopyInput(false);
-      setCopyInputValue("");
-      return;
-    }
-    setCopyMutating(true);
+    if (current.includes(relativePath)) return;
     try {
-      await setWorktreeCopy(activeProjectDir, [...current, value]);
+      await setWorktreeCopy(activeProjectDir, [...current, relativePath]);
       queryClient.invalidateQueries({ queryKey: ["worktreeCopy", activeProjectDir] });
-      setShowCopyInput(false);
-      setCopyInputValue("");
     } catch (e) {
       console.error("[worktree-copy] set failed:", e);
-    } finally {
-      setCopyMutating(false);
+    }
+  };
+
+  const handlePickerAddFile = async (absolutePath: string) => {
+    if (!activeProjectDir) return;
+    const sep = absolutePath.includes("\\") ? "\\" : "/";
+    const projectRoot = activeProjectDir.replace(/\\/g, sep);
+    const normalized = absolutePath.replace(/\\/g, sep);
+    const relativePath = normalized.startsWith(projectRoot)
+      ? normalized.slice(projectRoot.length).replace(/^[/\\]/, "")
+      : absolutePath;
+    await handleAddCopyEntry(relativePath);
+  };
+
+  const handlePickerToggle = async (path: string) => {
+    setPickerExpandedDirs((prev) => {
+      const next = new Set(prev);
+      if (next.has(path)) {
+        next.delete(path);
+      } else {
+        next.add(path);
+      }
+      return next;
+    });
+    if (!pickerDirContents[path]) {
+      try {
+        const entries = await listDir(path);
+        setPickerDirContents((prev) => ({ ...prev, [path]: entries }));
+      } catch (e) {
+        console.error("[picker] load dir failed:", e);
+      }
+    }
+  };
+
+  const handleOpenPicker = async () => {
+    setShowFilePicker(true);
+    if (pickerRootEntries.length === 0 && activeProjectDir) {
+      setPickerLoading(true);
+      try {
+        const entries = await listDir(activeProjectDir);
+        setPickerRootEntries(entries);
+      } catch (e) {
+        console.error("[picker] load root failed:", e);
+      } finally {
+        setPickerLoading(false);
+      }
     }
   };
 
@@ -187,6 +292,24 @@ export function GitStatusPanel() {
     } catch (e) {
       console.error("[worktree-copy] remove failed:", e);
     }
+  };
+
+  const renderPickerEntries = (entries: FileEntry[], depth: number) => {
+    return entries.map((entry) => (
+      <div key={entry.path}>
+        <FileTreeNode
+          entry={entry}
+          depth={depth}
+          expanded={pickerExpandedDirs.has(entry.path)}
+          onFileClick={() => handlePickerAddFile(entry.path)}
+          onToggle={handlePickerToggle}
+          onAddToCopyList={handlePickerAddFile}
+        />
+        {entry.is_dir && pickerExpandedDirs.has(entry.path) && pickerDirContents[entry.path] && (
+          <div>{renderPickerEntries(pickerDirContents[entry.path], depth + 1)}</div>
+        )}
+      </div>
+    ));
   };
 
   if (!activeProjectDir) {
@@ -215,11 +338,18 @@ export function GitStatusPanel() {
           {currentBranch}
         </span>
         <button
-          onClick={handleOpenWorktreeForm}
+          onClick={handlePull}
           className="text-text-muted hover:text-accent-primary transition-colors"
-          title="Create worktree"
+          title="Pull"
         >
-          <GitFork size={12} />
+          <GitMerge size={12} />
+        </button>
+        <button
+          onClick={handleOpenNewBranchForm}
+          className="text-text-muted hover:text-accent-primary transition-colors"
+          title="New branch"
+        >
+          <Plus size={12} />
         </button>
         <button
           onClick={() => refetch()}
@@ -265,6 +395,46 @@ export function GitStatusPanel() {
           >
             ×
           </button>
+        </div>
+      )}
+
+      {/* Inline new branch form */}
+      {showNewBranchForm && (
+        <div className="px-3 py-2 border-b border-border-default flex flex-col gap-1.5">
+          <div className="text-[10px] text-text-muted">
+            New branch from <span className="text-text-primary font-medium">{currentBranch}</span>:
+          </div>
+          <div className="flex items-center gap-1.5">
+            <input
+              type="text"
+              value={newBranchName}
+              onChange={(e) => setNewBranchName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleCreateNewBranch();
+                if (e.key === "Escape") setShowNewBranchForm(false);
+              }}
+              placeholder="branch name"
+              className="flex-1 min-w-0 px-2 py-1 text-xs bg-bg-base border border-border-default rounded text-text-primary placeholder-text-muted focus:outline-none focus:border-border-focus"
+              autoFocus
+            />
+            <button
+              onClick={handleCreateNewBranch}
+              disabled={newBranchLoading || !newBranchName.trim()}
+              className="flex items-center gap-1 px-2 py-1 text-xs bg-accent-primary text-white rounded hover:opacity-90 disabled:opacity-50 transition-opacity shrink-0"
+            >
+              {newBranchLoading ? <Loader2 size={10} className="animate-spin" /> : null}
+              Create
+            </button>
+            <button
+              onClick={() => setShowNewBranchForm(false)}
+              className="px-2 py-1 text-xs text-text-muted hover:text-text-primary transition-colors shrink-0"
+            >
+              Cancel
+            </button>
+          </div>
+          {newBranchError && (
+            <p className="text-[10px] text-status-error">{newBranchError}</p>
+          )}
         </div>
       )}
 
@@ -316,6 +486,13 @@ export function GitStatusPanel() {
               {worktreesOpen ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
               Worktrees
               <span className="ml-auto font-normal normal-case">{worktrees.length}</span>
+              <button
+                onClick={(e) => { e.stopPropagation(); handleOpenWorktreeForm(); }}
+                className="ml-1 text-text-muted hover:text-accent-primary transition-colors"
+                title="Create worktree"
+              >
+                <GitFork size={10} />
+              </button>
             </button>
             {worktreesOpen && (
               <div className="pb-1">
@@ -393,55 +570,32 @@ export function GitStatusPanel() {
                 ))
               ) : (
                 <div className="px-4 py-1 text-[10px] text-text-muted">
-                  {isChildWorktree ? "No files were copied" : "No files — hover a file in the browser to add"}
+                  {isChildWorktree ? "No files were copied" : "No files — use Browse files to add"}
                 </div>
               )}
 
-              {/* Add input — only on main worktree */}
+              {/* Browse files picker — only on main worktree */}
               {!isChildWorktree && (
-                showCopyInput ? (
-                  <div className="flex items-center gap-1 px-3 py-1">
-                    <input
-                      type="text"
-                      value={copyInputValue}
-                      onChange={(e) => setCopyInputValue(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") handleAddCopyEntry();
-                        if (e.key === "Escape") {
-                          setShowCopyInput(false);
-                          setCopyInputValue("");
-                        }
-                      }}
-                      placeholder="relative path, e.g. .env"
-                      className="flex-1 min-w-0 px-1.5 py-0.5 text-[10px] bg-bg-base border border-border-default rounded text-text-primary placeholder-text-muted focus:outline-none focus:border-border-focus"
-                      autoFocus
-                    />
-                    <button
-                      onClick={handleAddCopyEntry}
-                      disabled={copyMutating || !copyInputValue.trim()}
-                      className="px-1.5 py-0.5 text-[10px] bg-accent-primary text-white rounded hover:opacity-90 disabled:opacity-50 transition-opacity shrink-0"
-                    >
-                      Add
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowCopyInput(false);
-                        setCopyInputValue("");
-                      }}
-                      className="text-text-muted hover:text-text-primary transition-colors shrink-0"
-                    >
-                      <X size={10} />
-                    </button>
-                  </div>
-                ) : (
+                <>
                   <button
-                    onClick={() => setShowCopyInput(true)}
+                    onClick={showFilePicker ? () => setShowFilePicker(false) : handleOpenPicker}
                     className="flex items-center gap-1 px-4 py-1 text-[10px] text-text-muted hover:text-text-secondary transition-colors"
                   >
-                    <Plus size={10} />
-                    Add path
+                    <FolderSearch size={10} />
+                    {showFilePicker ? "Close picker" : "Browse files"}
                   </button>
-                )
+                  {showFilePicker && (
+                    <div className="border-t border-border-default max-h-[180px] overflow-y-auto">
+                      {pickerLoading ? (
+                        <div className="px-4 py-1 text-[10px] text-text-muted">Loading...</div>
+                      ) : pickerRootEntries.length === 0 ? (
+                        <div className="px-4 py-1 text-[10px] text-text-muted">No files found</div>
+                      ) : (
+                        renderPickerEntries(pickerRootEntries, 0)
+                      )}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -485,11 +639,28 @@ export function GitStatusPanel() {
                 files={untracked}
                 onFileClick={handleFileClick}
                 selectedFile={selectedFile}
+                onHeaderContextMenu={(e) => {
+                  e.preventDefault();
+                  setFileContextMenu({ x: e.clientX, y: e.clientY, file: null });
+                }}
+                onFileContextMenu={(e, file) => {
+                  e.preventDefault();
+                  setFileContextMenu({ x: e.clientX, y: e.clientY, file });
+                }}
               />
             )}
           </div>
         )}
       </div>
+      {fileContextMenu && (
+        <UntrackedContextMenu
+          x={fileContextMenu.x}
+          y={fileContextMenu.y}
+          cwd={activeProjectDir}
+          file={fileContextMenu.file}
+          onClose={() => setFileContextMenu(null)}
+        />
+      )}
     </div>
   );
 }
@@ -502,13 +673,16 @@ interface FileSectionProps {
   files: GitFileEntry[];
   onFileClick: (file: GitFileEntry) => void;
   selectedFile: string | null;
+  onHeaderContextMenu?: (e: React.MouseEvent) => void;
+  onFileContextMenu?: (e: React.MouseEvent, file: GitFileEntry) => void;
 }
 
-function FileSection({ title, count, open, onToggle, files, onFileClick, selectedFile }: FileSectionProps) {
+function FileSection({ title, count, open, onToggle, files, onFileClick, selectedFile, onHeaderContextMenu, onFileContextMenu }: FileSectionProps) {
   return (
     <div>
       <button
         onClick={onToggle}
+        onContextMenu={onHeaderContextMenu}
         className="flex items-center gap-1 w-full px-3 py-1.5 text-[10px] font-semibold tracking-wider text-text-muted hover:text-text-secondary uppercase"
       >
         {open ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
@@ -523,6 +697,7 @@ function FileSection({ title, count, open, onToggle, files, onFileClick, selecte
               file={file}
               onClick={() => onFileClick(file)}
               isSelected={selectedFile === file.path}
+              onContextMenu={onFileContextMenu ? (e) => onFileContextMenu(e, file) : undefined}
             />
           ))}
         </div>
@@ -531,7 +706,7 @@ function FileSection({ title, count, open, onToggle, files, onFileClick, selecte
   );
 }
 
-function FileEntry({ file, onClick, isSelected }: { file: GitFileEntry; onClick: () => void; isSelected: boolean }) {
+function FileEntry({ file, onClick, isSelected, onContextMenu }: { file: GitFileEntry; onClick: () => void; isSelected: boolean; onContextMenu?: (e: React.MouseEvent) => void }) {
   const statusColor = getStatusColor(file.statusChar);
   const filename = file.path.split(/[/\\]/).pop() ?? file.path;
   const dir = file.path.includes("/") || file.path.includes("\\")
@@ -541,6 +716,7 @@ function FileEntry({ file, onClick, isSelected }: { file: GitFileEntry; onClick:
   return (
     <button
       onClick={onClick}
+      onContextMenu={onContextMenu}
       className={cn(
         "flex items-center gap-2 w-full px-4 py-1 text-xs text-left transition-colors",
         isSelected

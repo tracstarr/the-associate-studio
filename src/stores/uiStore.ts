@@ -18,6 +18,7 @@ interface UIStore {
   activeRightTab: RightTab;
   activeBottomTab: BottomTab;
   commandPaletteOpen: boolean;
+  neuralFieldOpen: boolean;
   selectedDiffFile: SelectedDiffFile | null;
   debugPanelOpen: boolean;
   projectDropdownOpen: boolean;
@@ -33,6 +34,7 @@ interface UIStore {
   setBottomTab: (tab: BottomTab) => void;
   openCommandPalette: () => void;
   closeCommandPalette: () => void;
+  toggleNeuralField: () => void;
   setSelectedDiffFile: (file: SelectedDiffFile | null) => void;
   toggleDebugPanel: () => void;
   openProjectDropdown: () => void;
@@ -50,6 +52,7 @@ export const useUIStore = create<UIStore>((set) => ({
   activeRightTab: "context",
   activeBottomTab: "git",
   commandPaletteOpen: false,
+  neuralFieldOpen: false,
   selectedDiffFile: null,
   debugPanelOpen: false,
   projectDropdownOpen: false,
@@ -65,6 +68,7 @@ export const useUIStore = create<UIStore>((set) => ({
   setBottomTab: (tab) => set({ activeBottomTab: tab }),
   openCommandPalette: () => set({ commandPaletteOpen: true }),
   closeCommandPalette: () => set({ commandPaletteOpen: false }),
+  toggleNeuralField: () => set((s) => ({ neuralFieldOpen: !s.neuralFieldOpen })),
   setSelectedDiffFile: (file) => set({ selectedDiffFile: file }),
   toggleDebugPanel: () => set((s) => ({ debugPanelOpen: !s.debugPanelOpen })),
   openProjectDropdown: () => set({ projectDropdownOpen: true }),
