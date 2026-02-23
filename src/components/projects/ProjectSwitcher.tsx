@@ -155,7 +155,7 @@ export function ProjectSwitcher() {
           .filter((t) => (!t.type || t.type === "terminal") && !t.sessionId && !t.resolvedSessionId)
           .map((tab) => {
             const isLive = tab.resolvedSessionId
-              ? knownSessions[tab.resolvedSessionId] === true
+              ? knownSessions[tab.resolvedSessionId] === "active"
               : false;
             const subs = tab.resolvedSessionId
               ? (activeSubagents[tab.resolvedSessionId] ?? [])
@@ -184,9 +184,9 @@ export function ProjectSwitcher() {
           </div>
         )}
         {sessions
-          ?.filter((s) => !s.isSidechain)
+          ?.filter((s) => !s.isSidechain && knownSessions[s.sessionId] !== undefined)
           .map((session) => {
-            const isLive = knownSessions[session.sessionId] === true;
+            const isLive = knownSessions[session.sessionId] === "active";
             const subs = activeSubagents[session.sessionId] ?? [];
             return (
               <SessionItem

@@ -21,25 +21,20 @@ export function PlansPanel() {
     );
   }
 
-  if (!plans || plans.length === 0) {
+  const sessionPlans: { plan: PlanFile; tabTitle: string }[] = (plans ?? [])
+    .filter((plan) => !!planLinks[plan.filename])
+    .map((plan) => {
+      const tabId = planLinks[plan.filename];
+      const tab = openTabs.find((t) => t.id === tabId);
+      return { plan, tabTitle: tab?.title ?? tabId };
+    });
+
+  if (!plans || sessionPlans.length === 0) {
     return (
       <div className="p-3 text-xs text-[var(--color-text-muted)] text-center">
-        No plans found
+        No active plans
       </div>
     );
-  }
-
-  const sessionPlans: { plan: PlanFile; tabTitle: string }[] = [];
-  const unknownPlans: PlanFile[] = [];
-
-  for (const plan of plans) {
-    const tabId = planLinks[plan.filename];
-    if (tabId) {
-      const tab = openTabs.find((t) => t.id === tabId);
-      sessionPlans.push({ plan, tabTitle: tab?.title ?? tabId });
-    } else {
-      unknownPlans.push(plan);
-    }
   }
 
   const toggle = (filename: string) =>
@@ -53,46 +48,22 @@ export function PlansPanel() {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      {sessionPlans.length > 0 && (
-        <>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--color-bg-raised)] border-b border-[var(--color-border-default)]">
-            <Layers size={10} className="text-[var(--color-accent-primary)]" />
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
-              Session Plans
-            </span>
-          </div>
-          {sessionPlans.map(({ plan, tabTitle }) => (
-            <PlanRow
-              key={plan.filename}
-              plan={plan}
-              sessionLabel={tabTitle}
-              expanded={expandedPlan === plan.filename}
-              onToggle={() => toggle(plan.filename)}
-              onOpen={() => handleOpen(plan)}
-            />
-          ))}
-        </>
-      )}
-
-      {unknownPlans.length > 0 && (
-        <>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--color-bg-raised)] border-b border-[var(--color-border-default)]">
-            <FileText size={10} className="text-[var(--color-text-muted)]" />
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
-              {sessionPlans.length > 0 ? "Other Plans" : "Plans"}
-            </span>
-          </div>
-          {unknownPlans.map((plan) => (
-            <PlanRow
-              key={plan.filename}
-              plan={plan}
-              expanded={expandedPlan === plan.filename}
-              onToggle={() => toggle(plan.filename)}
-              onOpen={() => handleOpen(plan)}
-            />
-          ))}
-        </>
-      )}
+      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--color-bg-raised)] border-b border-[var(--color-border-default)]">
+        <Layers size={10} className="text-[var(--color-accent-primary)]" />
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+          Session Plans
+        </span>
+      </div>
+      {sessionPlans.map(({ plan, tabTitle }) => (
+        <PlanRow
+          key={plan.filename}
+          plan={plan}
+          sessionLabel={tabTitle}
+          expanded={expandedPlan === plan.filename}
+          onToggle={() => toggle(plan.filename)}
+          onOpen={() => handleOpen(plan)}
+        />
+      ))}
     </div>
   );
 }

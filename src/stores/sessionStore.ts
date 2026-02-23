@@ -20,7 +20,7 @@ interface SessionStore {
   tabsByProject: Record<string, SessionTab[]>;
   activeTabByProject: Record<string, string | null>;
   activeSubagents: Record<string, ActiveSubagent[]>;
-  knownSessions: Record<string, boolean>;
+  knownSessions: Record<string, "active" | "idle" | "completed">;
   planLinks: Record<string, string>; // plan filename → tab id
   dirtyTabs: Record<string, boolean>;
 
@@ -43,16 +43,25 @@ interface SessionStore {
 
   // Global state (keyed by session ID, not project)
   setSubagents: (sessionId: string, subagents: ActiveSubagent[]) => void;
-  markSessionActive: (sessionId: string, isActive: boolean) => void;
+  markSessionStatus: (sessionId: string, status: "active" | "idle" | "completed") => void;
   linkPlan: (filename: string, tabId: string) => void;
 }
+
+const loadStoredPlanLinks = (): Record<string, string> => {
+  try {
+    const raw = localStorage.getItem("planLinks");
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+};
 
 export const useSessionStore = create<SessionStore>((set) => ({
   tabsByProject: {},
   activeTabByProject: {},
   activeSubagents: {},
   knownSessions: {},
-  planLinks: {},
+  planLinks: loadStoredPlanLinks(),
   dirtyTabs: {},
 
   openTab: (tab, projectId) =>
@@ -147,15 +156,17 @@ export const useSessionStore = create<SessionStore>((set) => ({
       activeSubagents: { ...s.activeSubagents, [sessionId]: subagents },
     })),
 
-  markSessionActive: (sessionId, isActive) =>
+  markSessionStatus: (sessionId, status) =>
     set((s) => ({
-      knownSessions: { ...s.knownSessions, [sessionId]: isActive },
+      knownSessions: { ...s.knownSessions, [sessionId]: status },
     })),
 
   linkPlan: (filename, tabId) =>
-    set((s) => ({
-      planLinks: { ...s.planLinks, [filename]: tabId },
-    })),
+    set((s) => {
+      const planLinks = { ...s.planLinks, [filename]: tabId };
+      try { localStorage.setItem("planLinks", JSON.stringify(planLinks)); } catch { /* ignore */ }
+      return { planLinks };
+    }),
 
   resumeTab: (tabId, projectId) =>
     set((s) => {

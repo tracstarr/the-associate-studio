@@ -47,12 +47,11 @@ export function useNeuralFieldData(): FieldNode[] {
       });
     }
 
-    // Active session nodes + their subagent nodes
-    const activeSessionIds = Object.entries(knownSessions)
-      .filter(([, isActive]) => isActive)
-      .map(([id]) => id);
+    // Active/idle session nodes + their subagent nodes
+    const visibleSessionEntries = Object.entries(knownSessions)
+      .filter(([, status]) => status === "active" || status === "idle");
 
-    for (const sessionId of activeSessionIds) {
+    for (const [sessionId, status] of visibleSessionEntries) {
       // Find the project this session belongs to
       let projectNodeId: string | undefined;
       outer: for (const [projectId, tabs] of Object.entries(tabsByProject)) {
@@ -67,14 +66,23 @@ export function useNeuralFieldData(): FieldNode[] {
       if (!projectNodeId) continue; // skip sessions with no project tie
 
       const agents = activeSubagents[sessionId] ?? [];
+      const isIdle = status === "idle";
+      const sublabel = isIdle
+        ? "waiting"
+        : agents.length > 0
+          ? `${agents.length} agent${agents.length !== 1 ? "s" : ""}`
+          : "running";
+      const glowIntensity = isIdle
+        ? 0.3
+        : agents.length > 0 ? 0.8 : 0.4;
       nodes.push({
         id: `session:${sessionId}`,
         type: "session",
         label: sessionId.slice(0, 8),
-        sublabel: agents.length > 0 ? `${agents.length} agent${agents.length !== 1 ? "s" : ""}` : "running",
+        sublabel,
         color: SESSION_COLOR,
-        glowIntensity: agents.length > 0 ? 0.8 : 0.4,
-        isActive: true,
+        glowIntensity,
+        isActive: !isIdle,
         parentId: projectNodeId,
         projectId: projectNodeId,
       });
@@ -98,15 +106,15 @@ export function useNeuralFieldData(): FieldNode[] {
     for (const team of teams ?? []) {
       const teamId = `team:${team.dirName}`;
 
-      // Resolve team to a project via leadSessionId
+      // Resolve team to a project via leadSessionId (only if lead is active or idle)
+      const leadStatus = team.config.leadSessionId ? knownSessions[team.config.leadSessionId] : undefined;
+      if (!leadStatus || (leadStatus !== "active" && leadStatus !== "idle")) continue;
       let teamProjectId: string | undefined;
-      if (team.config.leadSessionId) {
-        outer: for (const [pid, tabs] of Object.entries(tabsByProject)) {
-          for (const tab of tabs) {
-            if (tab.resolvedSessionId === team.config.leadSessionId) {
-              teamProjectId = `project:${pid}`;
-              break outer;
-            }
+      outer: for (const [pid, tabs] of Object.entries(tabsByProject)) {
+        for (const tab of tabs) {
+          if (tab.resolvedSessionId === team.config.leadSessionId) {
+            teamProjectId = `project:${pid}`;
+            break outer;
           }
         }
       }

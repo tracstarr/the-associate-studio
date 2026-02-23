@@ -207,7 +207,8 @@ export function useClaudeWatcher() {
       debugLog("Hooks", "Initial sessions", { count: sessions.length }, "info");
       const store = useSessionStore.getState();
       for (const session of sessions) {
-        store.markSessionActive(session.session_id, session.is_active);
+        const status = session.status ?? (session.is_active ? "active" : "idle");
+        store.markSessionStatus(session.session_id, status);
         if (session.subagents.length > 0) {
           store.setSubagents(session.session_id, session.subagents);
         }
@@ -243,7 +244,21 @@ export function useClaudeWatcher() {
         switch (event.hook_event_name) {
           case "SessionStart": {
             debugLog("Hooks", "SessionStart", { session_id: event.session_id, cwd: event.cwd }, "info");
-            store.markSessionActive(event.session_id, true);
+            store.markSessionStatus(event.session_id, "active");
+            // Hanging session cleanup: if not a resume, mark other sessions in same project as completed
+            if (event.source !== "resume") {
+              const projectId = pathToProjectId(event.cwd ?? "");
+              const projectTabs = tabsByProjectRef.current[projectId] ?? [];
+              const otherIds = projectTabs
+                .flatMap((t) => [t.resolvedSessionId, t.sessionId])
+                .filter((id): id is string => !!id && id !== event.session_id);
+              const { knownSessions } = useSessionStore.getState();
+              for (const id of otherIds) {
+                if (knownSessions[id] && knownSessions[id] !== "completed") {
+                  store.markSessionStatus(id, "completed");
+                }
+              }
+            }
             const normCwd = (event.cwd ?? "").replace(/\\/g, "/").toLowerCase();
             const projectId = pathToProjectId(event.cwd ?? "");
             const projectTabs = allTabsByProject[projectId] ?? [];
@@ -283,7 +298,7 @@ export function useClaudeWatcher() {
           }
           case "SessionEnd":
             debugLog("Hooks", "SessionEnd", { session_id: event.session_id }, "info");
-            store.markSessionActive(event.session_id, false);
+            store.markSessionStatus(event.session_id, "completed");
             // Close the terminal tab for this session (/exit was called)
             for (const [pid, tabs] of Object.entries(allTabsByProject)) {
               const termTab = tabs.find(
@@ -298,7 +313,7 @@ export function useClaudeWatcher() {
             break;
           case "Stop":
             debugLog("Hooks", "Stop", { session_id: event.session_id }, "warn");
-            store.markSessionActive(event.session_id, false);
+            store.markSessionStatus(event.session_id, "idle");
             break;
           case "SubagentStart": {
             debugLog("Hooks", "SubagentStart", { session_id: event.session_id, agent_id: event.agent_id, agent_type: event.agent_type }, "info");

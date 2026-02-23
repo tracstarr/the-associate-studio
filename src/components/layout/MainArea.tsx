@@ -15,10 +15,10 @@ import type { TabCloseAction } from "./TabContextMenu";
 import { CloseTabsWarningDialog } from "./CloseTabsWarningDialog";
 import { cn } from "@/lib/utils";
 
-function tabAccent(tab: SessionTab, knownSessions: Record<string, boolean>) {
+function tabAccent(tab: SessionTab, knownSessions: Record<string, "active" | "idle" | "completed">) {
   const isTerminal = !tab.type || tab.type === "terminal";
   if (isTerminal) {
-    const isLive = tab.resolvedSessionId ? knownSessions[tab.resolvedSessionId] === true : false;
+    const isLive = tab.resolvedSessionId ? knownSessions[tab.resolvedSessionId] === "active" : false;
     return isLive
       ? { border: "border-t-[var(--color-status-success)]", icon: "text-[var(--color-status-success)]" }
       : { border: "border-t-[var(--color-status-warning)]", icon: "text-[var(--color-status-warning)]" };
@@ -73,7 +73,7 @@ function MainAreaComponent({ projectId: projectIdProp }: { projectId?: string })
         warnings.push(`"${tab.title}" has unsaved changes`);
       }
       const isTerminal = !tab.type || tab.type === "terminal";
-      if (isTerminal && tab.resolvedSessionId && knownSessions[tab.resolvedSessionId] === true) {
+      if (isTerminal && tab.resolvedSessionId && knownSessions[tab.resolvedSessionId] === "active") {
         warnings.push(`"${tab.title}" has an active Claude session`);
       }
     }

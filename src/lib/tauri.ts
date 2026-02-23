@@ -375,6 +375,7 @@ export interface ActiveSession {
   started_at?: string;
   model?: string;
   is_active: boolean;
+  status?: "active" | "idle" | "completed";
   subagents: ActiveSubagent[];
 }
 

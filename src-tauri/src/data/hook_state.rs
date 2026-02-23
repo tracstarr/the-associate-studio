@@ -17,6 +17,7 @@ pub struct ActiveSession {
     pub started_at: Option<String>,
     pub model: Option<String>,
     pub is_active: bool,
+    pub status: String,
     pub subagents: Vec<ActiveSubagent>,
 }
 
@@ -47,17 +48,26 @@ pub fn build_active_sessions(events: &[HookEvent]) -> HashMap<String, ActiveSess
                         started_at: None,
                         model: event.model.clone(),
                         is_active: true,
+                        status: "active".to_string(),
                         subagents: vec![],
                     });
                 session.is_active = true;
+                session.status = "active".to_string();
                 session.cwd = event.cwd.clone();
                 if event.model.is_some() {
                     session.model = event.model.clone();
                 }
             }
-            "SessionEnd" | "Stop" => {
+            "SessionEnd" => {
                 if let Some(session) = sessions.get_mut(&event.session_id) {
                     session.is_active = false;
+                    session.status = "completed".to_string();
+                }
+            }
+            "Stop" => {
+                if let Some(session) = sessions.get_mut(&event.session_id) {
+                    session.is_active = false;
+                    session.status = "idle".to_string();
                 }
             }
             "SubagentStart" => {
@@ -70,6 +80,7 @@ pub fn build_active_sessions(events: &[HookEvent]) -> HashMap<String, ActiveSess
                             started_at: None,
                             model: None,
                             is_active: true,
+                            status: "active".to_string(),
                             subagents: vec![],
                         });
                     if !session.subagents.iter().any(|a| &a.agent_id == agent_id) {
