@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTeams, useTasks, useInbox } from "../../hooks/useClaudeData";
 import { useProjectsStore } from "../../stores/projectsStore";
+import { useSessionStore } from "../../stores/sessionStore";
 import { deleteTeam, sendInboxMessage } from "../../lib/tauri";
 import {
   Crown,
@@ -11,8 +12,17 @@ import {
   X,
   Check,
   Send,
+  Zap,
 } from "lucide-react";
 import type { Team, Task, TeamMember } from "../../lib/tauri";
+
+const shortModel = (model?: string): string => {
+  if (!model) return "?";
+  if (model.includes("haiku")) return "haiku";
+  if (model.includes("sonnet")) return "sonnet";
+  if (model.includes("opus")) return "opus";
+  return model.slice(0, 8);
+};
 
 export function TeamsRightPanel() {
   const activeProjectDir = useProjectsStore((s) =>
@@ -49,14 +59,32 @@ export function TeamsRightPanel() {
 function TeamCard({ team }: { team: Team }) {
   const queryClient = useQueryClient();
   const { data: tasks } = useTasks(team.dirName);
+  const activeSubagents = useSessionStore((s) => s.activeSubagents);
   const [expandedMember, setExpandedMember] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const activeTasks = tasks?.filter((t) => t.status === "in_progress") ?? [];
-  const pendingTasks = tasks?.filter((t) => t.status === "pending") ?? [];
-  const completedTasks = tasks?.filter((t) => t.status === "completed") ?? [];
+  const leadSessionId = team.config.leadSessionId;
+  const runningAgents = leadSessionId
+    ? (activeSubagents[leadSessionId] ?? [])
+    : Object.values(activeSubagents).flat();
+
+  const isMemberActive = (member: TeamMember) =>
+    runningAgents.some(
+      (a) =>
+        a.agent_id === member.name ||
+        a.agent_id === member.agentId ||
+        (a.agent_id?.includes(member.name) ?? false)
+    );
+
+  const visibleTasks =
+    tasks?.filter((t) => t.status !== "deleted") ?? [];
+
+  const sortedTasks = [...visibleTasks].sort((a, b) => {
+    const order: Record<string, number> = { in_progress: 0, pending: 1, completed: 2 };
+    return (order[a.status] ?? 3) - (order[b.status] ?? 3);
+  });
 
   const isDone =
     (tasks?.length ?? 0) > 0 &&
@@ -83,6 +111,9 @@ function TeamCard({ team }: { team: Team }) {
   const toggleMember = (name: string) => {
     setExpandedMember((prev) => (prev === name ? null : name));
   };
+
+  const memberByName = (name?: string) =>
+    team.config.members.find((m) => m.name === name);
 
   return (
     <div
@@ -126,7 +157,10 @@ function TeamCard({ team }: { team: Team }) {
                 {deleting ? "..." : "Yes"}
               </button>
               <button
-                onClick={() => { setConfirmDelete(false); setDeleteError(null); }}
+                onClick={() => {
+                  setConfirmDelete(false);
+                  setDeleteError(null);
+                }}
                 className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-bg-raised)] text-[var(--color-text-secondary)]"
               >
                 No
@@ -141,43 +175,156 @@ function TeamCard({ team }: { team: Team }) {
         )}
       </div>
 
-      {/* Member Rows */}
+      {/* Tasks Section */}
+      {sortedTasks.length > 0 && (
+        <div className="border-b border-[var(--color-border-default)]">
+          <p className="px-3 pt-2 pb-1 text-[9px] uppercase tracking-wider text-[var(--color-text-secondary)] font-semibold">
+            Tasks
+          </p>
+          <div className="pb-1">
+            {sortedTasks.map((task) => {
+              const owner = memberByName(task.owner);
+              const isActive = task.status === "in_progress";
+              const isDoneTask = task.status === "completed";
+              const isBlocked = task.blockedBy.length > 0;
+
+              return (
+                <div
+                  key={task.id}
+                  className="px-3 py-1 flex items-center gap-1.5"
+                  style={{ opacity: isDoneTask ? 0.45 : 1 }}
+                >
+                  {/* Status glyph */}
+                  <span
+                    className="text-[11px] shrink-0 w-3 text-center"
+                    style={{
+                      color: isActive
+                        ? "var(--color-status-success)"
+                        : "var(--color-text-secondary)",
+                    }}
+                  >
+                    {isActive ? "▶" : isDoneTask ? "✓" : "○"}
+                  </span>
+
+                  {/* Task ID */}
+                  <span className="text-[9px] text-[var(--color-text-secondary)] shrink-0 font-mono opacity-70">
+                    #{task.id}
+                  </span>
+
+                  {/* Task text */}
+                  <span
+                    className="text-[10px] flex-1 truncate"
+                    style={{
+                      color: isActive
+                        ? "var(--color-text-primary)"
+                        : "var(--color-text-primary)",
+                    }}
+                  >
+                    {isActive && task.activeForm
+                      ? task.activeForm
+                      : (task.subject ?? task.id)}
+                  </span>
+
+                  {/* Blocked badge */}
+                  {isBlocked && !isDoneTask && (
+                    <span className="text-[9px] px-1 py-px rounded bg-[var(--color-status-warning)] bg-opacity-20 text-[var(--color-status-warning)] shrink-0">
+                      blocked
+                    </span>
+                  )}
+
+                  {/* Owner dot */}
+                  {owner && (
+                    <span
+                      className="text-[9px] truncate max-w-[56px] shrink-0"
+                      style={{ color: owner.color ?? "var(--color-text-secondary)" }}
+                      title={owner.name}
+                    >
+                      ● {owner.name}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Agents Section */}
       <div className="divide-y divide-[var(--color-border-default)]">
+        <p className="px-3 pt-2 pb-1 text-[9px] uppercase tracking-wider text-[var(--color-text-secondary)] font-semibold">
+          Agents
+        </p>
         {team.config.members.map((member) => {
           const isExpanded = expandedMember === member.name;
-          const memberActiveTasks = activeTasks.filter(
-            (t) => t.owner === member.name
+          const active = isMemberActive(member);
+          const isLead = member.agentId === team.config.leadAgentId;
+          const inProgressTask = visibleTasks.find(
+            (t) => t.owner === member.name && t.status === "in_progress"
           );
+
           return (
             <div key={member.name}>
               <button
                 onClick={() => toggleMember(member.name)}
                 className="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[var(--color-bg-raised)] text-left"
               >
-                <Circle
-                  size={6}
-                  style={{
-                    color: member.color ?? "var(--color-text-muted)",
-                    fill: "currentColor",
-                  }}
-                  className="shrink-0"
-                />
-                <span className="text-xs text-[var(--color-text-secondary)] flex-1 truncate">
+                {/* Active/idle indicator */}
+                {active ? (
+                  <Zap
+                    size={8}
+                    className="shrink-0"
+                    style={{
+                      color: member.color ?? "var(--color-status-success)",
+                      fill: "currentColor",
+                    }}
+                  />
+                ) : (
+                  <Circle
+                    size={6}
+                    className="shrink-0"
+                    style={{
+                      color: member.color ?? "var(--color-text-secondary)",
+                    }}
+                  />
+                )}
+
+                {/* Name */}
+                <span className="text-xs text-[var(--color-text-primary)] truncate flex-1">
                   {member.name}
                 </span>
-                {member.agentId === team.config.leadAgentId && (
+
+                {/* Lead crown */}
+                {isLead && (
                   <Crown
                     size={10}
                     className="text-[var(--color-status-warning)] shrink-0"
                   />
                 )}
-                {memberActiveTasks.length > 0 && (
-                  <span className="text-[10px] text-[var(--color-status-success)] truncate max-w-[80px]">
-                    {memberActiveTasks[0].activeForm ??
-                      memberActiveTasks[0].subject ??
-                      "working"}
+
+                {/* Model badge */}
+                {member.model && (
+                  <span className="text-[9px] px-1 py-px rounded bg-[var(--color-bg-raised)] text-[var(--color-text-secondary)] shrink-0 font-mono border border-[var(--color-border-default)]">
+                    {shortModel(member.model)}
                   </span>
                 )}
+
+                {/* Status text */}
+                <span
+                  className="text-[10px] truncate max-w-[72px] shrink-0"
+                  style={{
+                    color: active
+                      ? "var(--color-status-success)"
+                      : "var(--color-text-secondary)",
+                  }}
+                >
+                  {active && inProgressTask
+                    ? (inProgressTask.activeForm ?? inProgressTask.subject ?? "working")
+                    : active
+                      ? "active"
+                      : "idle"}
+                </span>
+
+                {/* Expand chevron */}
                 {isExpanded ? (
                   <ChevronDown
                     size={12}
@@ -190,6 +337,7 @@ function TeamCard({ team }: { team: Team }) {
                   />
                 )}
               </button>
+
               {isExpanded && (
                 <MemberDetail
                   team={team}
@@ -201,21 +349,6 @@ function TeamCard({ team }: { team: Team }) {
           );
         })}
       </div>
-
-      {/* Task Summary Footer */}
-      {tasks && tasks.length > 0 && (
-        <div className="px-3 py-1.5 border-t border-[var(--color-border-default)] flex gap-3 text-[10px]">
-          <span className="text-[var(--color-status-success)]">
-            {activeTasks.length} active
-          </span>
-          <span className="text-[var(--color-text-muted)]">
-            {pendingTasks.length} pending
-          </span>
-          <span className="text-[var(--color-text-muted)]">
-            {completedTasks.length} done
-          </span>
-        </div>
-      )}
     </div>
   );
 }
@@ -271,6 +404,22 @@ function MemberDetail({
 
   return (
     <div className="bg-[var(--color-bg-raised)]">
+      {/* Agent metadata */}
+      {(member.agentType || member.model) && (
+        <div className="px-3 py-1.5 border-b border-[var(--color-border-default)] flex items-center gap-2 flex-wrap">
+          {member.agentType && (
+            <span className="text-[9px] px-1.5 py-px rounded bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] text-[var(--color-text-secondary)] font-mono">
+              {member.agentType}
+            </span>
+          )}
+          {member.model && (
+            <span className="text-[9px] text-[var(--color-text-secondary)] truncate">
+              {member.model}
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Member Tasks */}
       {memberTasks.length > 0 && (
         <div className="px-3 py-2 border-b border-[var(--color-border-default)]">
