@@ -144,7 +144,7 @@ export function TerminalView({ sessionId, resumeSessionId, cwd, isActive }: Term
       termRef.current = null;
       fitAddonRef.current = null;
     };
-  }, [sessionId, cwd]);
+  }, [sessionId, resumeSessionId, cwd]);
 
   // Focus terminal when tab becomes active
   useEffect(() => {

@@ -1,16 +1,38 @@
 use notify::{Config, RecommendedWatcher, RecursiveMode, Watcher};
-use std::path::PathBuf;
+use std::path::{Component, PathBuf};
 use std::time::Duration;
 use tauri::Emitter;
 
-fn get_claude_home() -> PathBuf {
+/// Check whether the given path has a specific directory name as a direct child
+/// of the `.claude` home directory.  For example, for `segment = "teams"` this
+/// matches `~/.claude/teams/…` but NOT `~/.claude/projects/foo/teams`.
+fn is_claude_child(path: &std::path::Path, segment: &str) -> bool {
+    let mut components = path.components().peekable();
+    while let Some(c) = components.next() {
+        if c == Component::Normal(".claude".as_ref()) {
+            // The very next component must be `segment`
+            return components.next() == Some(Component::Normal(segment.as_ref()));
+        }
+    }
+    false
+}
+
+fn get_claude_home() -> Option<PathBuf> {
     let home = std::env::var("USERPROFILE")
-        .unwrap_or_else(|_| std::env::var("HOME").unwrap_or_default());
-    PathBuf::from(home).join(".claude")
+        .or_else(|_| std::env::var("HOME"))
+        .ok()
+        .filter(|h| !h.is_empty())?;
+    Some(PathBuf::from(home).join(".claude"))
 }
 
 pub fn start_claude_watcher(app_handle: tauri::AppHandle) {
-    let claude_home = get_claude_home();
+    let claude_home = match get_claude_home() {
+        Some(p) => p,
+        None => {
+            eprintln!("Cannot start claude watcher: neither USERPROFILE nor HOME is set");
+            return;
+        }
+    };
 
     let (tx, rx) = std::sync::mpsc::channel();
 
@@ -59,32 +81,31 @@ pub fn start_claude_watcher(app_handle: tauri::AppHandle) {
         for result in rx {
             match result {
                 Ok(event) => {
-                    let path_str = event
-                        .paths
-                        .first()
-                        .map(|p| p.to_string_lossy().to_string())
-                        .unwrap_or_default();
+                    let path = match event.paths.first() {
+                        Some(p) => p,
+                        None => continue,
+                    };
+                    let path_str = path.to_string_lossy().to_string();
 
-                    // Classify by path and emit targeted events
-                    if path_str.contains("teams") && path_str.contains("inboxes") {
+                    // Classify by path component (direct child of .claude/) and emit targeted events
+                    if is_claude_child(path, "teams") && path_str.contains("inboxes") {
                         let _ = app_handle.emit("inbox-changed", &path_str);
-                    } else if path_str.contains("teams") {
+                    } else if is_claude_child(path, "teams") {
                         let _ = app_handle.emit("team-changed", &path_str);
-                    } else if path_str.contains("tasks") {
+                    } else if is_claude_child(path, "tasks") {
                         let _ = app_handle.emit("task-changed", &path_str);
-                    } else if path_str.contains("projects") && path_str.ends_with(".jsonl") {
+                    } else if is_claude_child(path, "projects") && path_str.ends_with(".jsonl") {
                         let _ = app_handle.emit("transcript-updated", &path_str);
-                    } else if path_str.contains("projects")
+                    } else if is_claude_child(path, "projects")
                         && path_str.ends_with("sessions-index.json")
                     {
                         let _ = app_handle.emit("session-changed", &path_str);
-                    } else if path_str.contains("todos") {
+                    } else if is_claude_child(path, "todos") {
                         let _ = app_handle.emit("todos-changed", &path_str);
-                    } else if path_str.contains("plans") {
+                    } else if is_claude_child(path, "plans") {
                         let _ = app_handle.emit("plans-changed", &path_str);
                     } else if path_str.contains("hook-events.jsonl") {
                         use std::io::{Read, Seek, SeekFrom};
-                        let path = &event.paths[0];
                         if let Ok(mut file) = std::fs::File::open(path) {
                             if let Ok(file_len) = file.seek(SeekFrom::End(0)) {
                                 if file_len > last_hook_offset {

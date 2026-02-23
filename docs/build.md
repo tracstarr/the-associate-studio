@@ -33,27 +33,27 @@ linker = "x86_64-w64-mingw32-gcc"
 
 ```bash
 # Frontend dev server only (browser preview at http://localhost:1420)
-cd /c/dev/ide && npm run dev
+cd /c/dev/the-associate-studio && npm run dev
 
 # Full Tauri dev (native .exe + hot reload)
 export PATH="/c/msys64/mingw64/bin:$HOME/.cargo/bin:$PATH"
-cd /c/dev/ide && npm run tauri dev
+cd /c/dev/the-associate-studio && npm run tauri dev
 
 # Cargo only (check Rust compiles without running)
-cargo build --manifest-path /c/dev/ide/src-tauri/Cargo.toml --target x86_64-pc-windows-gnu
+cargo build --manifest-path /c/dev/the-associate-studio/src-tauri/Cargo.toml --target x86_64-pc-windows-gnu
 
 # Release build (.exe + installer)
 export PATH="/c/msys64/mingw64/bin:$HOME/.cargo/bin:$PATH"
-cd /c/dev/ide && npm run tauri build
+cd /c/dev/the-associate-studio && npm run tauri build
 ```
 
 ## Hot reload behaviour
 
 | Change | Reload mechanism |
 |--------|-----------------|
-| `.tsx` / `.ts` file | Vite HMR — instant, no rebuild |
-| `.css` | Vite HMR — instant |
-| `.rs` file | `tauri dev` watcher → cargo rebuild → restart exe (15-60s) |
+| `.tsx` / `.ts` file | Vite HMR -- instant, no rebuild |
+| `.css` | Vite HMR -- instant |
+| `.rs` file | `tauri dev` watcher -> cargo rebuild -> restart exe (15-60s) |
 | `Cargo.toml` (new dep) | cargo rebuild + download (slower) |
 
 ## Known issues and fixes
@@ -72,7 +72,7 @@ cd /c/dev/ide && npm run tauri build
 
 ### Port 1420 already in use
 **Cause**: Previous `npm run tauri dev` or `npm run dev` still running.
-**Fix**: `netstat -ano | grep ":1420"` → `taskkill //F //PID {pid}`.
+**Fix**: `netstat -ano | grep ":1420"` then `taskkill //F //PID {pid}`.
 
 ### MSYS2 install (first time)
 ```bash
@@ -86,19 +86,65 @@ pacman -S mingw-w64-x86_64-gcc
 `Cargo.toml` for the Tauri lib:
 ```toml
 [lib]
+name = "the_associate_studio_lib"
 crate-type = ["staticlib", "rlib"]
 ```
 
-- `staticlib` — required by Tauri's build system for linking
-- `rlib` — required for unit tests and `cargo check`
-- `cdylib` — **removed** (causes ordinal overflow on Windows)
+- `staticlib` -- required by Tauri's build system for linking
+- `rlib` -- required for unit tests and `cargo check`
+- `cdylib` -- **removed** (causes ordinal overflow on Windows)
 
 ## Dependency compile times (cold)
 
 On first build, these crates are slow:
-- `libgit2-sys` — compiles libgit2 from C source (~2 min)
-- `portable-pty` — ConPTY bindings (~30s)
-- `reqwest` — HTTP stack (~1 min)
-- `tauri-runtime-wry` — WebView2 bindings (~2 min)
+- `libgit2-sys` -- compiles libgit2 from C source (~2 min)
+- `portable-pty` -- ConPTY bindings (~30s)
+- `reqwest` -- HTTP stack (~1 min)
+- `tauri-runtime-wry` -- WebView2 bindings (~2 min)
 
 Total cold build: ~4-6 min. Incremental (Rust file change only): ~15-30s.
+
+## Project structure
+
+```
+the-associate-studio/
+  package.json          -- npm scripts (dev, build, tauri)
+  vite.config.ts        -- Vite config with Tauri + React plugins
+  tsconfig.json         -- TypeScript config
+  src/                  -- Frontend (React + TypeScript)
+    main.tsx            -- Entry point (no StrictMode)
+    App.tsx             -- Root component, QueryClient, IDEShell
+    index.css           -- Tailwind v4 base styles + @theme tokens
+    lib/                -- Shared utilities (tauri invoke wrappers, cn helper)
+    stores/             -- 7 Zustand stores (ui, session, settings, projects, notification, output, debug)
+    hooks/              -- Custom hooks (useKeyBindings, useClaudeData, useGitAction, useActiveProjectTabs)
+    components/
+      shell/            -- TitleBar, StatusBar, ActivityBar, RightActivityBar, CommandPalette, SettingsPanel
+      layout/           -- IDELayout, Sidebar, MainArea, RightPanel, BottomPanel, OutputPanel, TabContextMenu, CloseTabsWarningDialog
+      terminal/         -- TerminalView (xterm.js + PTY)
+      sessions/         -- SessionsList, SessionView, TeamsPanel, InboxPanel
+      git/              -- GitStatusPanel, GitLogPanel, DiffViewer, BranchContextMenu, UntrackedContextMenu
+      issues/           -- PRListPanel, IssueListPanel
+      files/            -- FileBrowserPanel, FileEditorTab, FileTreeNode
+      context/          -- ContextPanel, TeamsRightPanel, PlansPanel
+      plan/             -- PlanEditorView
+      readme/           -- ReadmeTab
+      projects/         -- ProjectSwitcher
+      settings/         -- SettingsTab
+      notifications/    -- NotificationBell
+      dashboard/        -- NeuralFieldOverlay, NeuralFieldCanvas, useNeuralFieldData
+      debug/            -- DebugPanel
+  src-tauri/            -- Backend (Rust)
+    Cargo.toml          -- Rust dependencies
+    src/
+      lib.rs            -- Tauri app setup, plugin registration, command handler
+      main.rs           -- Entry point
+      commands/         -- 13 command modules (sessions, teams, tasks, inbox, todos, plans, git, pty, issues, integrations, hooks, projects, files)
+      data/             -- 11 data modules (sessions, teams, inboxes, tasks, todos, plans, transcripts, git, hook_state, projects, path_encoding)
+      models/           -- 9 model modules (session, team, inbox, task, todo, plan, transcript, git, hook_event)
+      watcher/          -- claude_watcher.rs (file system watcher)
+      utils/            -- Shared utilities
+    .cargo/config.toml  -- GNU linker config
+  docs/                 -- Documentation
+  CLAUDE.md             -- Agent instructions
+```

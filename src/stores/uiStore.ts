@@ -2,7 +2,7 @@ import { create } from "zustand";
 
 export type SidebarView = "sessions" | "git" | "prs" | "files";
 export type RightTab = "context" | "teams" | "plans";
-export type BottomTab = "log" | "git" | "prs" | "issues" | "output";
+export type BottomTab = "log" | "git" | "prs" | "issues" | "output" | "debug";
 
 export interface SelectedDiffFile {
   cwd: string;
@@ -20,7 +20,6 @@ interface UIStore {
   commandPaletteOpen: boolean;
   neuralFieldOpen: boolean;
   selectedDiffFile: SelectedDiffFile | null;
-  debugPanelOpen: boolean;
   projectDropdownOpen: boolean;
   tabInitStatus: Record<string, 'initializing' | 'error'>;
   tabInitError: Record<string, string>;
@@ -54,7 +53,6 @@ export const useUIStore = create<UIStore>((set) => ({
   commandPaletteOpen: false,
   neuralFieldOpen: false,
   selectedDiffFile: null,
-  debugPanelOpen: false,
   projectDropdownOpen: false,
   tabInitStatus: {},
   tabInitError: {},
@@ -70,7 +68,12 @@ export const useUIStore = create<UIStore>((set) => ({
   closeCommandPalette: () => set({ commandPaletteOpen: false }),
   toggleNeuralField: () => set((s) => ({ neuralFieldOpen: !s.neuralFieldOpen })),
   setSelectedDiffFile: (file) => set({ selectedDiffFile: file }),
-  toggleDebugPanel: () => set((s) => ({ debugPanelOpen: !s.debugPanelOpen })),
+  toggleDebugPanel: () => set((s) => {
+    if (s.activeBottomTab === "debug" && s.bottomPanelOpen) {
+      return { bottomPanelOpen: false };
+    }
+    return { activeBottomTab: "debug" as BottomTab, bottomPanelOpen: true };
+  }),
   openProjectDropdown: () => set({ projectDropdownOpen: true }),
   closeProjectDropdown: () => set({ projectDropdownOpen: false }),
   setTabInitStatus: (tabId, status) =>

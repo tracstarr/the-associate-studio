@@ -19,6 +19,8 @@ interface NotificationStore {
   clearAll: () => void;
 }
 
+const MAX_NOTIFICATIONS = 50;
+
 export const useNotificationStore = create<NotificationStore>((set) => ({
   notifications: [],
 
@@ -35,12 +37,20 @@ export const useNotificationStore = create<NotificationStore>((set) => ({
       }
       // Replace any read (acted-on) notification for this tab with a fresh unread one,
       // or append if no prior notification exists for this tab.
-      return {
-        notifications: [
-          ...s.notifications.filter((x) => x.tabId !== n.tabId),
-          { ...n, id: crypto.randomUUID(), timestamp: Date.now(), read: false },
-        ],
-      };
+      let notifications = [
+        ...s.notifications.filter((x) => x.tabId !== n.tabId),
+        { ...n, id: crypto.randomUUID(), timestamp: Date.now(), read: false },
+      ];
+      // Cap at MAX_NOTIFICATIONS: evict oldest read first, then oldest unread
+      while (notifications.length > MAX_NOTIFICATIONS) {
+        const oldestReadIdx = notifications.findIndex((x) => x.read);
+        if (oldestReadIdx !== -1) {
+          notifications.splice(oldestReadIdx, 1);
+        } else {
+          notifications.shift();
+        }
+      }
+      return { notifications };
     }),
 
   markRead: (id) =>

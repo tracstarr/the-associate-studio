@@ -1,4 +1,4 @@
-import { memo, useState, useRef, useEffect } from "react";
+import { memo, useState, useRef, useEffect, useCallback } from "react";
 import { Minus, Square, X, ChevronDown, GitBranch, FolderOpen, Plus, RefreshCw, GitMerge, Radar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useActiveProjectTabs } from "@/hooks/useActiveProjectTabs";
@@ -323,6 +323,9 @@ function TitleBarComponent() {
   const [projectDropdownOpen, setProjectDropdownOpen] = useState(false);
   const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
 
+  const handleBranchClose = useCallback(() => setBranchDropdownOpen(false), []);
+  const handleProjectClose = useCallback(() => setProjectDropdownOpen(false), []);
+
   // Current tab label for breadcrumb (only shown in the center/drag region)
   const tabLabel = activeTab ? activeTab.title : null;
 
@@ -402,7 +405,7 @@ function TitleBarComponent() {
               projects={projects}
               activeProjectId={activeProjectId}
               onSelect={setActiveProject}
-              onClose={() => setProjectDropdownOpen(false)}
+              onClose={handleProjectClose}
             />
           )}
         </div>
@@ -430,7 +433,7 @@ function TitleBarComponent() {
               <BranchDropdown
                 cwd={activeProjectDir}
                 currentBranch={currentBranch ?? ""}
-                onClose={() => setBranchDropdownOpen(false)}
+                onClose={handleBranchClose}
               />
             )}
           </div>

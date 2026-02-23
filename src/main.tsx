@@ -7,10 +7,17 @@ window.addEventListener("error", (event) => {
   console.error("[main] Uncaught error:", event.error);
   const root = document.getElementById("root");
   if (root && !root.innerHTML) {
-    root.innerHTML = `<div style="padding:24px;font-family:monospace;color:#f85149;background:#0d1117;height:100vh">
-      <h2 style="color:#e6edf3">Startup Error</h2>
-      <pre style="white-space:pre-wrap;font-size:12px">${String(event.error?.stack || event.message)}</pre>
-    </div>`;
+    const errorDiv = document.createElement("div");
+    errorDiv.style.cssText = "padding:24px;font-family:monospace;color:#f85149;background:#0d1117;height:100vh";
+    const heading = document.createElement("h2");
+    heading.style.color = "#e6edf3";
+    heading.textContent = "Startup Error";
+    const pre = document.createElement("pre");
+    pre.style.cssText = "white-space:pre-wrap;font-size:12px";
+    pre.textContent = String(event.error?.stack || event.message || "Unknown error");
+    errorDiv.appendChild(heading);
+    errorDiv.appendChild(pre);
+    root.appendChild(errorDiv);
   }
 });
 

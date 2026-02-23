@@ -18,6 +18,8 @@ function formatTime(date: Date): string {
   return date.toTimeString().slice(0, 8);
 }
 
+const MAX_MESSAGES = 500;
+
 export const useOutputStore = create<OutputStore>((set) => ({
   messages: [],
 
@@ -32,7 +34,7 @@ export const useOutputStore = create<OutputStore>((set) => ({
           text,
           source,
         },
-      ],
+      ].slice(-MAX_MESSAGES),
     })),
 
   clear: () => set({ messages: [] }),

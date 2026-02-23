@@ -13,13 +13,6 @@ export interface Command {
 }
 
 export function buildCommands(): Command[] {
-  const ui = useUIStore.getState();
-  const session = useSessionStore.getState();
-  const settings = useSettingsStore.getState();
-  const projects = useProjectsStore.getState();
-  const activeProjectId = projects.activeProjectId ?? "";
-  const activeProject = projects.projects.find((p) => p.id === activeProjectId);
-
   return [
     // -- View --
     {
@@ -27,21 +20,21 @@ export function buildCommands(): Command[] {
       label: "Toggle Sidebar",
       category: "View",
       keybinding: "Ctrl+B",
-      action: () => ui.toggleSidebar(),
+      action: () => useUIStore.getState().toggleSidebar(),
     },
     {
       id: "view.toggle-right-panel",
       label: "Toggle Right Panel",
       category: "View",
       keybinding: "Ctrl+Shift+B",
-      action: () => ui.toggleRightPanel(),
+      action: () => useUIStore.getState().toggleRightPanel(),
     },
     {
       id: "view.toggle-bottom-panel",
       label: "Toggle Bottom Panel",
       category: "View",
       keybinding: "Ctrl+J",
-      action: () => ui.toggleBottomPanel(),
+      action: () => useUIStore.getState().toggleBottomPanel(),
     },
     {
       id: "view.show-sessions",
@@ -49,8 +42,9 @@ export function buildCommands(): Command[] {
       category: "View",
       keybinding: "Ctrl+1",
       action: () => {
-        ui.setSidebarView("sessions");
-        if (!ui.sidebarOpen) ui.toggleSidebar();
+        const u = useUIStore.getState();
+        u.setSidebarView("sessions");
+        if (!u.sidebarOpen) u.toggleSidebar();
       },
     },
     {
@@ -59,8 +53,9 @@ export function buildCommands(): Command[] {
       category: "View",
       keybinding: "Ctrl+2",
       action: () => {
-        ui.setSidebarView("git");
-        if (!ui.sidebarOpen) ui.toggleSidebar();
+        const u = useUIStore.getState();
+        u.setSidebarView("git");
+        if (!u.sidebarOpen) u.toggleSidebar();
       },
     },
     {
@@ -69,8 +64,9 @@ export function buildCommands(): Command[] {
       category: "View",
       keybinding: "Ctrl+3",
       action: () => {
-        ui.setSidebarView("prs");
-        if (!ui.sidebarOpen) ui.toggleSidebar();
+        const u = useUIStore.getState();
+        u.setSidebarView("prs");
+        if (!u.sidebarOpen) u.toggleSidebar();
       },
     },
     {
@@ -78,8 +74,9 @@ export function buildCommands(): Command[] {
       label: "Right Panel: Context",
       category: "View",
       action: () => {
-        ui.setRightTab("context");
-        if (!ui.rightPanelOpen) ui.toggleRightPanel();
+        const u = useUIStore.getState();
+        u.setRightTab("context");
+        if (!u.rightPanelOpen) u.toggleRightPanel();
       },
     },
     {
@@ -87,8 +84,9 @@ export function buildCommands(): Command[] {
       label: "Right Panel: Teams",
       category: "View",
       action: () => {
-        ui.setRightTab("teams");
-        if (!ui.rightPanelOpen) ui.toggleRightPanel();
+        const u = useUIStore.getState();
+        u.setRightTab("teams");
+        if (!u.rightPanelOpen) u.toggleRightPanel();
       },
     },
     {
@@ -96,8 +94,9 @@ export function buildCommands(): Command[] {
       label: "Right Panel: Plans",
       category: "View",
       action: () => {
-        ui.setRightTab("plans");
-        if (!ui.rightPanelOpen) ui.toggleRightPanel();
+        const u = useUIStore.getState();
+        u.setRightTab("plans");
+        if (!u.rightPanelOpen) u.toggleRightPanel();
       },
     },
     {
@@ -106,8 +105,9 @@ export function buildCommands(): Command[] {
       category: "View",
       keybinding: "Ctrl+Shift+G",
       action: () => {
-        ui.setBottomTab("git");
-        if (!ui.bottomPanelOpen) ui.toggleBottomPanel();
+        const u = useUIStore.getState();
+        u.setBottomTab("git");
+        if (!u.bottomPanelOpen) u.toggleBottomPanel();
       },
     },
     {
@@ -115,8 +115,9 @@ export function buildCommands(): Command[] {
       label: "Bottom Panel: PRs",
       category: "View",
       action: () => {
-        ui.setBottomTab("prs");
-        if (!ui.bottomPanelOpen) ui.toggleBottomPanel();
+        const u = useUIStore.getState();
+        u.setBottomTab("prs");
+        if (!u.bottomPanelOpen) u.toggleBottomPanel();
       },
     },
     {
@@ -124,8 +125,9 @@ export function buildCommands(): Command[] {
       label: "Bottom Panel: Issues",
       category: "View",
       action: () => {
-        ui.setBottomTab("issues");
-        if (!ui.bottomPanelOpen) ui.toggleBottomPanel();
+        const u = useUIStore.getState();
+        u.setBottomTab("issues");
+        if (!u.bottomPanelOpen) u.toggleBottomPanel();
       },
     },
     {
@@ -133,8 +135,9 @@ export function buildCommands(): Command[] {
       label: "Bottom Panel: Output",
       category: "View",
       action: () => {
-        ui.setBottomTab("output");
-        if (!ui.bottomPanelOpen) ui.toggleBottomPanel();
+        const u = useUIStore.getState();
+        u.setBottomTab("output");
+        if (!u.bottomPanelOpen) u.toggleBottomPanel();
       },
     },
     {
@@ -143,7 +146,7 @@ export function buildCommands(): Command[] {
       description: "Open mission control overlay",
       category: "View",
       keybinding: "Ctrl+Shift+Space",
-      action: () => ui.toggleNeuralField(),
+      action: () => useUIStore.getState().toggleNeuralField(),
     },
 
     // -- Session --
@@ -154,10 +157,12 @@ export function buildCommands(): Command[] {
       category: "Session",
       keybinding: "Ctrl+N",
       action: () => {
+        const { activeProjectId, projects: allProjects } = useProjectsStore.getState();
         if (!activeProjectId) return;
+        const proj = allProjects.find((p) => p.id === activeProjectId);
         const id = `session-${Date.now()}`;
-        session.openTab(
-          { id, title: "New Session", projectDir: activeProject?.path ?? "", spawnedAt: Date.now() },
+        useSessionStore.getState().openTab(
+          { id, title: "New Session", projectDir: proj?.path ?? "", spawnedAt: Date.now() },
           activeProjectId
         );
       },
@@ -168,9 +173,11 @@ export function buildCommands(): Command[] {
       category: "Session",
       keybinding: "Ctrl+W",
       action: () => {
-        if (!activeProjectId) return;
-        const activeTabId = session.activeTabByProject[activeProjectId] ?? null;
-        if (activeTabId) session.closeTab(activeTabId, activeProjectId);
+        const pid = useProjectsStore.getState().activeProjectId ?? "";
+        if (!pid) return;
+        const s = useSessionStore.getState();
+        const activeTabId = s.activeTabByProject[pid] ?? null;
+        if (activeTabId) s.closeTab(activeTabId, pid);
       },
     },
     {
@@ -180,13 +187,15 @@ export function buildCommands(): Command[] {
       category: "Session",
       keybinding: "Ctrl+R",
       action: () => {
-        if (!activeProjectId) return;
-        const currentTabId = useSessionStore.getState().activeTabByProject[activeProjectId] ?? null;
+        const pid = useProjectsStore.getState().activeProjectId ?? "";
+        if (!pid) return;
+        const s = useSessionStore.getState();
+        const currentTabId = s.activeTabByProject[pid] ?? null;
         if (!currentTabId) return;
-        const tabs = useSessionStore.getState().tabsByProject[activeProjectId] ?? [];
+        const tabs = s.tabsByProject[pid] ?? [];
         const activeTab = tabs.find((t) => t.id === currentTabId);
         if (activeTab?.type === "session-view") {
-          useSessionStore.getState().resumeTab(currentTabId, activeProjectId);
+          s.resumeTab(currentTabId, pid);
         }
       },
     },
@@ -196,13 +205,15 @@ export function buildCommands(): Command[] {
       category: "Session",
       keybinding: "Ctrl+Tab",
       action: () => {
-        if (!activeProjectId) return;
-        const tabs = session.tabsByProject[activeProjectId] ?? [];
+        const pid = useProjectsStore.getState().activeProjectId ?? "";
+        if (!pid) return;
+        const s = useSessionStore.getState();
+        const tabs = s.tabsByProject[pid] ?? [];
         if (tabs.length < 2) return;
-        const activeTabId = session.activeTabByProject[activeProjectId] ?? null;
+        const activeTabId = s.activeTabByProject[pid] ?? null;
         const idx = tabs.findIndex((t) => t.id === activeTabId);
         const next = tabs[(idx + 1) % tabs.length];
-        session.setActiveTab(next.id, activeProjectId);
+        s.setActiveTab(next.id, pid);
       },
     },
     {
@@ -211,13 +222,15 @@ export function buildCommands(): Command[] {
       category: "Session",
       keybinding: "Ctrl+Shift+Tab",
       action: () => {
-        if (!activeProjectId) return;
-        const tabs = session.tabsByProject[activeProjectId] ?? [];
+        const pid = useProjectsStore.getState().activeProjectId ?? "";
+        if (!pid) return;
+        const s = useSessionStore.getState();
+        const tabs = s.tabsByProject[pid] ?? [];
         if (tabs.length < 2) return;
-        const activeTabId = session.activeTabByProject[activeProjectId] ?? null;
+        const activeTabId = s.activeTabByProject[pid] ?? null;
         const idx = tabs.findIndex((t) => t.id === activeTabId);
         const prev = tabs[(idx - 1 + tabs.length) % tabs.length];
-        session.setActiveTab(prev.id, activeProjectId);
+        s.setActiveTab(prev.id, pid);
       },
     },
 
@@ -227,14 +240,14 @@ export function buildCommands(): Command[] {
       label: "Next Project",
       category: "Project",
       keybinding: "Ctrl+Shift+→",
-      action: () => projects.cycleProject(1),
+      action: () => useProjectsStore.getState().cycleProject(1),
     },
     {
       id: "project.prev",
       label: "Previous Project",
       category: "Project",
       keybinding: "Ctrl+Shift+←",
-      action: () => projects.cycleProject(-1),
+      action: () => useProjectsStore.getState().cycleProject(-1),
     },
 
     // -- Settings --
@@ -253,21 +266,27 @@ export function buildCommands(): Command[] {
       label: "Increase Font Size",
       category: "Settings",
       keybinding: "Ctrl+=",
-      action: () => settings.setFontSize(Math.min(settings.fontSize + 1, 24)),
+      action: () => {
+        const s = useSettingsStore.getState();
+        s.setFontSize(Math.min(s.fontSize + 1, 24));
+      },
     },
     {
       id: "settings.font-size.decrease",
       label: "Decrease Font Size",
       category: "Settings",
       keybinding: "Ctrl+-",
-      action: () => settings.setFontSize(Math.max(settings.fontSize - 1, 8)),
+      action: () => {
+        const s = useSettingsStore.getState();
+        s.setFontSize(Math.max(s.fontSize - 1, 8));
+      },
     },
     {
       id: "settings.font-size.reset",
       label: "Reset Font Size",
       category: "Settings",
       keybinding: "Ctrl+0",
-      action: () => settings.setFontSize(13),
+      action: () => useSettingsStore.getState().setFontSize(13),
     },
   ];
 }

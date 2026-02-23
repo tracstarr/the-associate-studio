@@ -2,13 +2,13 @@
 
 ## Secret storage
 
-Sensitive credentials are **never** written to disk in plain text. They are stored in the Windows Credential Manager via the `keyring` crate.
+Sensitive credentials are **never** written to disk in plain text. They are stored in the Windows Credential Manager via the `keyring` crate (v3).
 
 | Secret | Keyring key | What it unlocks |
 |--------|-------------|-----------------|
-| GitHub token | `claude-ide / github-token` | GitHub API + gh CLI |
-| Linear API key | `claude-ide / linear-api-key` | Linear GraphQL API |
-| Jira API token | `claude-ide / jira-api-token` | Jira REST API |
+| GitHub token | `the-associate-studio / github-token` | GitHub API + gh CLI |
+| Linear API key | `the-associate-studio / linear-api-key` | Linear GraphQL API |
+| Jira API token | `the-associate-studio / jira-api-token` | Jira REST API |
 
 ### What goes where
 
@@ -21,13 +21,13 @@ Sensitive credentials are **never** written to disk in plain text. They are stor
 
 ### settings.json location
 
-`%APPDATA%\com.claude-ide\settings.json` (managed by `tauri-plugin-store`).
+`%APPDATA%\com.keith.the-associate-studio\settings.json` (managed by `tauri-plugin-store`).
 
 This file is intentionally free of secrets. If it is read by any process, no credentials are exposed.
 
 ## Windows Credential Manager
 
-Credentials stored under the service name `claude-ide` are visible in:
+Credentials stored under the service name `the-associate-studio` are visible in:
 
 **Control Panel → Credential Manager → Windows Credentials**
 
@@ -39,19 +39,54 @@ They are DPAPI-encrypted, meaning they can only be decrypted by the same Windows
 ## keyring crate API used
 
 ```rust
+const KEYRING_SERVICE: &str = "the-associate-studio";
+
 // Store
-keyring::Entry::new("claude-ide", "github-token")?.set_password(&token)?;
+keyring::Entry::new(KEYRING_SERVICE, "github-token")?.set_password(&token)?;
 
 // Retrieve
-keyring::Entry::new("claude-ide", "github-token")?.get_password()?;
+keyring::Entry::new(KEYRING_SERVICE, "github-token")?.get_password()?;
 
 // Delete (on disconnect)
-keyring::Entry::new("claude-ide", "github-token")?.delete_credential()?;
+keyring::Entry::new(KEYRING_SERVICE, "github-token")?.delete_credential()?;
 ```
+
+Helper functions `secret_set`, `secret_get`, and `secret_delete` in `src-tauri/src/commands/integrations.rs` wrap these calls.
 
 ## In-memory token lifetime
 
 On startup, `cmd_load_integration_secrets` reads all three tokens from keyring and hydrates `settingsStore` in memory. Tokens live in React component state only — they are never serialized back to disk by the frontend.
+
+## Tauri security configuration
+
+### Content Security Policy (CSP)
+
+CSP is currently set to `null` in `src-tauri/tauri.conf.json`, meaning no CSP restrictions are enforced. This is acceptable for a local desktop app with no remote content loading, but should be tightened before any release that loads external web content.
+
+### Capabilities (Tauri v2 permissions model)
+
+The app uses Tauri v2's capability-based permission system. The default capability (`src-tauri/capabilities/default.json`) grants the main window:
+
+| Permission | Purpose |
+|------------|---------|
+| `core:default` | Base Tauri APIs |
+| `opener:default` | Open URLs in default browser (for OAuth flows) |
+| `shell:default` | Shell command execution (for `gh` CLI, PTY) |
+| `fs:default` | Filesystem access (project files, Claude session data) |
+| `store:default` | Persistent key-value store (settings.json) |
+| `core:window:allow-start-dragging` | Custom titlebar drag |
+| `core:window:allow-minimize` | Window minimize |
+| `core:window:allow-maximize` | Window maximize |
+| `core:window:allow-unmaximize` | Window unmaximize |
+| `core:window:allow-close` | Window close |
+
+Custom Tauri commands (PTY, integrations, git) are not gated by capabilities — they are registered directly via `tauri::Builder::invoke_handler`.
+
+### Window configuration
+
+- `decorations: false` — custom titlebar (no native frame)
+- `transparent: false`
+- `resizable: true`
 
 ## What is NOT protected
 

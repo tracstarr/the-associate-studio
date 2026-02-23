@@ -48,7 +48,8 @@ pub async fn cmd_git_log(cwd: String, limit: Option<u32>) -> Result<Vec<CommitIn
         .map_err(|e| format!("Failed to run git log: {}", e))?;
 
     if !output.status.success() {
-        return Ok(vec![]);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("git log failed: {}", stderr.trim()));
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
@@ -316,22 +317,38 @@ pub async fn cmd_create_worktree(
     }
 
     // Post-creation: copy files listed in .worktree_copy from base project
+    let mut copy_warnings: Vec<String> = Vec::new();
     if let Ok(entries) = read_worktree_copy(&project_path) {
         for entry in entries {
             let src = PathBuf::from(&project_path).join(&entry);
             let dst = PathBuf::from(&worktree_path_str).join(&entry);
             if src.is_file() {
                 if let Some(parent) = dst.parent() {
-                    fs::create_dir_all(parent).ok();
+                    if let Err(e) = fs::create_dir_all(parent) {
+                        copy_warnings.push(format!("mkdir {}: {}", parent.display(), e));
+                        continue;
+                    }
                 }
-                fs::copy(&src, &dst).ok();
+                if let Err(e) = fs::copy(&src, &dst) {
+                    copy_warnings.push(format!("copy {}: {}", entry, e));
+                }
             } else if src.is_dir() {
-                copy_dir_recursive(&src, &dst).ok();
+                if let Err(e) = copy_dir_recursive(&src, &dst) {
+                    copy_warnings.push(format!("copy dir {}: {}", entry, e));
+                }
             }
         }
     }
 
-    Ok(worktree_path_str)
+    if copy_warnings.is_empty() {
+        Ok(worktree_path_str)
+    } else {
+        Ok(format!(
+            "{}\nWarnings copying files: {}",
+            worktree_path_str,
+            copy_warnings.join("; ")
+        ))
+    }
 }
 
 /// Helper: combine stdout+stderr and return Ok/Err based on exit status.
@@ -389,6 +406,10 @@ pub async fn cmd_git_add(cwd: String, path: String) -> Result<String, String> {
 #[tauri::command]
 pub async fn cmd_git_ignore(cwd: String, file_path: String) -> Result<String, String> {
     use std::io::Write;
+    // Reject paths containing newline/carriage-return to prevent injection of extra entries
+    if file_path.contains('\n') || file_path.contains('\r') {
+        return Err("Invalid file path: must not contain newline characters".to_string());
+    }
     let gitignore_path = std::path::PathBuf::from(&cwd).join(".gitignore");
     let mut file = std::fs::OpenOptions::new()
         .append(true)
@@ -405,6 +426,14 @@ pub async fn cmd_git_rebase(cwd: String, onto_branch: String) -> Result<String, 
     let dir = std::path::PathBuf::from(&cwd);
     if !dir.exists() {
         return Err(format!("Directory does not exist: {}", cwd));
+    }
+
+    // Validate branch name to prevent prompt injection
+    let valid_branch = onto_branch.chars().all(|c| {
+        c.is_ascii_alphanumeric() || matches!(c, '/' | '_' | '.' | '-')
+    });
+    if !valid_branch || onto_branch.is_empty() {
+        return Err("Invalid branch name: must match [a-zA-Z0-9/_.-]+".to_string());
     }
 
     let prompt = format!(

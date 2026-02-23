@@ -44,14 +44,68 @@ npm run tauri dev        # dev build + hot reload
 npm run tauri build      # release build
 ```
 
-## Key files
+## Key files — Frontend
 
-- `src/App.tsx` — root; loads settings on mount, mounts IDEShell
-- `src/stores/` — `uiStore`, `sessionStore`, `settingsStore`
-- `src/components/shell/` — TitleBar, ActivityBar, StatusBar, CommandPalette, SettingsPanel
-- `src-tauri/src/lib.rs` — registers all Tauri commands
-- `src-tauri/src/commands/pty.rs` — Claude CLI spawning via portable-pty
-- `src-tauri/src/commands/integrations.rs` — GitHub/Linear/Jira auth + Windows Credential Manager
+| Area | Files | Purpose |
+|------|-------|---------|
+| Entry | `src/main.tsx`, `src/App.tsx` | No StrictMode; ErrorBoundary wraps IDEShell; loads settings + projects on mount |
+| Stores | `src/stores/uiStore.ts` | Panel visibility, sidebar/right/bottom tab state, neural field, debug panel |
+| | `src/stores/sessionStore.ts` | Per-project tabs (open/close/resume), subagent tracking, plan links |
+| | `src/stores/projectsStore.ts` | Multi-project management, active project, `pathToProjectId()` encoding |
+| | `src/stores/settingsStore.ts` | Font, GitHub/Linear/Jira config; secrets via keyring, rest via `settings.json` |
+| | `src/stores/notificationStore.ts` | Claude question notifications (per-tab, read/unread) |
+| | `src/stores/outputStore.ts` | Output panel messages (git actions, operations log) |
+| | `src/stores/debugStore.ts` | Dev-only debug log (max 500 entries) |
+| Hooks | `src/hooks/useClaudeData.ts` | React Query hooks for all data (sessions, teams, tasks, inbox, git, PRs, issues); `useClaudeWatcher()` listens for Tauri events |
+| | `src/hooks/useKeyBindings.ts` | Global keyboard shortcuts |
+| | `src/hooks/useGitAction.ts` | Wraps async git ops with output panel logging |
+| | `src/hooks/useActiveProjectTabs.ts` | Derives tabs/activeTab for current project |
+| Lib | `src/lib/tauri.ts` | All `invoke()` wrappers + TypeScript types for Tauri commands |
+| | `src/lib/commands.ts` | Command palette entries (View, Session, Project, Settings) |
+| | `src/lib/cn.ts` | `cn()` — clsx + tailwind-merge utility |
+| | `src/lib/utils.ts` | `cn()` + `pathToProjectId()` (mirrors Rust `encode_project_path`) |
+
+## Key files — Backend (Rust)
+
+| Area | Files | Purpose |
+|------|-------|---------|
+| Entry | `src-tauri/src/lib.rs` | Plugin init, PtyState, hook setup on launch, starts claude_watcher |
+| Commands | `commands/pty.rs` | PTY spawn/resize/write/kill via portable-pty (ConPTY) |
+| | `commands/git.rs` | git status/diff/log/branches/worktrees/fetch/pull/rebase + Claude git actions |
+| | `commands/sessions.rs` | Load session index + transcripts from `~/.claude/projects/` |
+| | `commands/integrations.rs` | GitHub device flow, Linear, Jira auth; Windows Credential Manager |
+| | `commands/hooks.rs` | Install/remove Claude CLI hooks in `~/.claude/theassociate/` |
+| | `commands/projects.rs` | List/delete projects, pick folder, read/write files, run `claude --init` |
+| | `commands/teams.rs` | Load/delete team configs from `~/.claude/teams/` |
+| | `commands/tasks.rs` | Load tasks from `~/.claude/tasks/` |
+| | `commands/inbox.rs` | Load/send team inbox messages |
+| | `commands/todos.rs` | Load todo files |
+| | `commands/plans.rs` | Load/read/save markdown plan files |
+| | `commands/issues.rs` | List GitHub PRs and issues via `gh` CLI |
+| | `commands/files.rs` | Directory listing for file browser |
+| Data layer | `data/` module | File I/O + parsing for each domain: `sessions`, `transcripts`, `teams`, `tasks`, `inboxes`, `todos`, `plans`, `projects`, `git`, `hook_state`, `path_encoding` |
+| Models | `models/` module | Serde structs: `session`, `transcript`, `team`, `task`, `inbox`, `todo`, `plan`, `git`, `hook_event` |
+| Watcher | `watcher/claude_watcher.rs` | Watches `~/.claude/` dirs (teams, tasks, projects, todos, plans, theassociate); emits Tauri events on file changes; parses `hook-events.jsonl` for session/subagent lifecycle |
+
+## Component areas
+
+| Feature | Directory | Key components |
+|---------|-----------|----------------|
+| Shell chrome | `components/shell/` | TitleBar, ActivityBar, StatusBar, CommandPalette, SettingsPanel |
+| Layout | `components/layout/` | IDELayout (resizable 3-panel), TabBar, MainContent |
+| Terminal | `components/terminal/` | xterm.js PTY terminal for Claude CLI sessions |
+| Sessions | `components/sessions/` | Session list sidebar, session transcript viewer |
+| Git | `components/git/` | Sidebar git status, bottom panel git log/diff, branch management |
+| PRs & Issues | `components/issues/` | GitHub PR list, issue list (bottom panel tabs) |
+| Dashboard | `components/dashboard/` | NeuralFieldOverlay — mission control overlay (Ctrl+Shift+Space) |
+| Projects | `components/projects/` | Project switcher dropdown, project management |
+| Context | `components/context/` | Right panel context viewer (CLAUDE.md, memory files) |
+| Plans | `components/plan/` | Markdown plan editor (right panel) |
+| Notifications | `components/notifications/` | Claude question notification badges |
+| Settings | `components/settings/` | Settings tab (font, integrations) |
+| Debug | `components/debug/` | Dev-only debug panel (Ctrl+Shift+D) |
+| Files | `components/files/` | File browser sidebar view |
+| README | `components/readme/` | README viewer/editor tab |
 
 ## Critical gotchas (details in docs)
 
@@ -61,6 +115,9 @@ npm run tauri build      # release build
 4. **PTY uses portable-pty** — real ConPTY, not piped stdio → [`docs/terminal.md`](docs/terminal.md)
 5. **Secrets in Windows Credential Manager** — never in settings.json → [`docs/security.md`](docs/security.md)
 6. **PATH required for Rust builds** — must set MSYS2 MinGW path → [`docs/build.md`](docs/build.md)
+7. **pathToProjectId encoding** — `C:\dev\ide` becomes `C--dev-ide`; duplicated in `projectsStore.ts` and `lib/utils.ts` — must stay in sync with Rust `data/path_encoding.rs`
+8. **Hook events via file watcher** — `hook-events.jsonl` is append-only; watcher tracks file offset to read only new lines
+9. **Claude watcher auto-starts** — `lib.rs` calls `start_claude_watcher()` in `.setup()`; also auto-installs hooks via `cmd_setup_hooks()`
 
 ## Research reference
 

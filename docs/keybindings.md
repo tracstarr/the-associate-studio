@@ -2,19 +2,21 @@
 
 ## Full reference
 
-### Global
+### Global (always active)
 
 | Key | Action |
 |-----|--------|
 | `Ctrl+P` | Open command palette |
-| `Ctrl+,` | Open settings |
+| `Ctrl+Shift+Space` | Toggle Neural Field (mission control overlay) |
+| `Escape` | Close overlays (Neural Field first, then command palette) |
+
+### Panels
+
+| Key | Action |
+|-----|--------|
 | `Ctrl+B` | Toggle sidebar |
 | `Ctrl+Shift+B` | Toggle right panel |
 | `Ctrl+J` | Toggle bottom panel |
-| `Ctrl+N` | New terminal session |
-| `Ctrl+W` | Close active tab |
-| `Ctrl+Tab` | Next tab |
-| `Ctrl+Shift+Tab` | Previous tab |
 
 ### Sidebar views (Activity Bar)
 
@@ -24,19 +26,43 @@
 | `Ctrl+2` | Git |
 | `Ctrl+3` | PRs / Issues |
 
-### Font size
+### Session / Tabs
 
 | Key | Action |
 |-----|--------|
+| `Ctrl+N` | New terminal session |
+| `Ctrl+R` | Resume current session-view tab as terminal |
+| `Ctrl+W` | Close active tab |
+| `Ctrl+Tab` | Next tab |
+| `Ctrl+Shift+Tab` | Previous tab |
+
+### Project cycling
+
+| Key | Action |
+|-----|--------|
+| `Ctrl+Shift+Right` | Next project |
+| `Ctrl+Shift+Left` | Previous project |
+
+### Settings / Font
+
+| Key | Action |
+|-----|--------|
+| `Ctrl+,` | Open settings |
 | `Ctrl+=` | Increase font size |
 | `Ctrl+-` | Decrease font size |
-| `Ctrl+0` | Reset font size |
+| `Ctrl+0` | Reset font size (13px) |
 
 ### Bottom panel
 
 | Key | Action |
 |-----|--------|
 | `Ctrl+Shift+G` | Open Git panel in bottom |
+
+### Dev-only
+
+| Key | Action |
+|-----|--------|
+| `Ctrl+Shift+D` | Toggle debug panel (only in `import.meta.env.DEV`) |
 
 ## Implementation
 
@@ -48,7 +74,11 @@ window.addEventListener("keydown", handler);
 return () => window.removeEventListener("keydown", handler);
 ```
 
-Actions dispatch to Zustand stores (`uiStore`, `sessionStore`, `settingsStore`) directly using `getState()` — no React context required.
+Actions dispatch to Zustand stores (`uiStore`, `sessionStore`, `settingsStore`, `projectsStore`) directly using `getState()` — no React context required.
+
+### Input guard
+
+The handler skips most keybindings when focus is inside an `<input>`, `<textarea>`, or `contentEditable` element. Exceptions: `Ctrl+P` (command palette) and `Ctrl+Shift+Space` (Neural Field) always fire regardless of focus.
 
 ## Command palette
 
@@ -58,13 +88,14 @@ The command palette (Ctrl+P) is built with `cmdk`. Commands are defined in `src/
 interface Command {
   id: string;
   label: string;
+  description?: string;
   category: string;
-  shortcut?: string;
+  keybinding?: string;
   action: () => void;
 }
 ```
 
-Categories: View, Session, Settings. ~25 commands total.
+Categories: View, Session, Project, Settings. ~30 commands total.
 
 ## Terminal focus
 

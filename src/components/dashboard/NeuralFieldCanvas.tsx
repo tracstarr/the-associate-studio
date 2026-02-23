@@ -235,7 +235,8 @@ export function NeuralFieldCanvas({
           currentR: nodeR,
         });
       } else {
-        // Update mutable props in-place
+        // Intentional: physicsRef stores mutable physics objects used only by the animation loop.
+        // These are NOT React state and must never be read in a render path.
         const p = physics.get(node.id)!;
         // project nodes get updated homes and sizing as activity changes
         if (node.type === "project") {

@@ -4,21 +4,29 @@
 
 ```
 TerminalView (React)
-  └─ xterm.js Terminal instance
-  └─ FitAddon → measures container → rows × cols
-  └─ invoke("pty_spawn", { sessionId, cwd, rows, cols })
-        └─ Rust: portable_pty::native_pty_system()
-        └─ pty_system.openpty(PtySize { rows, cols })
-        └─ CommandBuilder::new("claude").cwd(cwd)
-        └─ env_remove("CLAUDECODE") ← critical
-        └─ slave.spawn_command(cmd) → child process
-        └─ master.take_writer() → stored in PtySession
-        └─ master.try_clone_reader() → reader thread
-              └─ reader.read(&mut buf) loop
-              └─ emit("pty-data-{id}", String::from_utf8_lossy(buf))
-  └─ listen("pty-data-{id}") → term.write(payload)
-  └─ term.onData(data) → invoke("pty_write", { sessionId, data })
-        └─ session.writer.write_all(data.as_bytes())
+  +-- xterm.js Terminal instance
+  +-- FitAddon -> measures container -> rows x cols
+  +-- WebLinksAddon (clickable URLs)
+  +-- SearchAddon (Ctrl+F search)
+  +-- invoke("pty_spawn", { sessionId, resumeSessionId?, cwd, rows, cols })
+        +-- Rust: portable_pty::native_pty_system()
+        +-- pty_system.openpty(PtySize { rows, cols })
+        +-- CommandBuilder::new("claude").cwd(cwd)
+        +-- if resumeSessionId: cmd.args(["--resume", id])
+        +-- env_remove("CLAUDECODE") <-- critical
+        +-- env("TERM", "xterm-256color")
+        +-- env("COLORTERM", "truecolor")
+        +-- slave.spawn_command(cmd) -> child process
+        +-- master.take_writer() -> stored in PtySession
+        +-- master.try_clone_reader() -> reader thread
+              +-- reader.read(&mut buf) loop
+              +-- find_plan_filename(data) -> emit("plan-linked", { tab_id, filename })
+              +-- find_claude_question(data) -> emit("claude-question", { tab_id, question })
+              +-- emit("pty-data-{id}", String::from_utf8_lossy(buf))
+  +-- listen("pty-data-{id}") -> term.write(payload)
+  +-- listen("pty-exit-{id}") -> term.writeln("[Process exited]")
+  +-- term.onData(data) -> invoke("pty_write", { sessionId, data })
+        +-- session.writer.write_all(data.as_bytes())
 ```
 
 ## Why portable-pty (not piped stdio)
@@ -33,7 +41,7 @@ Claude Code sets `CLAUDECODE=1` in its environment. Any child process that inher
 
 > "Claude Code cannot be launched inside another Claude Code session. To bypass this check, unset the CLAUDECODE environment variable."
 
-**Fix**: `cmd.env_remove("CLAUDECODE")` before spawning. See `pty.rs:28`.
+**Fix**: `cmd.env_remove("CLAUDECODE")` before spawning. See `pty.rs`, inside `pty_spawn`.
 
 All related vars are also removed for safety:
 - `CLAUDE_CODE_SESSION_ID`
@@ -41,6 +49,14 @@ All related vars are also removed for safety:
 - `CLAUDE_CODE_ENTRYPOINT`
 - `ANTHROPIC_CLAUDE_ENTRYPOINT`
 - `CLAUDE_CODE_IS_SIDE_CHANNEL`
+
+Two env vars are explicitly set for proper terminal behavior:
+- `TERM=xterm-256color`
+- `COLORTERM=truecolor`
+
+## Session resume
+
+`pty_spawn` accepts an optional `resume_session_id`. When provided, the Claude CLI is spawned with `--resume {id}` to continue an existing conversation.
 
 ## Terminal sizing
 
@@ -51,6 +67,28 @@ The PTY opens at the real xterm.js dimensions (not a hardcoded size):
 3. When the container resizes (ResizeObserver), `FitAddon.fit()` runs and then `invoke("pty_resize", { rows, cols })` syncs the PTY size
 
 If PTY and xterm.js sizes diverge, Claude's UI wraps incorrectly.
+
+## Background tab ConPTY ping
+
+Windows ConPTY (`ResizePseudoConsole`) only fires a `WINDOW_BUFFER_SIZE_EVENT` into the child process's input queue when the size *actually changes*. Sending the same dimensions repeatedly is a silent no-op.
+
+When a tab goes to the background, the `TerminalView` periodically toggles the PTY height by +1 row and immediately restores it (every 5 seconds). This forces two real resize events, causing enquirer.js prompts inside Claude to redraw correctly even when the tab is not visible.
+
+## Plan detection
+
+The PTY reader thread scans each output chunk for references to `~/.claude/plans/*.md` files. When a plan filename is found, a `plan-linked` Tauri event is emitted (once per unique filename per session):
+
+```json
+{ "tab_id": "session-uuid", "filename": "enchanted-herding-koala.md" }
+```
+
+## Question detection
+
+The PTY reader thread scans output for interactive prompts from Claude CLI (enquirer.js `? question` style, `[Y/n]` / `(y/N)` confirmations, and selection prompts with "Enter to select" hints). When detected, a `claude-question` event is emitted to the frontend. Duplicate suppression avoids re-emitting the same question within 10 seconds.
+
+```json
+{ "tab_id": "session-uuid", "question": "Do you want to proceed?" }
+```
 
 ## Tab management — never unmount
 
@@ -79,3 +117,13 @@ pub struct PtySession {
 ```
 
 The reader is detached into a background thread and not stored in the struct (it only needs to run until EOF).
+
+## Rust commands
+
+| Command | Description |
+|---------|-------------|
+| `pty_spawn` | Open PTY, spawn `claude` (with optional `--resume`), start reader thread |
+| `pty_write` | Write user input to PTY stdin, flush |
+| `pty_resize` | Resize PTY to new rows/cols |
+| `pty_kill` | Kill child process and remove session from map |
+| `pty_list` | Return list of all active session IDs |

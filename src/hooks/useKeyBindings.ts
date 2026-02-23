@@ -6,12 +6,9 @@ import { useActiveProjectTabs } from "@/hooks/useActiveProjectTabs";
 import { useProjectsStore } from "@/stores/projectsStore";
 
 export function useKeyBindings() {
-  const ui = useUIStore();
-  const session = useSessionStore();
-  const settings = useSettingsStore();
   const { openTabs, activeTabId, projectId } = useActiveProjectTabs();
-  const activeProject = useProjectsStore((s) =>
-    s.projects.find((p) => p.id === s.activeProjectId)
+  const activeProjectPath = useProjectsStore((s) =>
+    s.projects.find((p) => p.id === s.activeProjectId)?.path ?? ""
   );
 
   useEffect(() => {
@@ -29,19 +26,20 @@ export function useKeyBindings() {
       // Command palette -- always intercept
       if (ctrl && e.key === "p" && !shift) {
         e.preventDefault();
-        ui.openCommandPalette();
+        useUIStore.getState().openCommandPalette();
         return;
       }
 
       // Neural Field -- always intercept
       if (ctrl && shift && e.key === " ") {
         e.preventDefault();
-        ui.toggleNeuralField();
+        useUIStore.getState().toggleNeuralField();
         return;
       }
 
       // Escape -- close overlays in priority order
       if (e.key === "Escape") {
+        const ui = useUIStore.getState();
         if (ui.neuralFieldOpen) {
           e.preventDefault();
           ui.toggleNeuralField();
@@ -62,36 +60,36 @@ export function useKeyBindings() {
         // Panels
         case "b":
           e.preventDefault();
-          if (shift) ui.toggleRightPanel();
-          else ui.toggleSidebar();
-          break;
-        case "B":
-          if (shift) {
-            e.preventDefault();
-            ui.toggleRightPanel();
-          }
+          if (shift) useUIStore.getState().toggleRightPanel();
+          else useUIStore.getState().toggleSidebar();
           break;
         case "j":
           e.preventDefault();
-          ui.toggleBottomPanel();
+          useUIStore.getState().toggleBottomPanel();
           break;
 
         // Sidebar views — now only 3 views
-        case "1":
+        case "1": {
           e.preventDefault();
+          const ui = useUIStore.getState();
           ui.setSidebarView("sessions");
           if (!ui.sidebarOpen) ui.toggleSidebar();
           break;
-        case "2":
+        }
+        case "2": {
           e.preventDefault();
+          const ui = useUIStore.getState();
           ui.setSidebarView("git");
           if (!ui.sidebarOpen) ui.toggleSidebar();
           break;
-        case "3":
+        }
+        case "3": {
           e.preventDefault();
+          const ui = useUIStore.getState();
           ui.setSidebarView("prs");
           if (!ui.sidebarOpen) ui.toggleSidebar();
           break;
+        }
 
         // Tabs
         case "n":
@@ -99,8 +97,8 @@ export function useKeyBindings() {
             e.preventDefault();
             if (projectId) {
               const id = `session-${Date.now()}`;
-              session.openTab(
-                { id, title: "New Session", projectDir: activeProject?.path ?? "", spawnedAt: Date.now() },
+              useSessionStore.getState().openTab(
+                { id, title: "New Session", projectDir: activeProjectPath, spawnedAt: Date.now() },
                 projectId
               );
             }
@@ -112,14 +110,14 @@ export function useKeyBindings() {
             if (activeTabId && projectId) {
               const activeTab = openTabs.find((t) => t.id === activeTabId);
               if (activeTab?.type === "session-view") {
-                session.resumeTab(activeTabId, projectId);
+                useSessionStore.getState().resumeTab(activeTabId, projectId);
               }
             }
           }
           break;
         case "w":
           e.preventDefault();
-          if (activeTabId && projectId) session.closeTab(activeTabId, projectId);
+          if (activeTabId && projectId) useSessionStore.getState().closeTab(activeTabId, projectId);
           break;
         case "Tab":
           e.preventDefault();
@@ -129,7 +127,7 @@ export function useKeyBindings() {
             const next = shift
               ? openTabs[(idx - 1 + openTabs.length) % openTabs.length]
               : openTabs[(idx + 1) % openTabs.length];
-            session.setActiveTab(next.id, projectId);
+            useSessionStore.getState().setActiveTab(next.id, projectId);
           }
           break;
 
@@ -137,6 +135,7 @@ export function useKeyBindings() {
         case "G":
           if (shift) {
             e.preventDefault();
+            const ui = useUIStore.getState();
             ui.setBottomTab("git");
             if (!ui.bottomPanelOpen) ui.toggleBottomPanel();
           }
@@ -146,14 +145,14 @@ export function useKeyBindings() {
         case "D":
           if (shift && import.meta.env.DEV) {
             e.preventDefault();
-            ui.toggleDebugPanel();
+            useUIStore.getState().toggleDebugPanel();
           }
           break;
 
         // Settings
         case ",":
           e.preventDefault();
-          if (projectId) session.openSettingsTab(projectId);
+          if (projectId) useSessionStore.getState().openSettingsTab(projectId);
           break;
 
         // Project cycling
@@ -172,22 +171,26 @@ export function useKeyBindings() {
 
         // Font size
         case "=":
-        case "+":
+        case "+": {
           e.preventDefault();
-          settings.setFontSize(Math.min(settings.fontSize + 1, 24));
+          const s = useSettingsStore.getState();
+          s.setFontSize(Math.min(s.fontSize + 1, 24));
           break;
-        case "-":
+        }
+        case "-": {
           e.preventDefault();
-          settings.setFontSize(Math.max(settings.fontSize - 1, 8));
+          const s = useSettingsStore.getState();
+          s.setFontSize(Math.max(s.fontSize - 1, 8));
           break;
+        }
         case "0":
           e.preventDefault();
-          settings.setFontSize(13);
+          useSettingsStore.getState().setFontSize(13);
           break;
       }
     };
 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [ui, session, settings, openTabs, activeTabId, projectId, activeProject]);
+  }, [openTabs, activeTabId, projectId, activeProjectPath]);
 }

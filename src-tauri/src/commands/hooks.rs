@@ -1,10 +1,14 @@
 use crate::data::hook_state::{build_active_sessions, parse_hook_events, ActiveSession};
 use serde_json::Value;
 
-fn get_claude_home() -> std::path::PathBuf {
+fn get_claude_home() -> Result<std::path::PathBuf, String> {
     let home = std::env::var("USERPROFILE")
-        .unwrap_or_else(|_| std::env::var("HOME").unwrap_or_default());
-    std::path::PathBuf::from(home).join(".claude")
+        .or_else(|_| std::env::var("HOME"))
+        .map_err(|_| "Neither USERPROFILE nor HOME environment variable is set".to_string())?;
+    if home.is_empty() {
+        return Err("Home directory environment variable is empty".to_string());
+    }
+    Ok(std::path::PathBuf::from(home).join(".claude"))
 }
 
 /// Returns the hook command string: `node /path/to/hook.js`
@@ -40,7 +44,7 @@ process.stdin.on('end', function() {
 
 #[tauri::command]
 pub fn cmd_setup_hooks() -> Result<(), String> {
-    let claude_home = get_claude_home();
+    let claude_home = get_claude_home()?;
     let settings_path = claude_home.join("settings.json");
 
     // --- Migration: remove stale .claude/ide references ---
@@ -83,7 +87,9 @@ pub fn cmd_setup_hooks() -> Result<(), String> {
                 }
             }
             if hooks.is_empty() {
-                settings.as_object_mut().unwrap().remove("hooks");
+                if let Some(obj) = settings.as_object_mut() {
+                    obj.remove("hooks");
+                }
             }
         }
     }
@@ -162,7 +168,7 @@ pub fn cmd_setup_hooks() -> Result<(), String> {
 
 #[tauri::command]
 pub fn cmd_remove_hooks() -> Result<(), String> {
-    let claude_home = get_claude_home();
+    let claude_home = get_claude_home()?;
     let theassociate_dir = claude_home.join("theassociate");
     let old_dir = claude_home.join("ide");
     let settings_path = claude_home.join("settings.json");
@@ -208,7 +214,9 @@ pub fn cmd_remove_hooks() -> Result<(), String> {
             }
         }
         if hooks.is_empty() {
-            settings.as_object_mut().unwrap().remove("hooks");
+            if let Some(obj) = settings.as_object_mut() {
+                obj.remove("hooks");
+            }
         }
     }
 
@@ -227,8 +235,21 @@ pub fn cmd_remove_hooks() -> Result<(), String> {
 
 #[tauri::command]
 pub fn cmd_get_active_sessions() -> Result<Vec<ActiveSession>, String> {
-    let claude_home = get_claude_home();
+    let claude_home = get_claude_home()?;
     let hook_file = claude_home.join("theassociate").join("hook-events.jsonl");
+
+    // Truncate hook-events.jsonl if it exceeds 1000 lines to prevent unbounded growth
+    if hook_file.exists() {
+        if let Ok(content) = std::fs::read_to_string(&hook_file) {
+            let lines: Vec<&str> = content.lines().collect();
+            if lines.len() > 1000 {
+                let truncated = lines[lines.len() - 1000..].join("\n");
+                // Write back only the last 1000 lines (best-effort; don't fail the command)
+                let _ = std::fs::write(&hook_file, format!("{}\n", truncated));
+            }
+        }
+    }
+
     let events = parse_hook_events(&hook_file);
     let sessions_map = build_active_sessions(&events);
     Ok(sessions_map.into_values().collect())
@@ -236,7 +257,7 @@ pub fn cmd_get_active_sessions() -> Result<Vec<ActiveSession>, String> {
 
 #[tauri::command]
 pub fn cmd_hooks_configured() -> Result<bool, String> {
-    let claude_home = get_claude_home();
+    let claude_home = get_claude_home()?;
     let ide_dir = claude_home.join("theassociate");
     let settings_path = claude_home.join("settings.json");
     if !settings_path.exists() {

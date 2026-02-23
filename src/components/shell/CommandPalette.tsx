@@ -8,7 +8,7 @@ export function CommandPalette() {
   const [search, setSearch] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const commands = useMemo(() => buildCommands(), []);
+  const commands = useMemo(() => buildCommands(), [commandPaletteOpen]);
 
   // Group commands by category
   const categories = useMemo(() => {

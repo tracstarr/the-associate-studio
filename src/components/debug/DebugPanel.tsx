@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
-import { X, Trash2, ChevronRight, ChevronDown } from "lucide-react";
+import { Trash2, ChevronRight, ChevronDown } from "lucide-react";
 import { useDebugStore, type DebugEntry } from "@/stores/debugStore";
-import { useUIStore } from "@/stores/uiStore";
+import { cn } from "@/lib/utils";
 
 const LEVEL_COLORS: Record<DebugEntry["level"], string> = {
   info: "var(--color-text-primary)",
@@ -15,11 +15,24 @@ const CATEGORY_COLORS: Record<string, string> = {
   Terminal: "var(--color-status-success)",
   PTY: "var(--color-accent-secondary)",
   Hooks: "var(--color-status-warning)",
+  GitAction: "var(--color-accent-primary)",
+  Settings: "var(--color-text-secondary)",
+  Projects: "var(--color-accent-secondary)",
 };
 
 function getCategoryColor(category: string): string {
   return CATEGORY_COLORS[category] ?? "var(--color-text-muted)";
 }
+
+type LevelFilter = "all" | DebugEntry["level"];
+
+const LEVEL_FILTERS: { id: LevelFilter; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "info", label: "Info" },
+  { id: "warn", label: "Warn" },
+  { id: "error", label: "Error" },
+  { id: "success", label: "Success" },
+];
 
 function DebugEntryRow({ entry }: { entry: DebugEntry }) {
   const [expanded, setExpanded] = useState(false);
@@ -80,13 +93,13 @@ function DebugEntryRow({ entry }: { entry: DebugEntry }) {
 }
 
 export function DebugPanel() {
-  if (!import.meta.env.DEV) return null;
-
   const entries = useDebugStore((s) => s.entries);
   const clearLog = useDebugStore((s) => s.clearLog);
-  const debugPanelOpen = useUIStore((s) => s.debugPanelOpen);
-  const toggleDebugPanel = useUIStore((s) => s.toggleDebugPanel);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [levelFilter, setLevelFilter] = useState<LevelFilter>("all");
+
+  const filteredEntries =
+    levelFilter === "all" ? entries : entries.filter((e) => e.level === levelFilter);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -94,21 +107,13 @@ export function DebugPanel() {
     }
   }, [entries.length]);
 
-  if (!debugPanelOpen) return null;
+  if (!import.meta.env.DEV) return null;
 
   return (
-    <div
-      className="fixed top-0 right-0 h-full flex flex-col border-l"
-      style={{
-        width: 380,
-        zIndex: 9999,
-        backgroundColor: "var(--color-bg-raised)",
-        borderColor: "var(--color-border-default)",
-      }}
-    >
+    <div className="flex flex-col h-full">
       {/* Header */}
       <div
-        className="flex items-center gap-2 px-3 py-2 border-b shrink-0"
+        className="flex items-center gap-2 px-3 py-1.5 border-b shrink-0 flex-wrap"
         style={{ borderColor: "var(--color-border-default)" }}
       >
         <span
@@ -127,6 +132,23 @@ export function DebugPanel() {
         >
           {entries.length}
         </span>
+        {/* Level filter */}
+        <div className="flex items-center gap-0.5">
+          {LEVEL_FILTERS.map((f) => (
+            <button
+              key={f.id}
+              onClick={() => setLevelFilter(f.id)}
+              className={cn(
+                "px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors",
+                levelFilter === f.id
+                  ? "bg-bg-overlay text-text-primary"
+                  : "text-text-muted hover:text-text-secondary"
+              )}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
         <div className="flex-1" />
         <button
           onClick={clearLog}
@@ -136,19 +158,11 @@ export function DebugPanel() {
         >
           <Trash2 size={13} />
         </button>
-        <button
-          onClick={toggleDebugPanel}
-          className="p-1 rounded hover:bg-[var(--color-bg-surface)] transition-colors"
-          style={{ color: "var(--color-text-muted)" }}
-          title="Close"
-        >
-          <X size={13} />
-        </button>
       </div>
 
       {/* Log list */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
-        {entries.length === 0 ? (
+        {filteredEntries.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <span
               className="text-xs"
@@ -158,7 +172,7 @@ export function DebugPanel() {
             </span>
           </div>
         ) : (
-          entries.map((entry) => <DebugEntryRow key={entry.id} entry={entry} />)
+          filteredEntries.map((entry) => <DebugEntryRow key={entry.id} entry={entry} />)
         )}
       </div>
     </div>

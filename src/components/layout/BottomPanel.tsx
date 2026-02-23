@@ -1,13 +1,15 @@
 import { memo } from "react";
 import { cn } from "@/lib/utils";
 import { useUIStore, type BottomTab } from "@/stores/uiStore";
+import { useDebugStore } from "@/stores/debugStore";
 import { DiffViewer } from "@/components/git/DiffViewer";
 import { GitLogPanel } from "@/components/git/GitLogPanel";
 import { PRListPanel } from "@/components/issues/PRListPanel";
 import { IssueListPanel } from "@/components/issues/IssueListPanel";
 import { OutputPanel } from "@/components/layout/OutputPanel";
+import { DebugPanel } from "@/components/debug/DebugPanel";
 
-const tabs: { id: BottomTab; label: string }[] = [
+const BASE_TABS: { id: BottomTab; label: string }[] = [
   { id: "log", label: "Log" },
   { id: "git", label: "Diff" },
   { id: "prs", label: "PRs" },
@@ -21,12 +23,18 @@ const tabPlaceholders: Record<BottomTab, string> = {
   prs: "No pull requests.",
   issues: "No issues.",
   output: "No output.",
+  debug: "No debug entries.",
 };
 
 function BottomPanelComponent() {
   const activeTab = useUIStore((s) => s.activeBottomTab);
   const setTab = useUIStore((s) => s.setBottomTab);
   const selectedDiffFile = useUIStore((s) => s.selectedDiffFile);
+  const debugCount = useDebugStore((s) => s.entries.length);
+
+  const tabs = import.meta.env.DEV
+    ? [...BASE_TABS, { id: "debug" as BottomTab, label: "Debug" }]
+    : BASE_TABS;
 
   return (
     <div className="flex flex-col h-full bg-bg-surface">
@@ -37,13 +45,18 @@ function BottomPanelComponent() {
             key={tab.id}
             onClick={() => setTab(tab.id)}
             className={cn(
-              "px-3 py-1 text-xs rounded-lg transition-colors",
+              "px-3 py-1 text-xs rounded-lg transition-colors flex items-center",
               activeTab === tab.id
                 ? "text-text-primary bg-bg-overlay"
                 : "text-text-muted hover:text-text-secondary"
             )}
           >
             {tab.label}
+            {tab.id === "debug" && debugCount > 0 && (
+              <span className="ml-1 px-1 text-[9px] rounded bg-bg-base text-text-muted font-mono">
+                {debugCount > 99 ? "99+" : debugCount}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -72,6 +85,10 @@ function BottomPanelComponent() {
       ) : activeTab === "output" ? (
         <div className="flex-1 overflow-hidden">
           <OutputPanel />
+        </div>
+      ) : activeTab === "debug" ? (
+        <div className="flex-1 overflow-hidden">
+          <DebugPanel />
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center p-4">

@@ -2,32 +2,40 @@ use std::path::PathBuf;
 
 use crate::data::projects::{discover_orphaned_projects, discover_projects, ProjectInfo};
 
-fn get_home_dir_str() -> String {
-    std::env::var("USERPROFILE")
-        .unwrap_or_else(|_| std::env::var("HOME").unwrap_or_default())
-        .replace('\\', "/")
+fn get_home_dir_str() -> Result<String, String> {
+    let home = std::env::var("USERPROFILE")
+        .or_else(|_| std::env::var("HOME"))
+        .map_err(|_| "Neither USERPROFILE nor HOME environment variable is set".to_string())?;
+    if home.is_empty() {
+        return Err("Home directory environment variable is empty".to_string());
+    }
+    Ok(home.replace('\\', "/"))
 }
 
-fn get_claude_home() -> PathBuf {
+fn get_claude_home() -> Result<PathBuf, String> {
     let home = std::env::var("USERPROFILE")
-        .unwrap_or_else(|_| std::env::var("HOME").unwrap_or_default());
-    PathBuf::from(home).join(".claude")
+        .or_else(|_| std::env::var("HOME"))
+        .map_err(|_| "Neither USERPROFILE nor HOME environment variable is set".to_string())?;
+    if home.is_empty() {
+        return Err("Home directory environment variable is empty".to_string());
+    }
+    Ok(PathBuf::from(home).join(".claude"))
 }
 
 #[tauri::command]
 pub async fn cmd_get_home_dir() -> Result<String, String> {
-    Ok(get_home_dir_str())
+    get_home_dir_str()
 }
 
 #[tauri::command]
 pub async fn cmd_list_projects() -> Result<Vec<ProjectInfo>, String> {
-    let claude_home = get_claude_home();
+    let claude_home = get_claude_home()?;
     discover_projects(&claude_home).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub async fn cmd_list_orphaned_projects() -> Result<Vec<ProjectInfo>, String> {
-    let claude_home = get_claude_home();
+    let claude_home = get_claude_home()?;
     discover_orphaned_projects(&claude_home).map_err(|e| e.to_string())
 }
 
@@ -43,6 +51,12 @@ pub async fn cmd_pick_folder() -> Result<Option<String>, String> {
 #[tauri::command]
 pub async fn cmd_read_file(path: String) -> Result<String, String> {
     let p = PathBuf::from(&path);
+    // Reject paths containing .. components to prevent path traversal
+    for component in p.components() {
+        if matches!(component, std::path::Component::ParentDir) {
+            return Err("Invalid path: '..' components are not allowed".to_string());
+        }
+    }
     if !p.exists() {
         return Err("File not found".to_string());
     }
@@ -51,17 +65,32 @@ pub async fn cmd_read_file(path: String) -> Result<String, String> {
 
 #[tauri::command]
 pub async fn cmd_write_file(path: String, content: String) -> Result<(), String> {
-    std::fs::write(&path, content).map_err(|e| e.to_string())
+    let p = PathBuf::from(&path);
+    // Reject paths containing .. components to prevent path traversal
+    for component in p.components() {
+        if matches!(component, std::path::Component::ParentDir) {
+            return Err("Invalid path: '..' components are not allowed".to_string());
+        }
+    }
+    std::fs::write(&p, content).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub async fn cmd_delete_project(id: String) -> Result<(), String> {
-    let claude_home = get_claude_home();
-    let project_dir = claude_home.join("projects").join(&id);
-    if !project_dir.exists() {
-        return Ok(());
+    let claude_home = get_claude_home()?;
+    let projects_dir = claude_home.join("projects");
+    let project_dir = projects_dir.join(&id);
+    // Canonicalize to resolve symlinks and .. components, then verify containment
+    let canonical = project_dir
+        .canonicalize()
+        .map_err(|_| "Project directory not found".to_string())?;
+    let canonical_parent = projects_dir
+        .canonicalize()
+        .map_err(|_| "Projects directory not found".to_string())?;
+    if !canonical.starts_with(&canonical_parent) {
+        return Err("Invalid project id: path traversal detected".to_string());
     }
-    std::fs::remove_dir_all(&project_dir).map_err(|e| e.to_string())
+    std::fs::remove_dir_all(&canonical).map_err(|e| e.to_string())
 }
 
 #[tauri::command]

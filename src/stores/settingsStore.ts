@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { load } from "@tauri-apps/plugin-store";
 import { invoke } from "@tauri-apps/api/core";
+import { debugLog } from "./debugStore";
 
 interface SettingsStore {
   // Appearance
@@ -78,6 +79,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   setJiraUsername: (jiraUsername) => set({ jiraUsername }),
 
   loadFromDisk: async () => {
+    debugLog("Settings", "Loading settings from disk", undefined, "info");
     // Load non-sensitive config from settings.json
     try {
       const store = await load("settings.json", { autoSave: false, defaults: {} });
@@ -93,6 +95,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         ...(jiraBaseUrl != null && { jiraBaseUrl }),
         ...(jiraEmail != null && { jiraEmail }),
       });
+      debugLog("Settings", "Config loaded from disk", { fontSize, fontFamily, githubClientId }, "success");
     } catch {
       // not in Tauri context
     }
@@ -108,6 +111,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       if (secrets.github_token) set({ githubToken: secrets.github_token });
       if (secrets.linear_api_key) set({ linearApiKey: secrets.linear_api_key });
       if (secrets.jira_api_token) set({ jiraApiToken: secrets.jira_api_token });
+      debugLog("Settings", "Secrets loaded from keyring", { hasGithub: !!secrets.github_token, hasLinear: !!secrets.linear_api_key, hasJira: !!secrets.jira_api_token }, "success");
     } catch {
       // not in Tauri context
     }
@@ -123,16 +127,22 @@ interface Config {
   jiraEmail: string;
 }
 
-async function persistConfig(config: Config) {
-  try {
-    const store = await load("settings.json", { autoSave: false, defaults: {} });
-    await store.set("fontSize", config.fontSize);
-    await store.set("fontFamily", config.fontFamily);
-    await store.set("githubClientId", config.githubClientId);
-    await store.set("jiraBaseUrl", config.jiraBaseUrl);
-    await store.set("jiraEmail", config.jiraEmail);
-    await store.save();
-  } catch {
-    // not in Tauri context
-  }
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
+
+function persistConfig(config: Config) {
+  if (persistTimer) clearTimeout(persistTimer);
+  persistTimer = setTimeout(async () => {
+    debugLog("Settings", "Persisting config", { fontSize: config.fontSize, fontFamily: config.fontFamily }, "info");
+    try {
+      const store = await load("settings.json", { autoSave: false, defaults: {} });
+      await store.set("fontSize", config.fontSize);
+      await store.set("fontFamily", config.fontFamily);
+      await store.set("githubClientId", config.githubClientId);
+      await store.set("jiraBaseUrl", config.jiraBaseUrl);
+      await store.set("jiraEmail", config.jiraEmail);
+      await store.save();
+    } catch {
+      // not in Tauri context
+    }
+  }, 100);
 }

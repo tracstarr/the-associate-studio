@@ -167,9 +167,17 @@ fn set_gh_token(token: &str) -> Result<(), String> {
         .map_err(|e| format!("Failed to run gh: {}", e))?;
 
     if let Some(mut stdin) = child.stdin.take() {
-        let _ = stdin.write_all(format!("{}\n", token).as_bytes());
+        stdin
+            .write_all(format!("{}\n", token).as_bytes())
+            .map_err(|e| format!("Failed to write token to gh stdin: {}", e))?;
     }
-    child.wait().map_err(|e| e.to_string())?;
+    let status = child.wait().map_err(|e| e.to_string())?;
+    if !status.success() {
+        return Err(format!(
+            "gh auth login failed with exit code {}",
+            status.code().unwrap_or(-1)
+        ));
+    }
     Ok(())
 }
 

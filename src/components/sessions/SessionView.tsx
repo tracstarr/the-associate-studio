@@ -108,7 +108,7 @@ export function SessionView({ tab, projectId }: { tab: SessionTab; projectId: st
           </div>
         )}
         {filtered.map((item, i) => (
-          <TranscriptRow key={i} item={item} />
+          <TranscriptRow key={`${item.timestamp ?? i}-${item.kind ?? i}`} item={item} />
         ))}
       </div>
     </div>
