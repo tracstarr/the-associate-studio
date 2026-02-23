@@ -341,9 +341,9 @@ pub async fn cmd_claude_git_action(cwd: String, action: String) -> Result<String
     }
 
     let prompt = match action.as_str() {
-        "commit" => "Stage all changes with 'git add -A' and commit with a clear, descriptive commit message based on the actual diff. Output the commit hash when done.".to_string(),
-        "commit_push" => "Stage all changes with 'git add -A', commit with a descriptive message based on the actual diff, then push to the remote branch. Output the commit hash and push result when done.".to_string(),
-        "commit_push_pr" => "Stage all changes with 'git add -A', commit with a descriptive message based on the actual diff, push to the remote branch, then create a pull request using 'gh pr create --fill'. Output the PR URL when done.".to_string(),
+        "commit" => "Stage all changes with 'git add -A' and commit with a clear, descriptive commit message based on the actual diff. Add a blank line after the subject, then include the trailer 'Co-Authored-By: The Associate <noreply@the-associate.bitbounce.ca>' in the commit body. Output the commit hash when done.".to_string(),
+        "commit_push" => "Stage all changes with 'git add -A', commit with a descriptive message based on the actual diff (include 'Co-Authored-By: The Associate <noreply@the-associate.bitbounce.ca>' as a trailer in the commit body), then push to the remote branch. Output the commit hash and push result when done.".to_string(),
+        "commit_push_pr" => "Stage all changes with 'git add -A', commit with a descriptive message based on the actual diff (include 'Co-Authored-By: The Associate <noreply@the-associate.bitbounce.ca>' as a trailer in the commit body), push to the remote branch, then create a pull request using 'gh pr create --fill'. Output the PR URL when done.".to_string(),
         _ => return Err(format!("Unknown action: {}", action)),
     };
 
