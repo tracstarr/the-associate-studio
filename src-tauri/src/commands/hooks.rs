@@ -19,7 +19,7 @@ fn hook_command(hook_dir: &std::path::Path) -> String {
 }
 
 /// The Node.js script that reads stdin and appends the JSON line to hook-events.jsonl.
-/// Written to ~/.claude/ide/hook.js by cmd_setup_hooks.
+/// Written to ~/.claude/theassociate/hook.js by cmd_setup_hooks.
 fn hook_js_content() -> &'static str {
     r#"'use strict';
 var d = '';
@@ -163,10 +163,15 @@ pub fn cmd_setup_hooks() -> Result<(), String> {
 #[tauri::command]
 pub fn cmd_remove_hooks() -> Result<(), String> {
     let claude_home = get_claude_home();
-    let ide_dir = claude_home.join("ide");
+    let theassociate_dir = claude_home.join("theassociate");
+    let old_dir = claude_home.join("ide");
     let settings_path = claude_home.join("settings.json");
 
     if !settings_path.exists() {
+        // Still clean up the old directory if present
+        if old_dir.exists() {
+            std::fs::remove_dir_all(&old_dir).ok();
+        }
         return Ok(());
     }
 
@@ -175,7 +180,10 @@ pub fn cmd_remove_hooks() -> Result<(), String> {
     let mut settings: Value =
         serde_json::from_str(&content).unwrap_or(Value::Object(serde_json::Map::new()));
 
-    let cmd = hook_command(&ide_dir);
+    // Commands to remove: current theassociate path and stale ide path
+    let cmd = hook_command(&theassociate_dir);
+    let old_cmd = hook_command(&old_dir);
+
     if let Some(hooks) = settings.get_mut("hooks").and_then(|h| h.as_object_mut()) {
         for event_name in &[
             "SessionStart",
@@ -185,13 +193,13 @@ pub fn cmd_remove_hooks() -> Result<(), String> {
             "Stop",
         ] {
             if let Some(arr) = hooks.get_mut(*event_name).and_then(|v| v.as_array_mut()) {
-                // Remove only our hook group, leave other groups intact
+                // Remove our hook groups (both theassociate and stale ide), leave others intact
                 arr.retain(|group| {
-                    !group
+                    let command = group
                         .get("hooks")
                         .and_then(|h| h.as_array())
-                        .map(|hs| hs.iter().any(|h| h.get("command").and_then(|c| c.as_str()) == Some(&cmd)))
-                        .unwrap_or(false)
+                        .and_then(|hs| hs.iter().find_map(|h| h.get("command").and_then(|c| c.as_str()).map(|s| s.to_string())));
+                    !matches!(command.as_deref(), Some(c) if c == cmd || c == old_cmd)
                 });
             }
             // Remove the event key entirely if its array is now empty
@@ -209,13 +217,18 @@ pub fn cmd_remove_hooks() -> Result<(), String> {
     std::fs::write(&settings_path, json_str)
         .map_err(|e| format!("Failed to write settings.json: {}", e))?;
 
+    // Remove old .claude/ide directory if still present
+    if old_dir.exists() {
+        std::fs::remove_dir_all(&old_dir).ok();
+    }
+
     Ok(())
 }
 
 #[tauri::command]
 pub fn cmd_get_active_sessions() -> Result<Vec<ActiveSession>, String> {
     let claude_home = get_claude_home();
-    let hook_file = claude_home.join("ide").join("hook-events.jsonl");
+    let hook_file = claude_home.join("theassociate").join("hook-events.jsonl");
     let events = parse_hook_events(&hook_file);
     let sessions_map = build_active_sessions(&events);
     Ok(sessions_map.into_values().collect())
@@ -224,7 +237,7 @@ pub fn cmd_get_active_sessions() -> Result<Vec<ActiveSession>, String> {
 #[tauri::command]
 pub fn cmd_hooks_configured() -> Result<bool, String> {
     let claude_home = get_claude_home();
-    let ide_dir = claude_home.join("ide");
+    let ide_dir = claude_home.join("theassociate");
     let settings_path = claude_home.join("settings.json");
     if !settings_path.exists() {
         return Ok(false);

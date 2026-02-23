@@ -48,7 +48,7 @@ pub fn start_claude_watcher(app_handle: tauri::AppHandle) {
         .watch(&plans_dir, RecursiveMode::NonRecursive)
         .ok();
 
-    let ide_dir = claude_home.join("ide");
+    let ide_dir = claude_home.join("theassociate");
     watcher
         .watch(&ide_dir, RecursiveMode::NonRecursive)
         .ok();
