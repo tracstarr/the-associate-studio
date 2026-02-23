@@ -4,7 +4,7 @@ import { useNotificationStore } from "./notificationStore";
 
 export interface SessionTab {
   id: string;
-  type?: "terminal" | "plan" | "readme" | "settings" | "diff" | "session-view" | "file";
+  type?: "terminal" | "plan" | "readme" | "settings" | "diff" | "session-view" | "file" | "summary";
   projectDir: string;
   sessionId?: string;
   title: string;
@@ -14,6 +14,8 @@ export interface SessionTab {
   planFilename?: string; // only for type === "plan"
   diffPath?: string; // file path for type === "diff"
   diffStaged?: boolean; // whether to show staged changes
+  summaryFilename?: string; // only for type === "summary"
+  summaryProjectDir?: string; // encoded project dir for type === "summary"
 }
 
 interface SessionStore {
@@ -30,6 +32,7 @@ interface SessionStore {
   setActiveTab: (tabId: string, projectId: string) => void;
   openPlanTab: (filename: string, title: string, projectId: string) => void;
   openSettingsTab: (projectId: string) => void;
+  openSummaryTab: (sessionId: string, filename: string, projectDir: string, projectId: string) => void;
   resumeTab: (tabId: string, projectId: string) => void;
   setTabDirty: (tabId: string, dirty: boolean) => void;
   closeAllTabs: (projectId: string) => void;
@@ -128,6 +131,38 @@ export const useSessionStore = create<SessionStore>((set) => ({
       projectDir: "",
     };
     useSessionStore.getState().openTab(tab, projectId);
+  },
+
+  openSummaryTab: (sessionId, filename, projectDir, projectId) => {
+    const tabId = `summary:${filename}`;
+    // Extract counter from filename for a readable title, e.g. "abc-summary-001.md" → "Summary 1"
+    const match = filename.match(/-summary-(\d+)\.md$/);
+    const num = match ? parseInt(match[1], 10) : 1;
+    const title = `Summary ${num}`;
+    set((s) => {
+      const tabs = s.tabsByProject[projectId] ?? [];
+      if (tabs.find((t) => t.id === tabId)) {
+        return { activeTabByProject: { ...s.activeTabByProject, [projectId]: tabId } };
+      }
+      return {
+        tabsByProject: {
+          ...s.tabsByProject,
+          [projectId]: [
+            ...tabs,
+            {
+              id: tabId,
+              type: "summary" as const,
+              title,
+              projectDir: "",
+              sessionId,
+              summaryFilename: filename,
+              summaryProjectDir: projectDir,
+            },
+          ],
+        },
+        activeTabByProject: { ...s.activeTabByProject, [projectId]: tabId },
+      };
+    });
   },
 
   // Scan all projects to find and update the tab (tab IDs are globally unique)

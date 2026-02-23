@@ -10,9 +10,9 @@ import {
   ChevronDown,
   ChevronRight,
   X,
-  Check,
   Send,
   Zap,
+  ExternalLink,
 } from "lucide-react";
 import type { Team, Task, TeamMember } from "../../lib/tauri";
 
@@ -60,6 +60,11 @@ function TeamCard({ team }: { team: Team }) {
   const queryClient = useQueryClient();
   const { data: tasks } = useTasks(team.dirName);
   const activeSubagents = useSessionStore((s) => s.activeSubagents);
+  const openTab = useSessionStore((s) => s.openTab);
+  const projectId = useProjectsStore((s) => s.activeProjectId);
+  const activeProjectDir = useProjectsStore((s) =>
+    s.projects.find((p) => p.id === s.activeProjectId)?.path ?? ""
+  );
   const [expandedMember, setExpandedMember] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -90,6 +95,27 @@ function TeamCard({ team }: { team: Team }) {
     (tasks?.length ?? 0) > 0 &&
     tasks!.every((t) => t.status === "completed" || t.status === "deleted");
 
+  if (tasks !== undefined && isDone) return null;
+
+  const handleOpenSession = () => {
+    if (!leadSessionId || !projectId) return;
+    openTab(
+      {
+        id: `session-view:${leadSessionId}`,
+        type: "session-view",
+        projectDir: activeProjectDir,
+        sessionId: leadSessionId,
+        title: team.config.name ?? team.dirName,
+      },
+      projectId
+    );
+  };
+
+  const leadMember = team.config.members.find(
+    (m) => m.agentId === team.config.leadAgentId
+  );
+  const originalPrompt = leadMember?.prompt ?? team.config.description;
+
   const handleDelete = async () => {
     setDeleting(true);
     setDeleteError(null);
@@ -116,20 +142,22 @@ function TeamCard({ team }: { team: Team }) {
     team.config.members.find((m) => m.name === name);
 
   return (
-    <div
-      className="border border-[var(--color-border-default)] rounded bg-[var(--color-bg-surface)]"
-      style={{ opacity: isDone ? 0.6 : 1 }}
-    >
+    <div className="border border-[var(--color-border-default)] rounded bg-[var(--color-bg-surface)]">
       {/* Card Header */}
       <div className="px-3 py-2 border-b border-[var(--color-border-default)]">
         <div className="flex items-center gap-2">
-          <p className="text-xs font-medium text-[var(--color-text-primary)] flex-1 truncate">
-            {team.config.name ?? team.dirName}
-          </p>
-          {isDone && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--color-status-success)] bg-opacity-20 text-[var(--color-status-success)] shrink-0 flex items-center gap-0.5">
-              Done <Check size={8} />
-            </span>
+          {leadSessionId ? (
+            <button
+              onClick={handleOpenSession}
+              className="text-xs font-medium text-[var(--color-text-primary)] hover:underline text-left truncate flex-1 flex items-center gap-1"
+            >
+              <span className="truncate">{team.config.name ?? team.dirName}</span>
+              <ExternalLink size={10} className="shrink-0 text-[var(--color-text-muted)]" />
+            </button>
+          ) : (
+            <p className="text-xs font-medium text-[var(--color-text-primary)] flex-1 truncate">
+              {team.config.name ?? team.dirName}
+            </p>
           )}
           {!confirmDelete ? (
             <button
@@ -168,9 +196,9 @@ function TeamCard({ team }: { team: Team }) {
             </div>
           )}
         </div>
-        {team.config.description && (
-          <p className="text-[10px] text-[var(--color-text-muted)] mt-0.5 line-clamp-2">
-            {team.config.description}
+        {originalPrompt && (
+          <p className="text-[10px] italic text-[var(--color-text-muted)] mt-1 line-clamp-2 border-l-2 border-[var(--color-border-default)] pl-2">
+            {originalPrompt}
           </p>
         )}
       </div>
@@ -293,12 +321,19 @@ function TeamCard({ team }: { team: Team }) {
                   {member.name}
                 </span>
 
-                {/* Lead crown */}
+                {/* Lead crown + session chip */}
                 {isLead && (
-                  <Crown
-                    size={10}
-                    className="text-[var(--color-status-warning)] shrink-0"
-                  />
+                  <>
+                    <Crown
+                      size={10}
+                      className="text-[var(--color-status-warning)] shrink-0"
+                    />
+                    {leadSessionId && (
+                      <span className="text-[9px] font-mono text-[var(--color-text-muted)] truncate max-w-[60px] shrink-0">
+                        {leadSessionId.slice(0, 8)}
+                      </span>
+                    )}
+                  </>
                 )}
 
                 {/* Model badge */}

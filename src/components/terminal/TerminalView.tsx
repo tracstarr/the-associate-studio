@@ -146,12 +146,22 @@ export function TerminalView({ sessionId, resumeSessionId, cwd, isActive }: Term
     };
   }, [sessionId, resumeSessionId, cwd]);
 
-  // Focus terminal when tab becomes active
+  // Focus terminal when tab becomes active, and re-fit to correct any squish
+  // from display:none → display:block not triggering ResizeObserver
   useEffect(() => {
     if (isActive && termRef.current) {
       termRef.current.focus();
+      const fitAddon = fitAddonRef.current;
+      if (fitAddon) {
+        fitAddon.fit();
+        const d = fitAddon.proposeDimensions();
+        if (d) {
+          lastDimsRef.current = { rows: d.rows, cols: d.cols };
+          invoke("pty_resize", { sessionId, rows: d.rows, cols: d.cols }).catch(() => {});
+        }
+      }
     }
-  }, [isActive]);
+  }, [isActive, sessionId]);
 
   // When tab goes to background, periodically trigger a redraw by toggling the
   // PTY height by +1 row and immediately restoring it.

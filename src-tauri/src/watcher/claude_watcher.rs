@@ -2,6 +2,16 @@ use notify::{Config, RecommendedWatcher, RecursiveMode, Watcher};
 use std::path::{Component, PathBuf};
 use std::time::Duration;
 use tauri::Emitter;
+use serde::Serialize;
+
+#[derive(Debug, Clone, Serialize)]
+pub struct SummaryPayload {
+    pub session_id: String,
+    pub project_path: String,
+    pub project_dir: String,  // encoded dir name under ~/.claude/projects/
+    pub filename: String,
+    pub preview: String,
+}
 
 /// Check whether the given path has a specific directory name as a direct child
 /// of the `.claude` home directory.  For example, for `segment = "teams"` this
@@ -123,6 +133,42 @@ pub fn start_claude_watcher(app_handle: tauri::AppHandle) {
                                         >(
                                             line
                                         ) {
+                                            // Detect completion summary on Stop events
+                                            if hook_event.hook_event_name == "Stop" {
+                                                if let Some(ref msg) = hook_event.last_assistant_message {
+                                                    if crate::data::summaries::is_completion_summary(msg) {
+                                                        if let Some(ref cwd) = hook_event.cwd {
+                                                            let claude_home = get_claude_home();
+                                                            if let Some(home) = claude_home {
+                                                                let encoded = crate::data::path_encoding::encode_project_path(
+                                                                    &std::path::PathBuf::from(cwd)
+                                                                );
+                                                                let sessions_dir = home.join("projects").join(&encoded);
+                                                                match crate::data::summaries::save_summary(
+                                                                    &sessions_dir,
+                                                                    &hook_event.session_id,
+                                                                    msg,
+                                                                ) {
+                                                                    Ok(filename) => {
+                                                                        let preview: String = msg.chars().take(200).collect();
+                                                                        let payload = SummaryPayload {
+                                                                            session_id: hook_event.session_id.clone(),
+                                                                            project_path: cwd.clone(),
+                                                                            project_dir: encoded,
+                                                                            filename,
+                                                                            preview,
+                                                                        };
+                                                                        let _ = app_handle.emit("session-summary", &payload);
+                                                                    }
+                                                                    Err(e) => {
+                                                                        eprintln!("[watcher] failed to save summary: {}", e);
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
                                             let _ =
                                                 app_handle.emit("hook-event", &hook_event);
                                         }

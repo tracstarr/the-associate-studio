@@ -1,18 +1,35 @@
 import { create } from "zustand";
 
 export interface QuestionNotification {
+  type: "question";
   id: string;
   tabId: string;
   projectId: string;
   sessionTitle: string;
   question: string;
   timestamp: number;
-  read: boolean; // true = user has acted on it (tab switch / typed); shown greyed out
+  read: boolean;
 }
 
+export interface CompletionNotification {
+  type: "completion";
+  id: string;
+  sessionId: string;
+  tabId?: string;
+  projectId: string;
+  sessionTitle: string;
+  filename: string;
+  preview: string;
+  timestamp: number;
+  read: boolean;
+}
+
+export type AppNotification = QuestionNotification | CompletionNotification;
+
 interface NotificationStore {
-  notifications: QuestionNotification[];
-  addNotification: (n: Omit<QuestionNotification, "id" | "timestamp" | "read">) => void;
+  notifications: AppNotification[];
+  addNotification: (n: Omit<QuestionNotification, "id" | "timestamp" | "read" | "type">) => void;
+  addCompletionNotification: (n: Omit<CompletionNotification, "id" | "timestamp" | "read" | "type">) => void;
   markRead: (id: string) => void;
   markReadByTabId: (tabId: string) => void;
   removeNotification: (id: string) => void;
@@ -26,22 +43,47 @@ export const useNotificationStore = create<NotificationStore>((set) => ({
 
   addNotification: (n) =>
     set((s) => {
-      const existing = s.notifications.find((x) => x.tabId === n.tabId);
+      const existing = s.notifications.find(
+        (x): x is QuestionNotification => x.type === "question" && x.tabId === n.tabId
+      );
       if (existing && !existing.read) {
-        // Update question text on the existing unread notification (same session, new text)
         return {
           notifications: s.notifications.map((x) =>
-            x.tabId === n.tabId ? { ...x, question: n.question, timestamp: Date.now() } : x
+            x.type === "question" && x.tabId === n.tabId
+              ? { ...x, question: n.question, timestamp: Date.now() }
+              : x
           ),
         };
       }
-      // Replace any read (acted-on) notification for this tab with a fresh unread one,
-      // or append if no prior notification exists for this tab.
-      let notifications = [
-        ...s.notifications.filter((x) => x.tabId !== n.tabId),
-        { ...n, id: crypto.randomUUID(), timestamp: Date.now(), read: false },
+      let notifications: AppNotification[] = [
+        ...s.notifications.filter((x) => !(x.type === "question" && x.tabId === n.tabId)),
+        { ...n, type: "question" as const, id: crypto.randomUUID(), timestamp: Date.now(), read: false },
       ];
-      // Cap at MAX_NOTIFICATIONS: evict oldest read first, then oldest unread
+      while (notifications.length > MAX_NOTIFICATIONS) {
+        const oldestReadIdx = notifications.findIndex((x) => x.read);
+        if (oldestReadIdx !== -1) {
+          notifications.splice(oldestReadIdx, 1);
+        } else {
+          notifications.shift();
+        }
+      }
+      return { notifications };
+    }),
+
+  addCompletionNotification: (n) =>
+    set((s) => {
+      // Deduplicate by sessionId + filename
+      const isDupe = s.notifications.some(
+        (x): x is CompletionNotification =>
+          x.type === "completion" &&
+          x.sessionId === n.sessionId &&
+          x.filename === n.filename
+      );
+      if (isDupe) return {};
+      let notifications: AppNotification[] = [
+        ...s.notifications,
+        { ...n, type: "completion" as const, id: crypto.randomUUID(), timestamp: Date.now(), read: false },
+      ];
       while (notifications.length > MAX_NOTIFICATIONS) {
         const oldestReadIdx = notifications.findIndex((x) => x.read);
         if (oldestReadIdx !== -1) {
@@ -63,7 +105,7 @@ export const useNotificationStore = create<NotificationStore>((set) => ({
   markReadByTabId: (tabId) =>
     set((s) => ({
       notifications: s.notifications.map((n) =>
-        n.tabId === tabId ? { ...n, read: true } : n
+        "tabId" in n && n.tabId === tabId ? { ...n, read: true } : n
       ),
     })),
 

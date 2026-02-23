@@ -86,8 +86,7 @@ export function ProjectSwitcher() {
       setActiveTab(existingTab.id, projectId);
       return;
     }
-    const title =
-      session.summary || session.firstPrompt?.slice(0, 50) || session.sessionId.slice(0, 8);
+    const title = session.summary || session.sessionId.slice(0, 8);
     openTab(
       {
         id: `session-${session.sessionId}`,
@@ -150,16 +149,17 @@ export function ProjectSwitcher() {
 
       {/* Session list */}
       <div className="flex-1 overflow-y-auto">
-        {/* Open new-session tabs (no sessionId yet) */}
+        {/* Resolved tabs not yet written to disk (hook fired, sessions-index.json not ready yet) */}
         {openTabs
-          .filter((t) => (!t.type || t.type === "terminal") && !t.sessionId && !t.resolvedSessionId)
+          .filter((t) => {
+            if (!(!t.type || t.type === "terminal")) return false;
+            if (!t.resolvedSessionId) return false;
+            if (knownSessions[t.resolvedSessionId] === undefined) return false;
+            return !(sessions?.some((s) => s.sessionId === t.resolvedSessionId) ?? false);
+          })
           .map((tab) => {
-            const isLive = tab.resolvedSessionId
-              ? knownSessions[tab.resolvedSessionId] === "active"
-              : false;
-            const subs = tab.resolvedSessionId
-              ? (activeSubagents[tab.resolvedSessionId] ?? [])
-              : [];
+            const isLive = knownSessions[tab.resolvedSessionId!] === "active";
+            const subs = activeSubagents[tab.resolvedSessionId!] ?? [];
             return (
               <NewSessionTabItem
                 key={tab.id}
@@ -220,10 +220,7 @@ function SessionItem({
   subagentTypes: string[];
   onClick: () => void;
 }) {
-  const title =
-    session.summary ||
-    session.firstPrompt?.slice(0, 50) ||
-    session.sessionId.slice(0, 8);
+  const title = session.summary || session.sessionId.slice(0, 8);
   const timeStr = session.modified ? formatRelativeTime(new Date(session.modified)) : "";
 
   return (

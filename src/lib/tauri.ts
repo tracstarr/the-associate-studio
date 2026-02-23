@@ -84,6 +84,15 @@ export interface TodoFile {
   items: TodoItem[];
 }
 
+// ---- Summary Types ----
+
+export interface SummaryFile {
+  session_id: string;
+  filename: string;
+  created: number; // Unix timestamp (seconds)
+  preview: string;
+}
+
 // ---- Plan Types ----
 
 export type MarkdownLineKind = "Heading" | "CodeFence" | "CodeBlock" | "Normal";
@@ -462,4 +471,14 @@ export function listDir(path: string): Promise<FileEntry[]> {
 
 export function getHomeDir(): Promise<string> {
   return invoke("cmd_get_home_dir");
+}
+
+// ---- Summary Invoke Wrappers ----
+
+export function loadSummaries(projectDir: string, sessionId: string): Promise<SummaryFile[]> {
+  return invoke("cmd_load_summaries", { projectDir, sessionId });
+}
+
+export function readSummary(projectDir: string, filename: string): Promise<string> {
+  return invoke("cmd_read_summary", { projectDir, filename });
 }

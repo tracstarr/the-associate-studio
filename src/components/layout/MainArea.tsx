@@ -1,10 +1,11 @@
 import { memo, useState, useCallback } from "react";
-import { X, FileText, BookOpen, Settings, GitBranch, History, Terminal, Code2 } from "lucide-react";
+import { X, FileText, BookOpen, Settings, GitBranch, History, Terminal, Code2, CheckCircle2 } from "lucide-react";
 import { useSessionStore } from "@/stores/sessionStore";
 import type { SessionTab } from "@/stores/sessionStore";
 import { useActiveProjectTabs } from "@/hooks/useActiveProjectTabs";
 import { TerminalView } from "../terminal/TerminalView";
 import { SessionView } from "../sessions/SessionView";
+import { SummaryView } from "../sessions/SummaryView";
 import { PlanEditorView } from "../plan/PlanEditorView";
 import { ReadmeTab } from "../readme/ReadmeTab";
 import { FileEditorTab } from "../files/FileEditorTab";
@@ -25,6 +26,9 @@ function tabAccent(tab: SessionTab, knownSessions: Record<string, "active" | "id
   }
   if (tab.type === "session-view") {
     return { border: "border-t-[var(--color-status-warning)]", icon: "text-[var(--color-status-warning)]" };
+  }
+  if (tab.type === "summary") {
+    return { border: "border-t-[var(--color-status-success)]", icon: "text-[var(--color-status-success)]" };
   }
   // readme, plan, diff, settings → blue
   return { border: "border-t-[var(--color-accent-primary)]", icon: "text-[var(--color-accent-primary)]" };
@@ -141,6 +145,9 @@ function MainAreaComponent({ projectId: projectIdProp }: { projectId?: string })
               {tab.type === "session-view" && (
                 <History size={10} className={cn("shrink-0", isActive ? accent.icon : "text-text-muted")} />
               )}
+              {tab.type === "summary" && (
+                <CheckCircle2 size={10} className={cn("shrink-0", isActive ? accent.icon : "text-text-muted")} />
+              )}
               {tab.type === "file" && (
                 <Code2 size={10} className={cn("shrink-0", isActive ? "text-[var(--color-accent-secondary)]" : "text-text-muted")} />
               )}
@@ -215,6 +222,8 @@ function MainAreaComponent({ projectId: projectIdProp }: { projectId?: string })
                 />
               ) : tab.type === "session-view" ? (
                 <SessionView tab={tab} projectId={projectId} />
+              ) : tab.type === "summary" ? (
+                <SummaryView tab={tab} projectId={projectId} />
               ) : (
                 <TerminalView
                   sessionId={tab.id}

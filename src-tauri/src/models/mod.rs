@@ -3,6 +3,7 @@ pub mod hook_event;
 pub mod inbox;
 pub mod plan;
 pub mod session;
+pub mod summary;
 pub mod task;
 pub mod team;
 pub mod todo;

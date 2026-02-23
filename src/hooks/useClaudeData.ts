@@ -10,6 +10,17 @@ import { useProjectsStore } from "../stores/projectsStore";
 import { useNotificationStore } from "../stores/notificationStore";
 import { debugLog } from "../stores/debugStore";
 
+// ---- Summary Hooks ----
+
+export function useSummaries(projectDir: string, sessionId: string) {
+  return useQuery({
+    queryKey: ["summaries", projectDir, sessionId],
+    queryFn: () => tauri.loadSummaries(projectDir, sessionId),
+    enabled: !!projectDir && !!sessionId,
+    staleTime: 30_000,
+  });
+}
+
 // ---- Session Hooks ----
 
 export function useSessions(projectDir: string) {
@@ -294,6 +305,7 @@ export function useClaudeWatcher() {
                 store.closeTab(svTab.id, pid);
               }
             }
+            queryClient.invalidateQueries({ queryKey: ["sessions"] });
             break;
           }
           case "SessionEnd":
@@ -410,6 +422,34 @@ export function useClaudeWatcher() {
           }
         }
       })
+    );
+
+    // Session completion summary saved
+    unlisteners.push(
+      listen<{ session_id: string; project_path: string; project_dir: string; filename: string; preview: string }>(
+        "session-summary",
+        ({ payload }) => {
+          debugLog("Hooks", "SessionSummary", { session_id: payload.session_id, filename: payload.filename }, "info");
+          queryClient.invalidateQueries({ queryKey: ["summaries"] });
+          const projectId = pathToProjectId(payload.project_path);
+          // Find the session title from open tabs or fall back to session ID prefix
+          const { tabsByProject } = useSessionStore.getState();
+          const projectTabs = tabsByProject[projectId] ?? [];
+          const sessionTab = projectTabs.find(
+            (t) =>
+              t.sessionId === payload.session_id ||
+              t.resolvedSessionId === payload.session_id
+          );
+          const sessionTitle = sessionTab?.title ?? payload.session_id.slice(0, 8);
+          useNotificationStore.getState().addCompletionNotification({
+            sessionId: payload.session_id,
+            projectId,
+            sessionTitle,
+            filename: payload.filename,
+            preview: payload.preview,
+          });
+        }
+      )
     );
 
     return () => {

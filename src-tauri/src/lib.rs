@@ -83,6 +83,8 @@ pub fn run() {
             commands::projects::cmd_run_claude_init,
             commands::projects::cmd_run_readme_gen,
             commands::files::cmd_list_dir,
+            commands::summaries::cmd_load_summaries,
+            commands::summaries::cmd_read_summary,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -8,6 +8,7 @@ pub mod plans;
 pub mod projects;
 pub mod pty;
 pub mod sessions;
+pub mod summaries;
 pub mod tasks;
 pub mod teams;
 pub mod todos;

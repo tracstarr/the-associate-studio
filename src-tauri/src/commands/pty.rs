@@ -236,8 +236,13 @@ fn find_claude_question(data: &str) -> Option<String> {
     for line in &lines {
         let t = line.trim();
         // enquirer.js / inquirer style: "? question text"
+        // Exclude known Claude CLI UI hint strings that share this prefix but are not questions.
+        const KNOWN_UI_HINTS: &[&str] = &["for shortcuts"];
         if t.starts_with("? ") && t.len() > 2 {
-            return Some(t[2..].to_string());
+            let extracted = &t[2..];
+            if !KNOWN_UI_HINTS.iter().any(|hint| extracted.starts_with(hint)) {
+                return Some(extracted.to_string());
+            }
         }
         // Y/N confirmation prompts
         if !t.is_empty()
