@@ -180,6 +180,10 @@ export async function loadTeams(
   return invoke("cmd_load_teams", { projectCwd: projectCwd ?? null });
 }
 
+export async function deleteTeam(teamName: string): Promise<void> {
+  return invoke("cmd_delete_team", { teamName });
+}
+
 export async function loadTasks(teamName: string): Promise<Task[]> {
   return invoke("cmd_load_tasks", { teamName });
 }
@@ -286,6 +290,13 @@ export function getWorktreeCopy(projectPath: string): Promise<string[]> {
 
 export function setWorktreeCopy(projectPath: string, entries: string[]): Promise<void> {
   return invoke("cmd_set_worktree_copy", { projectPath, entries });
+}
+
+export async function claudeGitAction(
+  cwd: string,
+  action: "commit" | "commit_push" | "commit_push_pr"
+): Promise<string> {
+  return invoke("cmd_claude_git_action", { cwd, action });
 }
 
 // ─── PR / Issues Types ────────────────────────────────────────────────────────

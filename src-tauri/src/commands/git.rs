@@ -332,3 +332,43 @@ pub async fn cmd_create_worktree(
 
     Ok(worktree_path_str)
 }
+
+#[tauri::command]
+pub async fn cmd_claude_git_action(cwd: String, action: String) -> Result<String, String> {
+    let dir = std::path::PathBuf::from(&cwd);
+    if !dir.exists() {
+        return Err(format!("Directory does not exist: {}", cwd));
+    }
+
+    let prompt = match action.as_str() {
+        "commit" => "Stage all changes with 'git add -A' and commit with a clear, descriptive commit message based on the actual diff. Output the commit hash when done.".to_string(),
+        "commit_push" => "Stage all changes with 'git add -A', commit with a descriptive message based on the actual diff, then push to the remote branch. Output the commit hash and push result when done.".to_string(),
+        "commit_push_pr" => "Stage all changes with 'git add -A', commit with a descriptive message based on the actual diff, push to the remote branch, then create a pull request using 'gh pr create --fill'. Output the PR URL when done.".to_string(),
+        _ => return Err(format!("Unknown action: {}", action)),
+    };
+
+    let output = tokio::task::spawn_blocking(move || {
+        crate::utils::silent_command("claude")
+            .args(["-p", &prompt, "--dangerously-skip-permissions"])
+            .current_dir(&dir)
+            .env_remove("CLAUDECODE")
+            .output()
+    })
+    .await
+    .map_err(|e| format!("Task join error: {}", e))?
+    .map_err(|e| format!("Failed to run claude: {}", e))?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+    let combined = format!("{}{}", stdout, stderr);
+
+    if output.status.success() {
+        Ok(combined.trim().to_string())
+    } else {
+        Err(if combined.trim().is_empty() {
+            format!("claude exited with code {}", output.status)
+        } else {
+            combined.trim().to_string()
+        })
+    }
+}

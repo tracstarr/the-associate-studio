@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
   GitBranch, GitFork, RefreshCw, ChevronRight, ChevronDown,
-  Loader2, AlertTriangle, Plus, X,
+  Loader2, AlertTriangle, Plus, X, GitCommitHorizontal, Upload, GitPullRequest,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGitStatus, useGitBranches, useGitCurrentBranch, useWorktrees, useWorktreeCopy } from "@/hooks/useClaudeData";
@@ -9,7 +9,7 @@ import { useProjectsStore, pathToProjectId } from "@/stores/projectsStore";
 import { useUIStore } from "@/stores/uiStore";
 import { useSessionStore } from "@/stores/sessionStore";
 import type { GitFileEntry } from "@/lib/tauri";
-import { createWorktree, setWorktreeCopy } from "@/lib/tauri";
+import { createWorktree, setWorktreeCopy, claudeGitAction } from "@/lib/tauri";
 import { cn } from "@/lib/utils";
 
 export function GitStatusPanel() {
@@ -42,6 +42,10 @@ export function GitStatusPanel() {
   const [worktreesOpen, setWorktreesOpen] = useState(true);
   const [copyOpen, setCopyOpen] = useState(true);
 
+  // Quick git action state
+  const [gitActionLoading, setGitActionLoading] = useState<string | null>(null);
+  const [gitActionResult, setGitActionResult] = useState<{ ok: boolean; msg: string } | null>(null);
+
   // Copy-on-create inline input state
   const [showCopyInput, setShowCopyInput] = useState(false);
   const [copyInputValue, setCopyInputValue] = useState("");
@@ -67,6 +71,21 @@ export function GitStatusPanel() {
           !wt.isMain
       )
     : false;
+
+  const handleGitAction = async (action: "commit" | "commit_push" | "commit_push_pr") => {
+    if (!activeProjectDir || gitActionLoading) return;
+    setGitActionLoading(action);
+    setGitActionResult(null);
+    try {
+      const result = await claudeGitAction(activeProjectDir, action);
+      setGitActionResult({ ok: true, msg: result || "Done" });
+      queryClient.invalidateQueries({ queryKey: ["gitStatus", activeProjectDir] });
+    } catch (e) {
+      setGitActionResult({ ok: false, msg: String(e) });
+    } finally {
+      setGitActionLoading(null);
+    }
+  };
 
   const handleOpenWorktreeForm = () => {
     setWorktreeBranch(`feature/${currentBranch}-wt`);
@@ -210,6 +229,44 @@ export function GitStatusPanel() {
           <RefreshCw size={12} />
         </button>
       </div>
+
+      {/* Quick commit actions */}
+      <div className="flex items-center gap-1 px-3 py-1.5 border-b border-border-default">
+        {[
+          { action: "commit" as const, label: "Commit", icon: GitCommitHorizontal },
+          { action: "commit_push" as const, label: "+ Push", icon: Upload },
+          { action: "commit_push_pr" as const, label: "+ PR", icon: GitPullRequest },
+        ].map(({ action, label, icon: Icon }) => (
+          <button
+            key={action}
+            onClick={() => handleGitAction(action)}
+            disabled={!!gitActionLoading}
+            title={action === "commit" ? "Commit all changes" : action === "commit_push" ? "Commit & push" : "Commit, push & create PR"}
+            className="flex items-center gap-1 px-2 py-0.5 text-[10px] rounded border border-border-default text-text-muted hover:text-text-primary hover:border-border-focus disabled:opacity-50 transition-colors"
+          >
+            {gitActionLoading === action
+              ? <Loader2 size={9} className="animate-spin" />
+              : <Icon size={9} />}
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Result message */}
+      {gitActionResult && (
+        <div className={cn(
+          "px-3 py-1 text-[10px] border-b border-border-default",
+          gitActionResult.ok ? "text-status-success" : "text-status-error"
+        )}>
+          {gitActionResult.msg.split("\n").slice(-3).join(" · ")}
+          <button
+            onClick={() => setGitActionResult(null)}
+            className="ml-2 text-text-muted hover:text-text-primary"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* Inline worktree creation form */}
       {showWorktreeForm && (

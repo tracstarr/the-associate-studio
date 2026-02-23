@@ -2,7 +2,6 @@ import { memo } from "react";
 import { useUIStore } from "@/stores/uiStore";
 import { ContextPanel } from "@/components/context/ContextPanel";
 import { TeamsRightPanel } from "@/components/context/TeamsRightPanel";
-import { InboxRightPanel } from "@/components/context/InboxRightPanel";
 import { PlansPanel } from "@/components/context/PlansPanel";
 
 function RightPanelComponent() {
@@ -16,7 +15,6 @@ function RightPanelComponent() {
       <div className="flex-1 overflow-hidden">
         {activeTab === "context" && <ContextPanel />}
         {activeTab === "teams" && <TeamsRightPanel />}
-        {activeTab === "inbox" && <InboxRightPanel />}
         {activeTab === "plans" && <PlansPanel />}
       </div>
     </div>

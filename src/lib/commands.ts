@@ -92,15 +92,6 @@ export function buildCommands(): Command[] {
       },
     },
     {
-      id: "view.right.inbox",
-      label: "Right Panel: Inbox",
-      category: "View",
-      action: () => {
-        ui.setRightTab("inbox");
-        if (!ui.rightPanelOpen) ui.toggleRightPanel();
-      },
-    },
-    {
       id: "view.right.plans",
       label: "Right Panel: Plans",
       category: "View",

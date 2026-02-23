@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { Save, Loader2 } from "lucide-react";
 import { readFile, writeFile } from "@/lib/tauri";
 import { cn } from "@/lib/utils";
+import { useSessionStore } from "@/stores/sessionStore";
 
 const MonacoEditor = lazy(() =>
   import("@monaco-editor/react").then((m) => ({ default: m.default }))
@@ -63,9 +64,11 @@ function getLanguage(filePath: string): string {
 interface FileEditorTabProps {
   filePath: string;
   isActive: boolean;
+  tabId: string;
 }
 
-export function FileEditorTab({ filePath }: FileEditorTabProps) {
+export function FileEditorTab({ filePath, tabId }: FileEditorTabProps) {
+  const setTabDirty = useSessionStore((s) => s.setTabDirty);
   const [content, setContent] = useState<string | null>(null);
   const [editContent, setEditContent] = useState<string>("");
   const [dirty, setDirty] = useState(false);
@@ -93,6 +96,11 @@ export function FileEditorTab({ filePath }: FileEditorTabProps) {
       cancelled = true;
     };
   }, [filePath]);
+
+  useEffect(() => {
+    setTabDirty(tabId, dirty);
+    return () => { setTabDirty(tabId, false); };
+  }, [dirty, tabId, setTabDirty]);
 
   const handleSave = async () => {
     if (!dirty || saving) return;

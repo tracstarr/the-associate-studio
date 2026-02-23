@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useState, useCallback } from "react";
 import { X, FileText, BookOpen, Settings, GitBranch, History, Terminal, Code2 } from "lucide-react";
 import { useSessionStore } from "@/stores/sessionStore";
 import type { SessionTab } from "@/stores/sessionStore";
@@ -10,6 +10,9 @@ import { ReadmeTab } from "../readme/ReadmeTab";
 import { FileEditorTab } from "../files/FileEditorTab";
 import { SettingsTab } from "../settings/SettingsTab";
 import { DiffViewer } from "../git/DiffViewer";
+import { TabContextMenu } from "./TabContextMenu";
+import type { TabCloseAction } from "./TabContextMenu";
+import { CloseTabsWarningDialog } from "./CloseTabsWarningDialog";
 import { cn } from "@/lib/utils";
 
 function tabAccent(tab: SessionTab, knownSessions: Record<string, boolean>) {
@@ -27,11 +30,74 @@ function tabAccent(tab: SessionTab, knownSessions: Record<string, boolean>) {
   return { border: "border-t-[var(--color-accent-primary)]", icon: "text-[var(--color-accent-primary)]" };
 }
 
-function MainAreaComponent() {
-  const { openTabs, activeTabId, projectId } = useActiveProjectTabs();
+function MainAreaComponent({ projectId: projectIdProp }: { projectId?: string }) {
+  const { openTabs, activeTabId, projectId } = useActiveProjectTabs(projectIdProp);
   const setActiveTab = useSessionStore((s) => s.setActiveTab);
   const closeTab = useSessionStore((s) => s.closeTab);
   const knownSessions = useSessionStore((s) => s.knownSessions);
+  const dirtyTabs = useSessionStore((s) => s.dirtyTabs);
+  const closeAllTabs = useSessionStore((s) => s.closeAllTabs);
+  const closeOtherTabs = useSessionStore((s) => s.closeOtherTabs);
+  const closeTabsToLeft = useSessionStore((s) => s.closeTabsToLeft);
+  const closeTabsToRight = useSessionStore((s) => s.closeTabsToRight);
+
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tab: SessionTab } | null>(null);
+  const [pendingClose, setPendingClose] = useState<{ action: TabCloseAction; tabId: string } | null>(null);
+
+  const getAffectedTabIds = useCallback((action: TabCloseAction, tabId: string): string[] => {
+    switch (action) {
+      case "close":
+        return [tabId];
+      case "closeAll":
+        return openTabs.map((t) => t.id);
+      case "closeOthers":
+        return openTabs.filter((t) => t.id !== tabId).map((t) => t.id);
+      case "closeLeft": {
+        const idx = openTabs.findIndex((t) => t.id === tabId);
+        return idx > 0 ? openTabs.slice(0, idx).map((t) => t.id) : [];
+      }
+      case "closeRight": {
+        const idx = openTabs.findIndex((t) => t.id === tabId);
+        return idx !== -1 ? openTabs.slice(idx + 1).map((t) => t.id) : [];
+      }
+    }
+  }, [openTabs]);
+
+  const computeWarnings = useCallback((action: TabCloseAction, tabId: string): string[] => {
+    const affectedIds = getAffectedTabIds(action, tabId);
+    const warnings: string[] = [];
+    for (const id of affectedIds) {
+      const tab = openTabs.find((t) => t.id === id);
+      if (!tab) continue;
+      if (dirtyTabs[id]) {
+        warnings.push(`"${tab.title}" has unsaved changes`);
+      }
+      const isTerminal = !tab.type || tab.type === "terminal";
+      if (isTerminal && tab.resolvedSessionId && knownSessions[tab.resolvedSessionId] === true) {
+        warnings.push(`"${tab.title}" has an active Claude session`);
+      }
+    }
+    return warnings;
+  }, [getAffectedTabIds, openTabs, dirtyTabs, knownSessions]);
+
+  const executeClose = useCallback((action: TabCloseAction, tabId: string) => {
+    switch (action) {
+      case "close": closeTab(tabId, projectId); break;
+      case "closeAll": closeAllTabs(projectId); break;
+      case "closeOthers": closeOtherTabs(tabId, projectId); break;
+      case "closeLeft": closeTabsToLeft(tabId, projectId); break;
+      case "closeRight": closeTabsToRight(tabId, projectId); break;
+    }
+  }, [closeTab, closeAllTabs, closeOtherTabs, closeTabsToLeft, closeTabsToRight, projectId]);
+
+  const handleAction = useCallback((action: TabCloseAction, tabId: string) => {
+    const warnings = computeWarnings(action, tabId);
+    if (warnings.length > 0) {
+      setPendingClose({ action, tabId });
+    } else {
+      executeClose(action, tabId);
+    }
+  }, [computeWarnings, executeClose]);
 
   return (
     <div className="flex flex-col h-full bg-bg-base">
@@ -55,6 +121,10 @@ function MainAreaComponent() {
                   : "text-text-muted hover:text-text-secondary hover:bg-bg-raised"
               )}
               onClick={() => setActiveTab(tab.id, projectId)}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                setContextMenu({ x: e.clientX, y: e.clientY, tab });
+              }}
             >
               {tab.type === "settings" && (
                 <Settings size={10} className={cn("shrink-0", isActive ? accent.icon : "text-text-muted")} />
@@ -129,7 +199,7 @@ function MainAreaComponent() {
                   isActive={activeTabId === tab.id}
                 />
               ) : tab.type === "file" ? (
-                <FileEditorTab filePath={tab.filePath!} isActive={activeTabId === tab.id} />
+                <FileEditorTab tabId={tab.id} filePath={tab.filePath!} isActive={activeTabId === tab.id} />
               ) : tab.type === "readme" ? (
                 <ReadmeTab
                   filePath={tab.filePath ?? tab.projectDir + "/README.md"}
@@ -157,6 +227,31 @@ function MainAreaComponent() {
           ))
         )}
       </div>
+
+      {contextMenu && (
+        <TabContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          tab={contextMenu.tab}
+          tabs={openTabs}
+          onClose={() => setContextMenu(null)}
+          onAction={(action) => {
+            setContextMenu(null);
+            handleAction(action, contextMenu.tab.id);
+          }}
+        />
+      )}
+
+      {pendingClose && (
+        <CloseTabsWarningDialog
+          warnings={computeWarnings(pendingClose.action, pendingClose.tabId)}
+          onConfirm={() => {
+            executeClose(pendingClose.action, pendingClose.tabId);
+            setPendingClose(null);
+          }}
+          onCancel={() => setPendingClose(null)}
+        />
+      )}
     </div>
   );
 }

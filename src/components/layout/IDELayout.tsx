@@ -1,6 +1,8 @@
 import { memo } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { useUIStore } from "@/stores/uiStore";
+import { useSessionStore } from "@/stores/sessionStore";
+import { useProjectsStore } from "@/stores/projectsStore";
 import { ActivityBar } from "@/components/shell/ActivityBar";
 import { RightActivityBar } from "@/components/shell/RightActivityBar";
 import { Sidebar } from "./Sidebar";
@@ -12,6 +14,12 @@ function IDELayoutComponent() {
   const sidebarOpen = useUIStore((s) => s.sidebarOpen);
   const rightPanelOpen = useUIStore((s) => s.rightPanelOpen);
   const bottomPanelOpen = useUIStore((s) => s.bottomPanelOpen);
+  const tabsByProject = useSessionStore((s) => s.tabsByProject);
+  const activeProjectId = useProjectsStore((s) => s.activeProjectId);
+
+  const projectIds = [
+    ...new Set([...Object.keys(tabsByProject), activeProjectId ?? ""].filter(Boolean)),
+  ];
 
   return (
     <PanelGroup direction="vertical" className="flex-1 overflow-hidden">
@@ -36,7 +44,17 @@ function IDELayoutComponent() {
               }
               minSize={30}
             >
-              <MainArea />
+              <div className="relative w-full h-full">
+                {projectIds.map((pid) => (
+                  <div
+                    key={pid}
+                    className="absolute inset-0"
+                    style={{ display: pid === activeProjectId ? "block" : "none" }}
+                  >
+                    <MainArea projectId={pid} />
+                  </div>
+                ))}
+              </div>
             </Panel>
 
             {rightPanelOpen && (

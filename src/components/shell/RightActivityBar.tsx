@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Brain, Users, Mail, FileText } from "lucide-react";
+import { Brain, Users, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUIStore, type RightTab } from "@/stores/uiStore";
 
@@ -12,7 +12,6 @@ interface RightActivityItem {
 const rightItems: RightActivityItem[] = [
   { id: "context", icon: Brain, label: "Context" },
   { id: "teams", icon: Users, label: "Teams" },
-  { id: "inbox", icon: Mail, label: "Inbox" },
   { id: "plans", icon: FileText, label: "Plans" },
 ];
 

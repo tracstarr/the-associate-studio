@@ -4,6 +4,7 @@ import { Pencil, Save, X, FilePlus, Sparkles, Loader2 } from "lucide-react";
 import { readFile, writeFile, runClaudeInit, runReadmeGen } from "@/lib/tauri";
 import { debugLog } from "@/stores/debugStore";
 import { useUIStore } from "@/stores/uiStore";
+import { useSessionStore } from "@/stores/sessionStore";
 
 interface ReadmeTabProps {
   filePath: string;
@@ -20,6 +21,13 @@ export function ReadmeTab({ filePath, projectDir, isActive, tabId }: ReadmeTabPr
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [dirty, setDirty] = useState(false);
+
+  const setTabDirty = useSessionStore((s) => s.setTabDirty);
+
+  useEffect(() => {
+    setTabDirty(tabId, dirty);
+    return () => { setTabDirty(tabId, false); };
+  }, [dirty, tabId, setTabDirty]);
 
   const tabInitStatus = useUIStore((s) => s.tabInitStatus[tabId]);
   const tabInitError = useUIStore((s) => s.tabInitError[tabId]);

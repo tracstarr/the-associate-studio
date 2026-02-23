@@ -3,7 +3,7 @@ import { GitBranch } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useProjectsStore } from "@/stores/projectsStore";
 import { useActiveProjectTabs } from "@/hooks/useActiveProjectTabs";
-import { useGitBranches, useGitStatus } from "@/hooks/useClaudeData";
+import { useGitCurrentBranch, useGitStatus } from "@/hooks/useClaudeData";
 
 function getParentDir(path: string): string {
   return path.replace(/\\/g, "/").split("/").slice(0, -1).join("/");
@@ -30,10 +30,10 @@ function StatusBarComponent() {
       )
     : null;
 
-  const { data: branches } = useGitBranches(projectPath);
+  const { data: branch } = useGitCurrentBranch(projectPath);
   const { data: gitStatus } = useGitStatus(projectPath);
 
-  const branch = branches?.[0] ?? "main";
+  const currentBranch = branch ?? "main";
   const changeCount =
     (gitStatus?.staged?.length ?? 0) +
     (gitStatus?.unstaged?.length ?? 0) +
@@ -69,7 +69,7 @@ function StatusBarComponent() {
         )}
         <span className="flex items-center gap-1">
           <GitBranch size={10} />
-          {branch}
+          {currentBranch}
         </span>
         <span>{changeCount} changes</span>
       </div>

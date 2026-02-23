@@ -4,8 +4,9 @@ import { useSessionStore } from "../stores/sessionStore";
 
 const EMPTY_TABS: SessionTab[] = [];
 
-export function useActiveProjectTabs() {
-  const projectId = useProjectsStore((s) => s.activeProjectId) ?? "";
+export function useActiveProjectTabs(overrideProjectId?: string) {
+  const activeProjectId = useProjectsStore((s) => s.activeProjectId) ?? "";
+  const projectId = overrideProjectId ?? activeProjectId;
   const openTabs = useSessionStore((s) => s.tabsByProject[projectId] ?? EMPTY_TABS);
   const activeTabId = useSessionStore((s) => s.activeTabByProject[projectId] ?? null);
   return { openTabs, activeTabId, projectId };

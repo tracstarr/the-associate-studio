@@ -21,6 +21,7 @@ interface SessionStore {
   activeSubagents: Record<string, ActiveSubagent[]>;
   knownSessions: Record<string, boolean>;
   planLinks: Record<string, string>; // plan filename → tab id
+  dirtyTabs: Record<string, boolean>;
 
   // Per-project tab management (require projectId)
   openTab: (tab: SessionTab, projectId: string) => void;
@@ -29,6 +30,11 @@ interface SessionStore {
   openPlanTab: (filename: string, title: string, projectId: string) => void;
   openSettingsTab: (projectId: string) => void;
   resumeTab: (tabId: string, projectId: string) => void;
+  setTabDirty: (tabId: string, dirty: boolean) => void;
+  closeAllTabs: (projectId: string) => void;
+  closeOtherTabs: (tabId: string, projectId: string) => void;
+  closeTabsToLeft: (tabId: string, projectId: string) => void;
+  closeTabsToRight: (tabId: string, projectId: string) => void;
 
   // Scan-all variants (watcher doesn't know projectId easily)
   resolveTabSession: (tabId: string, realSessionId: string) => void;
@@ -46,6 +52,7 @@ export const useSessionStore = create<SessionStore>((set) => ({
   activeSubagents: {},
   knownSessions: {},
   planLinks: {},
+  dirtyTabs: {},
 
   openTab: (tab, projectId) =>
     set((s) => {
@@ -157,6 +164,61 @@ export const useSessionStore = create<SessionStore>((set) => ({
             t.id === tabId ? { ...t, type: undefined } : t
           ),
         },
+      };
+    }),
+
+  setTabDirty: (tabId, dirty) =>
+    set((s) => {
+      const next = { ...s.dirtyTabs };
+      if (dirty) {
+        next[tabId] = true;
+      } else {
+        delete next[tabId];
+      }
+      return { dirtyTabs: next };
+    }),
+
+  closeAllTabs: (projectId) =>
+    set((s) => ({
+      tabsByProject: { ...s.tabsByProject, [projectId]: [] },
+      activeTabByProject: { ...s.activeTabByProject, [projectId]: null },
+    })),
+
+  closeOtherTabs: (tabId, projectId) =>
+    set((s) => {
+      const tab = (s.tabsByProject[projectId] ?? []).find((t) => t.id === tabId);
+      const kept = tab ? [tab] : [];
+      return {
+        tabsByProject: { ...s.tabsByProject, [projectId]: kept },
+        activeTabByProject: { ...s.activeTabByProject, [projectId]: tab?.id ?? null },
+      };
+    }),
+
+  closeTabsToLeft: (tabId, projectId) =>
+    set((s) => {
+      const tabs = s.tabsByProject[projectId] ?? [];
+      const idx = tabs.findIndex((t) => t.id === tabId);
+      const kept = idx === -1 ? tabs : tabs.slice(idx);
+      const currentActive = s.activeTabByProject[projectId];
+      const keptIds = new Set(kept.map((t) => t.id));
+      const newActive = keptIds.has(currentActive ?? "") ? currentActive : (kept[0]?.id ?? null);
+      return {
+        tabsByProject: { ...s.tabsByProject, [projectId]: kept },
+        activeTabByProject: { ...s.activeTabByProject, [projectId]: newActive },
+      };
+    }),
+
+  closeTabsToRight: (tabId, projectId) =>
+    set((s) => {
+      const tabs = s.tabsByProject[projectId] ?? [];
+      const idx = tabs.findIndex((t) => t.id === tabId);
+      const kept = idx === -1 ? tabs : tabs.slice(0, idx + 1);
+      const currentActive = s.activeTabByProject[projectId];
+      const keptIds = new Set(kept.map((t) => t.id));
+      const newActive = keptIds.has(currentActive ?? "") ? currentActive : (kept[kept.length - 1]?.id ?? null);
+      return {
+        tabsByProject: { ...s.tabsByProject, [projectId]: kept },
+        activeTabByProject: { ...s.activeTabByProject, [projectId]: newActive },
       };
     }),
 }));
