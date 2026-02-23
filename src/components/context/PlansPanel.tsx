@@ -4,7 +4,7 @@ import { usePlans } from "../../hooks/useClaudeData";
 import { useSessionStore } from "../../stores/sessionStore";
 import { useActiveProjectTabs } from "../../hooks/useActiveProjectTabs";
 import type { PlanFile, MarkdownLine } from "../../lib/tauri";
-import { cn } from "../../lib/cn";
+import { cn } from "../../lib/utils";
 
 export function PlansPanel() {
   const { data: plans, isLoading } = usePlans();

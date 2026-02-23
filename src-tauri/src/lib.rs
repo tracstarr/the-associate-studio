@@ -57,7 +57,6 @@ pub fn run() {
             commands::pty::pty_resize,
             commands::pty::pty_write,
             commands::pty::pty_kill,
-            commands::pty::pty_list,
             commands::issues::cmd_list_prs,
             commands::issues::cmd_list_issues,
             commands::integrations::cmd_load_integration_secrets,

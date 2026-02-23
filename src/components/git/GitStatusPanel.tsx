@@ -6,7 +6,8 @@ import {
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGitStatus, useGitBranches, useGitCurrentBranch, useWorktrees, useWorktreeCopy } from "@/hooks/useClaudeData";
-import { useProjectsStore, pathToProjectId } from "@/stores/projectsStore";
+import { useProjectsStore } from "@/stores/projectsStore";
+import { pathToProjectId } from "@/lib/utils";
 import { useUIStore } from "@/stores/uiStore";
 import { useSessionStore } from "@/stores/sessionStore";
 import { useOutputStore } from "@/stores/outputStore";
@@ -215,8 +216,9 @@ export function GitStatusPanel() {
         activeProjectId
       );
     } else {
+      if (!activeProjectDir) return;
       setSelectedDiffFile({
-        cwd: activeProjectDir!,
+        cwd: activeProjectDir,
         path: file.path,
         staged: file.section === "Staged",
       });

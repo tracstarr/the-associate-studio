@@ -2,7 +2,7 @@ import { type ReactNode, useState, useCallback, lazy, Suspense } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Save, Eye, Pencil, Check } from "lucide-react";
 import { readPlan, savePlan } from "../../lib/tauri";
-import { cn } from "../../lib/cn";
+import { cn } from "../../lib/utils";
 
 const MonacoEditor = lazy(() =>
   import("@monaco-editor/react").then((m) => ({ default: m.default }))

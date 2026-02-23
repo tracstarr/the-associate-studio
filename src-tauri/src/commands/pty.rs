@@ -51,20 +51,26 @@ pub async fn pty_spawn(
     cmd.env("TERM", "xterm-256color");
     cmd.env("COLORTERM", "truecolor");
 
-    let child = pair
+    let mut child = pair
         .slave
         .spawn_command(cmd)
         .map_err(|e| format!("Failed to spawn claude: {}", e))?;
 
-    let writer = pair
-        .master
-        .take_writer()
-        .map_err(|e| format!("Failed to get PTY writer: {}", e))?;
+    let writer = match pair.master.take_writer() {
+        Ok(w) => w,
+        Err(e) => {
+            let _ = child.kill();
+            return Err(format!("Failed to get PTY writer: {}", e));
+        }
+    };
 
-    let reader = pair
-        .master
-        .try_clone_reader()
-        .map_err(|e| format!("Failed to get PTY reader: {}", e))?;
+    let reader = match pair.master.try_clone_reader() {
+        Ok(r) => r,
+        Err(e) => {
+            let _ = child.kill();
+            return Err(format!("Failed to get PTY reader: {}", e));
+        }
+    };
 
     {
         let mut sessions = state.0.lock().map_err(|e| e.to_string())?;
@@ -77,6 +83,8 @@ pub async fn pty_spawn(
     std::thread::spawn(move || {
         let mut reader = reader;
         let mut buf = [0u8; 4096];
+        // Carry buffer for incomplete UTF-8 sequences split across reads
+        let mut carry: Vec<u8> = Vec::new();
         // Track which plan filenames have already been emitted for this session
         // so we fire plan-linked exactly once per plan (Claude's TUI redraws continuously)
         let mut emitted_plans = std::collections::HashSet::<String>::new();
@@ -86,7 +94,30 @@ pub async fn pty_spawn(
             match reader.read(&mut buf) {
                 Ok(0) => break,
                 Ok(n) => {
-                    let data = String::from_utf8_lossy(&buf[..n]).to_string();
+                    carry.extend_from_slice(&buf[..n]);
+                    // Find the longest valid UTF-8 prefix
+                    let valid_up_to = match std::str::from_utf8(&carry) {
+                        Ok(_) => carry.len(),
+                        Err(e) => {
+                            let valid = e.valid_up_to();
+                            // If no valid bytes and carry is getting large, drain
+                            // the incomplete sequence to avoid unbounded growth
+                            if valid == 0 && carry.len() >= 4 {
+                                carry.clear();
+                                continue;
+                            }
+                            valid
+                        }
+                    };
+                    if valid_up_to == 0 {
+                        // Not enough bytes yet for a valid character, wait for more
+                        continue;
+                    }
+                    // SAFETY: we just validated that carry[..valid_up_to] is valid UTF-8
+                    let data = unsafe { std::str::from_utf8_unchecked(&carry[..valid_up_to]) }.to_string();
+                    // Keep the remainder (incomplete trailing bytes) for the next read
+                    let remainder = carry[valid_up_to..].to_vec();
+                    carry = remainder;
                     // Detect plan file references and emit once per filename
                     if let Some(filename) = find_plan_filename(&data) {
                         if emitted_plans.insert(filename.clone()) {
@@ -139,8 +170,10 @@ pub async fn pty_resize(
                 pixel_height: 0,
             })
             .map_err(|e| e.to_string())?;
+        Ok(())
+    } else {
+        Err(format!("No session with id {}", session_id))
     }
-    Ok(())
 }
 
 #[tauri::command]
@@ -172,12 +205,6 @@ pub async fn pty_kill(
         let _ = session.child.kill();
     }
     Ok(())
-}
-
-#[tauri::command]
-pub async fn pty_list(state: State<'_, PtyState>) -> Result<Vec<String>, String> {
-    let sessions = state.0.lock().map_err(|e| e.to_string())?;
-    Ok(sessions.keys().cloned().collect())
 }
 
 /// Strip ANSI escape sequences from a string.

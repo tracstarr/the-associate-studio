@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import { listProjects, deleteProject, type Project } from "../lib/tauri";
+import { pathToProjectId } from "../lib/utils";
+import { debugLog } from "./debugStore";
 
 interface ProjectsStore {
   projects: Project[];
@@ -18,6 +20,7 @@ export const useProjectsStore = create<ProjectsStore>((set, get) => ({
   isLoading: false,
 
   loadProjects: async () => {
+    debugLog("Projects", "Loading projects", undefined, "info");
     set({ isLoading: true });
     try {
       const projects = await listProjects();
@@ -28,8 +31,10 @@ export const useProjectsStore = create<ProjectsStore>((set, get) => ({
           ? activeProjectId
           : (projects[0]?.id ?? null);
       set({ projects, activeProjectId: newActiveId, isLoading: false });
+      debugLog("Projects", "Projects loaded", { count: projects.length, activeId: newActiveId }, "success");
     } catch (e) {
       console.error("[projects] load failed:", e);
+      debugLog("Projects", "Load failed", { error: String(e) }, "error");
       set({ isLoading: false });
     }
   },
@@ -37,7 +42,14 @@ export const useProjectsStore = create<ProjectsStore>((set, get) => ({
   setActiveProject: (id) => set({ activeProjectId: id }),
 
   removeProject: async (id) => {
-    await deleteProject(id);
+    debugLog("Projects", "Project removed", { id }, "warn");
+    try {
+      await deleteProject(id);
+    } catch (e) {
+      console.error("[projects] removeProject failed:", e);
+      debugLog("Projects", "Remove failed", { id, error: String(e) }, "error");
+      return;
+    }
     set((s) => {
       const projects = s.projects.filter((p) => p.id !== id);
       const activeProjectId =
@@ -63,6 +75,7 @@ export const useProjectsStore = create<ProjectsStore>((set, get) => ({
       if (exists) {
         return { activeProjectId: id };
       }
+      debugLog("Projects", "Project added", { id, path, name }, "info");
       return {
         projects: [{ id, path, name, sessionCount: 0 }, ...s.projects],
         activeProjectId: id,
@@ -70,13 +83,3 @@ export const useProjectsStore = create<ProjectsStore>((set, get) => ({
     });
   },
 }));
-
-/// Mirror of Rust encode_project_path:
-/// C:\dev\ide → C--dev-ide
-/// C:/dev/ide → C--dev-ide
-export function pathToProjectId(path: string): string {
-  let s = path.replace(/\//g, "\\"); // normalize to backslashes
-  s = s.replace(/:\\/g, "--");       // :\ → --
-  s = s.replace(/\\/g, "-");         // remaining \ → -
-  return s.replace(/-+$/, "");       // strip trailing slashes (encoded as -)
-}

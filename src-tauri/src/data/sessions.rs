@@ -30,9 +30,6 @@ pub fn load_sessions(project_dir: &Path) -> Result<Vec<SessionEntry>> {
 #[serde(rename_all = "camelCase")]
 struct JsonlEnvelope {
     #[serde(default)]
-    #[allow(dead_code)]
-    session_id: Option<String>,
-    #[serde(default)]
     git_branch: Option<String>,
     #[serde(default)]
     cwd: Option<String>,

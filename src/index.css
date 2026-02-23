@@ -19,12 +19,10 @@
   --color-text-secondary: #8B949E;
   --color-text-muted: #484F58;
   --color-text-link: #58A6FF;
-  --color-text-inverse: #0D1117;
 
   /* Accent colors */
   --color-accent-primary: #58A6FF;
   --color-accent-secondary: #BC8CFF;
-  --color-accent-tertiary: #79C0FF;
 
   /* Status colors */
   --color-status-success: #3FB950;

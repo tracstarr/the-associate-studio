@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { listen } from "@tauri-apps/api/event";
 import * as tauri from "../lib/tauri";
 import { getActiveSessions } from "../lib/tauri";
@@ -8,6 +8,7 @@ import { pathToProjectId } from "../lib/utils";
 import { useSessionStore } from "../stores/sessionStore";
 import { useProjectsStore } from "../stores/projectsStore";
 import { useNotificationStore } from "../stores/notificationStore";
+import { debugLog } from "../stores/debugStore";
 
 // ---- Session Hooks ----
 
@@ -35,6 +36,7 @@ export function useTeams(projectCwd?: string) {
   return useQuery({
     queryKey: ["teams", projectCwd],
     queryFn: () => tauri.loadTeams(projectCwd),
+    enabled: projectCwd === undefined || !!projectCwd,
     staleTime: 10_000,
   });
 }
@@ -58,31 +60,6 @@ export function useInbox(teamName: string, agentName: string) {
     queryFn: () => tauri.loadInbox(teamName, agentName),
     enabled: !!teamName && !!agentName,
     staleTime: 5_000,
-  });
-}
-
-export function useSendInboxMessage() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (params: {
-      teamName: string;
-      agentName: string;
-      from: string;
-      text: string;
-      color?: string;
-    }) =>
-      tauri.sendInboxMessage(
-        params.teamName,
-        params.agentName,
-        params.from,
-        params.text,
-        params.color
-      ),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ["inbox", variables.teamName, variables.agentName],
-      });
-    },
   });
 }
 
@@ -207,30 +184,32 @@ export function useIssues(cwd: string | null, state = "open") {
 
 export function useClaudeWatcher() {
   const queryClient = useQueryClient();
-  const resolveTabSession = useSessionStore((s) => s.resolveTabSession);
-  const renameTab = useSessionStore((s) => s.renameTab);
-  const setSubagents = useSessionStore((s) => s.setSubagents);
-  const markSessionActive = useSessionStore((s) => s.markSessionActive);
-  const linkPlan = useSessionStore((s) => s.linkPlan);
-  const openPlanTab = useSessionStore((s) => s.openPlanTab);
-  const tabsByProject = useSessionStore((s) => s.tabsByProject);
-  const activeSubagents = useSessionStore((s) => s.activeSubagents);
-  const tabsByProjectRef = useRef(tabsByProject);
-  tabsByProjectRef.current = tabsByProject;
-  const activeSubagentsRef = useRef(activeSubagents);
-  activeSubagentsRef.current = activeSubagents;
 
-  // Active project for openPlanTab — read from projects store via ref
-  const activeProjectId = useProjectsStore((s) => s.activeProjectId);
-  const activeProjectIdRef = useRef(activeProjectId);
-  activeProjectIdRef.current = activeProjectId;
+  // Use refs for all reactive state so listeners never need to be torn down/rebuilt
+  const tabsByProjectRef = useRef(useSessionStore.getState().tabsByProject);
+  const activeSubagentsRef = useRef(useSessionStore.getState().activeSubagents);
+  const activeProjectIdRef = useRef(useProjectsStore.getState().activeProjectId);
+
+  // Keep refs in sync via subscriptions (no effect deps needed)
+  useEffect(() => {
+    const unsubSession = useSessionStore.subscribe((s) => {
+      tabsByProjectRef.current = s.tabsByProject;
+      activeSubagentsRef.current = s.activeSubagents;
+    });
+    const unsubProjects = useProjectsStore.subscribe((s) => {
+      activeProjectIdRef.current = s.activeProjectId;
+    });
+    return () => { unsubSession(); unsubProjects(); };
+  }, []);
 
   useEffect(() => {
     getActiveSessions().then((sessions) => {
+      debugLog("Hooks", "Initial sessions", { count: sessions.length }, "info");
+      const store = useSessionStore.getState();
       for (const session of sessions) {
-        markSessionActive(session.session_id, session.is_active);
+        store.markSessionActive(session.session_id, session.is_active);
         if (session.subagents.length > 0) {
-          setSubagents(session.session_id, session.subagents);
+          store.setSubagents(session.session_id, session.subagents);
         }
         if (session.cwd) {
           const normCwd = session.cwd.replace(/\\/g, "/").toLowerCase();
@@ -244,14 +223,14 @@ export function useClaudeWatcher() {
                 t.projectDir.replace(/\\/g, "/").toLowerCase() === normCwd)
           );
           if (tab) {
-            resolveTabSession(tab.id, session.session_id);
+            store.resolveTabSession(tab.id, session.session_id);
             if (!tab.sessionId && tab.title === "New Session") {
-              renameTab(tab.id, session.session_id.slice(0, 8));
+              store.renameTab(tab.id, session.session_id.slice(0, 8));
             }
           }
         }
       }
-    }).catch(() => {});
+    }).catch((err) => { console.error('[useClaudeWatcher] getActiveSessions failed:', err); });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -259,10 +238,12 @@ export function useClaudeWatcher() {
 
     unlisteners.push(
       listen<HookEvent>("hook-event", ({ payload: event }) => {
+        const store = useSessionStore.getState();
         const allTabsByProject = tabsByProjectRef.current;
         switch (event.hook_event_name) {
           case "SessionStart": {
-            markSessionActive(event.session_id, true);
+            debugLog("Hooks", "SessionStart", { session_id: event.session_id, cwd: event.cwd }, "info");
+            store.markSessionActive(event.session_id, true);
             const normCwd = (event.cwd ?? "").replace(/\\/g, "/").toLowerCase();
             const projectId = pathToProjectId(event.cwd ?? "");
             const projectTabs = allTabsByProject[projectId] ?? [];
@@ -277,9 +258,9 @@ export function useClaudeWatcher() {
               )
               .sort((a, b) => (b.spawnedAt ?? 0) - (a.spawnedAt ?? 0))[0];
             if (tab) {
-              resolveTabSession(tab.id, event.session_id);
+              store.resolveTabSession(tab.id, event.session_id);
               if (!tab.sessionId && tab.title === "New Session") {
-                renameTab(tab.id, event.session_id.slice(0, 8));
+                store.renameTab(tab.id, event.session_id.slice(0, 8));
               }
             }
             // Also check if a resume tab exists (has sessionId but not yet resolved)
@@ -287,7 +268,7 @@ export function useClaudeWatcher() {
               (t) => !t.resolvedSessionId && t.sessionId === event.session_id
             );
             if (resumeTab) {
-              resolveTabSession(resumeTab.id, event.session_id);
+              store.resolveTabSession(resumeTab.id, event.session_id);
             }
             // Close any session-view tab for this session (resumed externally)
             for (const [pid, tabs] of Object.entries(allTabsByProject)) {
@@ -295,13 +276,14 @@ export function useClaudeWatcher() {
                 (t) => t.type === "session-view" && t.sessionId === event.session_id
               );
               if (svTab) {
-                useSessionStore.getState().closeTab(svTab.id, pid);
+                store.closeTab(svTab.id, pid);
               }
             }
             break;
           }
           case "SessionEnd":
-            markSessionActive(event.session_id, false);
+            debugLog("Hooks", "SessionEnd", { session_id: event.session_id }, "info");
+            store.markSessionActive(event.session_id, false);
             // Close the terminal tab for this session (/exit was called)
             for (const [pid, tabs] of Object.entries(allTabsByProject)) {
               const termTab = tabs.find(
@@ -310,18 +292,20 @@ export function useClaudeWatcher() {
                   t.resolvedSessionId === event.session_id
               );
               if (termTab) {
-                useSessionStore.getState().closeTab(termTab.id, pid);
+                store.closeTab(termTab.id, pid);
               }
             }
             break;
           case "Stop":
-            markSessionActive(event.session_id, false);
+            debugLog("Hooks", "Stop", { session_id: event.session_id }, "warn");
+            store.markSessionActive(event.session_id, false);
             break;
           case "SubagentStart": {
+            debugLog("Hooks", "SubagentStart", { session_id: event.session_id, agent_id: event.agent_id, agent_type: event.agent_type }, "info");
             if (event.agent_id) {
               const current = activeSubagentsRef.current[event.session_id] ?? [];
               if (!current.some((a) => a.agent_id === event.agent_id)) {
-                setSubagents(event.session_id, [
+                store.setSubagents(event.session_id, [
                   ...current,
                   {
                     agent_id: event.agent_id,
@@ -334,9 +318,10 @@ export function useClaudeWatcher() {
             break;
           }
           case "SubagentStop": {
+            debugLog("Hooks", "SubagentStop", { session_id: event.session_id, agent_id: event.agent_id }, "info");
             if (event.agent_id) {
               const current = activeSubagentsRef.current[event.session_id] ?? [];
-              setSubagents(
+              store.setSubagents(
                 event.session_id,
                 current.filter((a) => a.agent_id !== event.agent_id)
               );
@@ -384,11 +369,12 @@ export function useClaudeWatcher() {
     );
     unlisteners.push(
       listen<{ tab_id: string; filename: string }>("plan-linked", ({ payload }) => {
-        linkPlan(payload.filename, payload.tab_id);
+        const s = useSessionStore.getState();
+        s.linkPlan(payload.filename, payload.tab_id);
         // Derive a readable title from the filename (strip extension)
         const title = payload.filename.replace(/\.md$/, "");
         const pid = activeProjectIdRef.current ?? "";
-        if (pid) openPlanTab(payload.filename, title, pid);
+        if (pid) s.openPlanTab(payload.filename, title, pid);
       })
     );
 
@@ -416,5 +402,5 @@ export function useClaudeWatcher() {
         unlisten.then((f) => f());
       });
     };
-  }, [queryClient, resolveTabSession, renameTab, setSubagents, markSessionActive, linkPlan, openPlanTab, activeProjectId]);
+  }, [queryClient]); // eslint-disable-line react-hooks/exhaustive-deps
 }

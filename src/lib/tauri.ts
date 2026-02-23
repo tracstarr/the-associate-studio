@@ -361,24 +361,6 @@ export function listIssues(cwd: string, state = "open"): Promise<Issue[]> {
   return invoke("cmd_list_issues", { cwd, state });
 }
 
-// ---- PTY / Terminal Wrappers ----
-
-export function ptySpawn(sessionId: string, cwd: string): Promise<void> {
-  return invoke("pty_spawn", { sessionId, cwd });
-}
-
-export function ptyWrite(sessionId: string, data: string): Promise<void> {
-  return invoke("pty_write", { sessionId, data });
-}
-
-export function ptyKill(sessionId: string): Promise<void> {
-  return invoke("pty_kill", { sessionId });
-}
-
-export function ptyList(): Promise<string[]> {
-  return invoke("pty_list");
-}
-
 // ---- Hook / Session Tracking Types ----
 
 export interface ActiveSubagent {
