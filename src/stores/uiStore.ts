@@ -2,7 +2,7 @@ import { create } from "zustand";
 
 export type SidebarView = "sessions" | "git" | "prs" | "files";
 export type RightTab = "context" | "teams" | "inbox" | "plans";
-export type BottomTab = "git" | "prs" | "issues" | "output";
+export type BottomTab = "log" | "git" | "prs" | "issues" | "output";
 
 export interface SelectedDiffFile {
   cwd: string;
@@ -45,7 +45,7 @@ interface UIStore {
 export const useUIStore = create<UIStore>((set) => ({
   sidebarOpen: true,
   rightPanelOpen: true,
-  bottomPanelOpen: false,
+  bottomPanelOpen: true,
   activeSidebarView: "sessions",
   activeRightTab: "context",
   activeBottomTab: "git",

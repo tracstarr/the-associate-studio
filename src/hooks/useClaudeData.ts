@@ -134,6 +134,33 @@ export function useGitBranches(cwd: string) {
   });
 }
 
+export function useGitCurrentBranch(cwd: string) {
+  return useQuery({
+    queryKey: ["git-current-branch", cwd],
+    queryFn: () => tauri.gitCurrentBranch(cwd),
+    enabled: !!cwd,
+    staleTime: 5_000,
+  });
+}
+
+export function useGitLog(cwd: string, limit = 100) {
+  return useQuery({
+    queryKey: ["git-log", cwd, limit],
+    queryFn: () => tauri.gitLog(cwd, limit),
+    enabled: !!cwd,
+    staleTime: 10_000,
+  });
+}
+
+export function useGitRemoteBranches(cwd: string) {
+  return useQuery({
+    queryKey: ["git-remote-branches", cwd],
+    queryFn: () => tauri.gitRemoteBranches(cwd),
+    enabled: !!cwd,
+    staleTime: 30_000,
+  });
+}
+
 export function useWorktrees(projectPath: string) {
   return useQuery({
     queryKey: ["worktrees", projectPath],
@@ -217,7 +244,7 @@ export function useClaudeWatcher() {
           );
           if (tab) {
             resolveTabSession(tab.id, session.session_id);
-            if (!tab.sessionId) {
+            if (!tab.sessionId && tab.title === "New Session") {
               renameTab(tab.id, session.session_id.slice(0, 8));
             }
           }
@@ -250,7 +277,7 @@ export function useClaudeWatcher() {
               .sort((a, b) => (b.spawnedAt ?? 0) - (a.spawnedAt ?? 0))[0];
             if (tab) {
               resolveTabSession(tab.id, event.session_id);
-              if (!tab.sessionId) {
+              if (!tab.sessionId && tab.title === "New Session") {
                 renameTab(tab.id, event.session_id.slice(0, 8));
               }
             }

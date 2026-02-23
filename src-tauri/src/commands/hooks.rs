@@ -11,8 +11,8 @@ fn get_claude_home() -> std::path::PathBuf {
 /// Using a Node.js script file avoids cmd.exe double-quote quoting issues
 /// that break inline PowerShell -Command strings when Claude CLI invokes
 /// hooks via `cmd.exe /d /s /c "COMMAND"`.
-fn hook_command(ide_dir: &std::path::Path) -> String {
-    let hook_js = ide_dir.join("hook.js");
+fn hook_command(hook_dir: &std::path::Path) -> String {
+    let hook_js = hook_dir.join("hook.js");
     // Use forward slashes — works on Windows and avoids backslash escaping
     let hook_js_path = hook_js.to_string_lossy().replace('\\', "/");
     format!("node {}", hook_js_path)
@@ -31,7 +31,7 @@ process.stdin.on('end', function() {
     var path = require('path');
     var fs = require('fs');
     var home = process.env.USERPROFILE || process.env.HOME || '';
-    var out = path.join(home, '.claude', 'ide', 'hook-events.jsonl');
+    var out = path.join(home, '.claude', 'theassociate', 'hook-events.jsonl');
     fs.appendFileSync(out, line + '\n');
   } catch(e) {}
 });
@@ -41,25 +41,13 @@ process.stdin.on('end', function() {
 #[tauri::command]
 pub fn cmd_setup_hooks() -> Result<(), String> {
     let claude_home = get_claude_home();
-    let ide_dir = claude_home.join("ide");
-    std::fs::create_dir_all(&ide_dir)
-        .map_err(|e| format!("Failed to create ide dir: {}", e))?;
-
-    // Write the Node.js hook script
-    let hook_js_path = ide_dir.join("hook.js");
-    std::fs::write(&hook_js_path, hook_js_content())
-        .map_err(|e| format!("Failed to write hook.js: {}", e))?;
-
-    // Touch hook-events.jsonl if it doesn't exist
-    let hook_file = ide_dir.join("hook-events.jsonl");
-    if !hook_file.exists() {
-        std::fs::write(&hook_file, "")
-            .map_err(|e| format!("Failed to create hook-events.jsonl: {}", e))?;
-    }
-
     let settings_path = claude_home.join("settings.json");
 
-    // Read existing settings
+    // --- Migration: remove stale .claude/ide references ---
+    let old_dir = claude_home.join("ide");
+    let old_cmd = hook_command(&old_dir);
+
+    // Read existing settings (needed for migration and for setup below)
     let mut settings: Value = if settings_path.exists() {
         let content = std::fs::read_to_string(&settings_path)
             .map_err(|e| format!("Failed to read settings.json: {}", e))?;
@@ -68,8 +56,62 @@ pub fn cmd_setup_hooks() -> Result<(), String> {
         Value::Object(serde_json::Map::new())
     };
 
-    // Build our IDE hook group (one entry to add to each event's array)
-    let cmd = hook_command(&ide_dir);
+    // Remove old ide/hook.js entries from settings.json
+    let mut settings_dirty = false;
+    if let Some(hooks) = settings.get_mut("hooks").and_then(|h| h.as_object_mut()) {
+        for event_name in &["SessionStart", "SessionEnd", "SubagentStart", "SubagentStop", "Stop"] {
+            if let Some(arr) = hooks.get_mut(*event_name).and_then(|v| v.as_array_mut()) {
+                let before = arr.len();
+                arr.retain(|group| {
+                    !group
+                        .get("hooks")
+                        .and_then(|h| h.as_array())
+                        .map(|hs| hs.iter().any(|h| h.get("command").and_then(|c| c.as_str()) == Some(&old_cmd)))
+                        .unwrap_or(false)
+                });
+                if arr.len() != before {
+                    settings_dirty = true;
+                }
+            }
+        }
+        // Clean up empty event arrays and the hooks object itself
+        if settings_dirty {
+            let event_names: Vec<String> = hooks.keys().cloned().collect();
+            for event_name in &event_names {
+                if hooks.get(event_name).and_then(|v| v.as_array()).map(|a| a.is_empty()).unwrap_or(false) {
+                    hooks.remove(event_name);
+                }
+            }
+            if hooks.is_empty() {
+                settings.as_object_mut().unwrap().remove("hooks");
+            }
+        }
+    }
+
+    // Delete old .claude/ide directory
+    if old_dir.exists() {
+        std::fs::remove_dir_all(&old_dir).ok();
+    }
+    // --- End migration ---
+
+    let theassociate_dir = claude_home.join("theassociate");
+    std::fs::create_dir_all(&theassociate_dir)
+        .map_err(|e| format!("Failed to create theassociate dir: {}", e))?;
+
+    // Write the Node.js hook script
+    let hook_js_path = theassociate_dir.join("hook.js");
+    std::fs::write(&hook_js_path, hook_js_content())
+        .map_err(|e| format!("Failed to write hook.js: {}", e))?;
+
+    // Touch hook-events.jsonl if it doesn't exist
+    let hook_file = theassociate_dir.join("hook-events.jsonl");
+    if !hook_file.exists() {
+        std::fs::write(&hook_file, "")
+            .map_err(|e| format!("Failed to create hook-events.jsonl: {}", e))?;
+    }
+
+    // Build our hook group (one entry to add to each event's array)
+    let cmd = hook_command(&theassociate_dir);
     let our_group = serde_json::json!({
         "hooks": [{
             "type": "command",

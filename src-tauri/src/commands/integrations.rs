@@ -67,7 +67,6 @@ struct GithubDeviceCodeRaw {
 #[derive(Deserialize)]
 struct GithubTokenRaw {
     access_token: Option<String>,
-    error: Option<String>,
 }
 
 #[tauri::command]

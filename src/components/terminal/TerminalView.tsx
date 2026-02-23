@@ -22,6 +22,19 @@ export function TerminalView({ sessionId, resumeSessionId, cwd, isActive }: Term
   const spawnedRef = useRef(false);
   const fontSize = useSettingsStore((s) => s.fontSize);
   const fontFamily = useSettingsStore((s) => s.fontFamily);
+  const fontSizeRef = useRef(fontSize);
+  const fontFamilyRef = useRef(fontFamily);
+
+  // Update font settings live without killing the PTY
+  useEffect(() => {
+    fontSizeRef.current = fontSize;
+    fontFamilyRef.current = fontFamily;
+    if (termRef.current) {
+      termRef.current.options.fontSize = fontSize;
+      termRef.current.options.fontFamily = fontFamily;
+      fitAddonRef.current?.fit();
+    }
+  }, [fontSize, fontFamily]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -54,8 +67,8 @@ export function TerminalView({ sessionId, resumeSessionId, cwd, isActive }: Term
         brightCyan: "#56D364",
         brightWhite: "#FFFFFF",
       },
-      fontFamily,
-      fontSize,
+      fontFamily: fontFamilyRef.current,
+      fontSize: fontSizeRef.current,
       lineHeight: 1.4,
       letterSpacing: 0,
       cursorBlink: true,
@@ -129,7 +142,7 @@ export function TerminalView({ sessionId, resumeSessionId, cwd, isActive }: Term
       termRef.current = null;
       fitAddonRef.current = null;
     };
-  }, [sessionId, cwd, fontSize, fontFamily]);
+  }, [sessionId, cwd]);
 
   // Focus terminal when tab becomes active
   useEffect(() => {

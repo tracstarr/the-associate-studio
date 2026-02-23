@@ -23,12 +23,6 @@ pub struct PlanFile {
     pub lines: Vec<MarkdownLine>,
 }
 
-impl PlanFile {
-    pub fn display_name(&self) -> &str {
-        self.filename.strip_suffix(".md").unwrap_or(&self.filename)
-    }
-}
-
 fn serialize_system_time<S>(time: &std::time::SystemTime, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: serde::Serializer,

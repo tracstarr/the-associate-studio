@@ -45,23 +45,9 @@ pub struct TeamMember {
     pub subscriptions: Option<Vec<String>>,
 }
 
-impl TeamMember {
-    pub fn is_lead(&self, config: &TeamConfig) -> bool {
-        match (&self.agent_id, &config.lead_agent_id) {
-            (Some(member_id), Some(lead_id)) => member_id == lead_id,
-            _ => false,
-        }
-    }
-}
 
 #[derive(Debug, Clone, Serialize)]
 pub struct Team {
     pub dir_name: String,
     pub config: TeamConfig,
-}
-
-impl Team {
-    pub fn display_name(&self) -> &str {
-        self.config.name.as_deref().unwrap_or(&self.dir_name)
-    }
 }

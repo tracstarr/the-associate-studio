@@ -17,8 +17,6 @@ pub struct TranscriptEnvelope {
 #[derive(Debug, Clone, Deserialize)]
 pub struct TranscriptMessage {
     #[serde(default)]
-    pub role: Option<String>,
-    #[serde(default)]
     pub content: MessageContent,
 }
 
@@ -71,21 +69,6 @@ pub enum TranscriptItemKind {
     ToolResult,
     System,
     Progress,
-    Other,
-}
-
-impl TranscriptItemKind {
-    pub fn label(&self) -> &'static str {
-        match self {
-            Self::User => "USER",
-            Self::Assistant => "ASST",
-            Self::ToolUse => "TOOL",
-            Self::ToolResult => "RSLT",
-            Self::System => "SYS ",
-            Self::Progress => "PROG",
-            Self::Other => "    ",
-        }
-    }
 }
 
 pub fn parse_envelope(envelope: &TranscriptEnvelope) -> Vec<TranscriptItem> {

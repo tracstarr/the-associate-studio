@@ -4,7 +4,7 @@ import {
   Loader2, AlertTriangle, Plus, X,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useGitStatus, useGitBranches, useWorktrees, useWorktreeCopy } from "@/hooks/useClaudeData";
+import { useGitStatus, useGitBranches, useGitCurrentBranch, useWorktrees, useWorktreeCopy } from "@/hooks/useClaudeData";
 import { useProjectsStore, pathToProjectId } from "@/stores/projectsStore";
 import { useUIStore } from "@/stores/uiStore";
 import { useSessionStore } from "@/stores/sessionStore";
@@ -49,10 +49,11 @@ export function GitStatusPanel() {
 
   const { data: gitStatus, isLoading, refetch } = useGitStatus(activeProjectDir ?? "");
   const { data: branches } = useGitBranches(activeProjectDir ?? "");
+  const { data: currentBranchData } = useGitCurrentBranch(activeProjectDir ?? "");
   const { data: worktrees } = useWorktrees(activeProjectDir ?? "");
   const { data: copyEntries } = useWorktreeCopy(activeProjectDir ?? "");
 
-  const currentBranch = branches?.[0] ?? "main";
+  const currentBranch = currentBranchData ?? branches?.[0] ?? "main";
 
   // Find the currently active worktree entry to highlight it
   const activeWorktreePath = activeProjectDir ?? "";

@@ -32,19 +32,3 @@ pub enum TaskStatus {
     Deleted,
 }
 
-impl TaskStatus {
-    pub fn icon(&self) -> &'static str {
-        match self {
-            Self::Pending => "[ ]",
-            Self::InProgress => "[=]",
-            Self::Completed => "[X]",
-            Self::Deleted => "[-]",
-        }
-    }
-}
-
-impl Task {
-    pub fn display_title(&self) -> String {
-        self.subject.as_deref().unwrap_or(&self.id).to_string()
-    }
-}

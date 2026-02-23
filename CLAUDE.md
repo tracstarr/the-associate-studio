@@ -6,7 +6,6 @@ Windows desktop IDE where **Claude Code CLI is the centerpiece**. Built with Tau
 
 | What | Where |
 |------|-------|
-| Root | `C:/dev/ide` |
 | Frontend | `src/` (React + TypeScript) |
 | Backend | `src-tauri/src/` (Rust) |
 | Docs index | [`docs/index.md`](docs/index.md) |

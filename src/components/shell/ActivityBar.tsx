@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { FolderOpen, GitBranch, GitPullRequest, FolderTree, Settings } from "lucide-react";
+import { FolderOpen, GitBranch, GitPullRequest, FolderTree, Settings, PanelBottomOpen, PanelBottomClose } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUIStore, type SidebarView } from "@/stores/uiStore";
 import { useSessionStore } from "@/stores/sessionStore";
@@ -21,6 +21,8 @@ const topItems: ActivityItem[] = [
 function ActivityBarComponent() {
   const activeSidebarView = useUIStore((s) => s.activeSidebarView);
   const setSidebarView = useUIStore((s) => s.setSidebarView);
+  const bottomPanelOpen = useUIStore((s) => s.bottomPanelOpen);
+  const toggleBottomPanel = useUIStore((s) => s.toggleBottomPanel);
   const openSettingsTab = useSessionStore((s) => s.openSettingsTab);
   const activeProjectId = useProjectsStore((s) => s.activeProjectId);
 
@@ -54,7 +56,20 @@ function ActivityBarComponent() {
       </div>
 
       {/* Bottom icons */}
-      <div className="flex flex-col items-center">
+      <div className="flex flex-col items-center gap-1">
+        <button
+          title="Toggle Bottom Panel (Ctrl+J)"
+          onClick={toggleBottomPanel}
+          className={cn(
+            "flex items-center justify-center w-10 h-10 rounded-md transition-colors",
+            bottomPanelOpen
+              ? "text-actbar-icon-active"
+              : "text-actbar-icon-default hover:text-text-secondary"
+          )}
+          aria-label="Toggle Bottom Panel"
+        >
+          {bottomPanelOpen ? <PanelBottomClose size={22} /> : <PanelBottomOpen size={22} />}
+        </button>
         <button
           title="Settings (Ctrl+,)"
           onClick={() => { if (activeProjectId) openSettingsTab(activeProjectId); }}

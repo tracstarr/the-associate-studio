@@ -6,7 +6,7 @@ import { ProjectSwitcher } from "@/components/projects/ProjectSwitcher";
 import { FileBrowserPanel } from "@/components/files/FileBrowserPanel";
 
 const viewLabels: Record<SidebarView, string> = {
-  sessions: "Projects",
+  sessions: "Sessions",
   git: "Git",
   prs: "Pull Requests",
   files: "Files",

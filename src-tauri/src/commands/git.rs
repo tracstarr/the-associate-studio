@@ -18,6 +18,102 @@ pub async fn cmd_git_branches(cwd: String) -> Result<Vec<String>, String> {
     git::load_branches(&PathBuf::from(&cwd)).map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+pub async fn cmd_git_current_branch(cwd: String) -> Result<String, String> {
+    git::load_current_branch(&PathBuf::from(&cwd)).map_err(|e| e.to_string())
+}
+
+// ─── Git Log Types ────────────────────────────────────────────────────────────
+
+#[derive(serde::Serialize)]
+pub struct CommitInfo {
+    pub hash: String,
+    pub message: String,
+    pub author: String,
+    pub date: String,
+    pub refs: Vec<String>,
+}
+
+#[tauri::command]
+pub async fn cmd_git_log(cwd: String, limit: Option<u32>) -> Result<Vec<CommitInfo>, String> {
+    let max = limit.unwrap_or(100).to_string();
+    let output = crate::utils::silent_command("git")
+        .args([
+            "-C", &cwd,
+            "log",
+            "--pretty=format:%h%x00%s%x00%an%x00%ar%x00%D",
+            "--max-count", &max,
+        ])
+        .output()
+        .map_err(|e| format!("Failed to run git log: {}", e))?;
+
+    if !output.status.success() {
+        return Ok(vec![]);
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let commits = stdout
+        .lines()
+        .filter(|l| !l.is_empty())
+        .map(|line| {
+            let parts: Vec<&str> = line.splitn(5, '\x00').collect();
+            let refs_raw = parts.get(4).copied().unwrap_or("");
+            let refs: Vec<String> = refs_raw
+                .split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect();
+            CommitInfo {
+                hash: parts.first().copied().unwrap_or("").to_string(),
+                message: parts.get(1).copied().unwrap_or("").to_string(),
+                author: parts.get(2).copied().unwrap_or("").to_string(),
+                date: parts.get(3).copied().unwrap_or("").to_string(),
+                refs,
+            }
+        })
+        .collect();
+
+    Ok(commits)
+}
+
+// ─── Remote Branch Types ──────────────────────────────────────────────────────
+
+#[derive(serde::Serialize)]
+pub struct RemoteBranch {
+    pub remote: String,
+    pub branch: String,
+    pub full_ref: String,
+}
+
+#[tauri::command]
+pub async fn cmd_git_remote_branches(cwd: String) -> Result<Vec<RemoteBranch>, String> {
+    let output = crate::utils::silent_command("git")
+        .args(["-C", &cwd, "branch", "-r", "--format=%(refname:short)"])
+        .output()
+        .map_err(|e| format!("Failed to run git branch -r: {}", e))?;
+
+    if !output.status.success() {
+        return Ok(vec![]);
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let branches = stdout
+        .lines()
+        .filter(|l| !l.is_empty() && !l.trim().ends_with("/HEAD"))
+        .filter_map(|line| {
+            let trimmed = line.trim();
+            let slash = trimmed.find('/')?;
+            Some(RemoteBranch {
+                remote: trimmed[..slash].to_string(),
+                branch: trimmed[slash + 1..].to_string(),
+                full_ref: trimmed.to_string(),
+            })
+        })
+        .collect();
+
+    Ok(branches)
+}
+
 // ─── Worktree Types ───────────────────────────────────────────────────────────
 
 #[derive(serde::Serialize)]

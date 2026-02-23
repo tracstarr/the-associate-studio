@@ -36,12 +36,3 @@ pub struct GitStatus {
     pub untracked: Vec<GitFileEntry>,
 }
 
-impl GitStatus {
-    pub fn is_empty(&self) -> bool {
-        self.staged.is_empty() && self.unstaged.is_empty() && self.untracked.is_empty()
-    }
-
-    pub fn total_files(&self) -> usize {
-        self.staged.len() + self.unstaged.len() + self.untracked.len()
-    }
-}

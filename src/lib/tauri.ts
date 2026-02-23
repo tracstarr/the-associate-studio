@@ -239,6 +239,36 @@ export async function gitBranches(cwd: string): Promise<string[]> {
   return invoke("cmd_git_branches", { cwd });
 }
 
+export async function gitCurrentBranch(cwd: string): Promise<string> {
+  return invoke("cmd_git_current_branch", { cwd });
+}
+
+// ---- Git Log Types ----
+
+export interface CommitInfo {
+  hash: string;
+  message: string;
+  author: string;
+  date: string;
+  refs: string[];
+}
+
+export async function gitLog(cwd: string, limit = 100): Promise<CommitInfo[]> {
+  return invoke("cmd_git_log", { cwd, limit });
+}
+
+// ---- Remote Branch Types ----
+
+export interface RemoteBranch {
+  remote: string;
+  branch: string;
+  fullRef: string;
+}
+
+export async function gitRemoteBranches(cwd: string): Promise<RemoteBranch[]> {
+  return invoke("cmd_git_remote_branches", { cwd });
+}
+
 export async function createWorktree(
   projectPath: string,
   branchName: string
