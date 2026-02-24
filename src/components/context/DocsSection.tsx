@@ -76,8 +76,7 @@ export function DocsSection({ activeProjectDir, activeProjectId }: DocsSectionPr
 
   const claudeMdHasDocs =
     !docsFolder ||
-    claudeMdContent == null ||
-    claudeMdContent.includes(docsFolder);
+    (claudeMdContent != null && claudeMdContent.includes(docsFolder));
 
   // ---- Folder edit ----
   const startEdit = () => {
