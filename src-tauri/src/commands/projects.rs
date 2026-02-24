@@ -164,6 +164,12 @@ pub async fn cmd_set_project_settings(project_path: String, settings: ProjectSet
 
 #[tauri::command]
 pub async fn cmd_run_docs_index_gen(project_path: String, docs_folder: String) -> Result<String, String> {
+    // Reject any docs_folder containing parent-path segments to prevent writes outside the project
+    let normalized = docs_folder.replace('\\', "/");
+    if normalized.split('/').any(|seg| seg == "..") || normalized.starts_with('/') {
+        return Err("docs_folder must not contain parent path segments or be an absolute path".to_string());
+    }
+
     let dir = PathBuf::from(&project_path);
     if !dir.exists() {
         return Err(format!("Directory does not exist: {}", project_path));
