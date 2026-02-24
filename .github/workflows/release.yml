@@ -47,13 +47,19 @@ jobs:
           # Static CRT → no VCRT DLL dependency; exe is fully self-contained
           RUSTFLAGS: '-C target-feature=+crt-static'
 
-      - name: Rename binary for release
+      - name: Collect release artifacts
         shell: pwsh
         run: |
+          # Portable binary
           Copy-Item src-tauri\target\release\the-associate-studio.exe assocs.exe
+          # NSIS installer → clean filename without version suffix
+          $installer = Get-ChildItem "src-tauri\target\release\bundle\nsis\*-setup.exe" | Select-Object -First 1
+          Copy-Item $installer.FullName the-associate-studio-setup.exe
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: assocs.exe
+          files: |
+            the-associate-studio-setup.exe
+            assocs.exe
           generate_release_notes: true
