@@ -616,7 +616,7 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
 // ── Main settings tab ─────────────────────────────────────────────────────────
 
 export function SettingsTab() {
-  const { fontSize, fontFamily, setFontSize, setFontFamily } =
+  const { fontSize, fontFamily, setFontSize, setFontFamily, openStartupFiles, setOpenStartupFiles } =
     useSettingsStore();
 
   return (
@@ -662,6 +662,24 @@ export function SettingsTab() {
               >
                 Reset to default
               </button>
+            </div>
+
+            {/* Startup files */}
+            <div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={openStartupFiles}
+                  onChange={(e) => setOpenStartupFiles(e.target.checked)}
+                  className="rounded"
+                />
+                <span className="text-xs font-medium text-text-secondary">
+                  Open CLAUDE.md &amp; README.md when switching projects
+                </span>
+              </label>
+              <p className="text-[11px] text-text-muted mt-1 ml-5">
+                When enabled, both files open automatically as tabs on project switch.
+              </p>
             </div>
 
             {/* Font family */}
