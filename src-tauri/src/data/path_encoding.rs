@@ -11,7 +11,8 @@ pub fn encode_project_path(path: &Path) -> String {
     let s = path.to_string_lossy().to_string();
     let s = s.replace('/', "\\");
     let s = s.replace(":\\", "--");
-    s.replace('\\', "-")
+    let s = s.replace('\\', "-");
+    s.trim_end_matches('-').to_string()
 }
 
 #[cfg(test)]

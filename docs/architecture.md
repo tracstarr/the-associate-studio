@@ -209,8 +209,11 @@ Claude CLI process
 
 claude_watcher.rs (notify crate)
   +-- Watches ~/.claude/theassociate/ (NonRecursive)
-       +-- On hook-events.jsonl change: seeks to last_hook_offset, reads new lines
+       +-- On hook-events.jsonl change: seeks to persisted offset, reads new lines
+            +-- Persists new offset to watcher-state.json BEFORE processing (crash-safe)
             +-- Parses each line as HookEvent
+                 +-- On Stop event with completion summary: saves markdown to project dir
+                      +-- app_handle.emit("session-summary", &SummaryPayload)
                  +-- app_handle.emit("hook-event", &hook_event)
 
 useClaudeWatcher (React)
@@ -243,6 +246,27 @@ The command is an inline PowerShell snippet using `$env:USERPROFILE` (no hardcod
 All 5 hook events (SessionStart/End, SubagentStart/Stop, Stop) are set to `async: true`
 so they never block Claude CLI execution. Hook events are written to `~/.claude/theassociate/`.
 
+### Persistent hook-event offset
+
+The watcher persists the byte offset of `hook-events.jsonl` to `~/.claude/theassociate/watcher-state.json` via `WatcherState` (`data/watcher_state.rs`). This prevents re-emitting old hook events on app restart and avoids missed events between sessions.
+
+Startup behavior:
+- If `hook-events.jsonl` exists but has no saved offset (first launch), the offset is pre-populated to the current file length, skipping historical events.
+- If the file has been truncated (offset > file length), the offset resets to 0.
+- The offset is persisted **before** processing new lines for crash safety.
+
+### Session completion summaries
+
+When a `Stop` hook event includes a `last_assistant_message` that qualifies as a completion summary (contains "# Summary" heading, or is >200 chars with "summary" keyword or numbered steps), the watcher saves it as a markdown file:
+
+```
+~/.claude/projects/{encoded-path}/{session-id}-summary-NNN.md
+```
+
+A `session-summary` Tauri event is emitted with a `SummaryPayload` containing `session_id`, `project_path`, `project_dir`, `filename`, and a 200-char `preview`. The frontend invalidates the `["summaries"]` TanStack Query cache.
+
+Summaries can be loaded via `cmd_load_summaries(project_dir, session_id)` and read via `cmd_read_summary(project_dir, filename)`.
+
 ## Rust backend structure
 
 ### Commands (`src-tauri/src/commands/`)
@@ -257,7 +281,8 @@ so they never block Claude CLI execution. Hook events are written to `~/.claude/
 | `plans` | `cmd_load_plans`, `cmd_read_plan`, `cmd_save_plan` |
 | `git` | `cmd_git_status`, `cmd_git_diff`, `cmd_git_branches`, `cmd_git_current_branch`, `cmd_git_log`, `cmd_git_remote_branches`, `cmd_create_worktree`, `cmd_list_worktrees`, `cmd_get_worktree_copy`, `cmd_set_worktree_copy`, `cmd_claude_git_action`, `cmd_git_fetch`, `cmd_git_pull`, `cmd_git_create_branch`, `cmd_git_add`, `cmd_git_ignore`, `cmd_git_rebase` |
 | `pty` | `pty_spawn`, `pty_resize`, `pty_write`, `pty_kill`, `pty_list` |
-| `issues` | `cmd_list_prs`, `cmd_list_issues` |
+| `issues` | `cmd_list_prs`, `cmd_list_issues`, `cmd_list_linear_issues` |
+| `summaries` | `cmd_load_summaries`, `cmd_read_summary` |
 | `integrations` | `cmd_load_integration_secrets`, `cmd_github_auth_status`, `cmd_github_device_flow_start`, `cmd_github_device_flow_poll`, `cmd_github_set_token`, `cmd_github_logout`, `cmd_linear_verify_key`, `cmd_linear_logout`, `cmd_jira_verify_token`, `cmd_jira_logout` |
 | `hooks` | `cmd_setup_hooks`, `cmd_remove_hooks`, `cmd_get_active_sessions`, `cmd_hooks_configured` |
 | `projects` | `cmd_list_projects`, `cmd_list_orphaned_projects`, `cmd_pick_folder`, `cmd_delete_project`, `cmd_get_home_dir`, `cmd_read_file`, `cmd_write_file`, `cmd_run_claude_init`, `cmd_run_readme_gen`, `cmd_get_project_settings`, `cmd_set_project_settings`, `cmd_run_docs_index_gen` |
@@ -276,6 +301,8 @@ so they never block Claude CLI execution. Hook events are written to `~/.claude/
 | `transcripts` | Parse JSONL transcript files |
 | `git` | Git operations via `git2` crate + `gh` CLI |
 | `hook_state` | Manage hook event JSONL file state |
+| `summaries` | Save/load session completion summaries as markdown files |
+| `watcher_state` | Persist watcher offsets (hook-events.jsonl position) across restarts |
 | `projects` | Project discovery and management |
 | `path_encoding` | Encode filesystem paths to safe directory names |
 
@@ -292,6 +319,7 @@ so they never block Claude CLI execution. Hook events are written to `~/.claude/
 | `transcript` | Transcript message model |
 | `git` | Git status/diff/branch models |
 | `hook_event` | Hook event types (SessionStart/End, SubagentStart/Stop) |
+| `summary` | Session completion summary file model |
 
 ## Neural Field Dashboard
 

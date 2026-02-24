@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::data::sessions::load_sessions;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ProjectInfo {
     pub id: String,
     pub path: String,

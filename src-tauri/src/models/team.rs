@@ -47,6 +47,7 @@ pub struct TeamMember {
 
 
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Team {
     pub dir_name: String,
     pub config: TeamConfig,

@@ -235,9 +235,18 @@ All fields are optional (`#[serde(default)]`). Empty files are skipped. Files ar
 
 ## File watcher
 
-The Rust `notify` crate (v8) watches `~/.claude/` recursively using `ReadDirectoryChangesW` on Windows. Events are debounced per category and emitted to the frontend as `"claude-fs-change"` Tauri events.
+The Rust `notify` crate (v8) watches specific subdirectories of `~/.claude/` using `ReadDirectoryChangesW` on Windows:
 
-**Skip `.lock` files**: Claude writes `.lock` companion files during writes. Ignore any path ending in `.lock`.
+| Directory | Mode | Tauri events |
+|-----------|------|-------------|
+| `teams/` | Recursive | `team-changed`, `inbox-changed` |
+| `tasks/` | Recursive | `task-changed` |
+| `projects/` | Recursive | `session-changed`, `transcript-updated` |
+| `todos/` | NonRecursive | `todos-changed` |
+| `plans/` | NonRecursive | `plans-changed` |
+| `theassociate/` | NonRecursive | `hook-event`, `session-summary` |
+
+Events are classified by matching path components (direct child of `.claude/`) via `is_claude_child()` and emitted as targeted Tauri events. The frontend's `useClaudeWatcher()` hook listens for these events and invalidates the corresponding TanStack Query caches.
 
 ## Hook events (live session tracking)
 
@@ -245,6 +254,7 @@ The Rust `notify` crate (v8) watches `~/.claude/` recursively using `ReadDirecto
 ~/.claude/theassociate/
 +-- hook.js              <-- Node.js script that appends stdin to JSONL
 +-- hook-events.jsonl    <-- append-only, one JSON line per hook event
++-- watcher-state.json   <-- persisted byte offsets (see Watcher state section)
 ```
 
 ### hook-events.jsonl line schema
@@ -292,3 +302,59 @@ All fields except `hook_event_name` and `session_id` are optional (`null` if not
 The Node.js script (`~/.claude/theassociate/hook.js`) reads all of stdin on `end` and appends the trimmed JSON line to `hook-events.jsonl`. Claude CLI pipes the hook event JSON to the command's stdin.
 
 The hook command registered in settings.json is: `node C:/Users/{user}/.claude/theassociate/hook.js` (forward slashes to avoid backslash escaping issues with cmd.exe).
+
+## Watcher state
+
+```
+~/.claude/theassociate/
++-- watcher-state.json    <-- persisted byte offsets for file watchers
+```
+
+### watcher-state.json
+
+```json
+{
+  "hook_offsets": {
+    "C:\\Users\\Keith\\.claude\\theassociate\\hook-events.jsonl": 4096
+  }
+}
+```
+
+`WatcherState` (`data/watcher_state.rs`) persists a `HashMap<String, u64>` mapping file paths to byte offsets. On startup, if `hook-events.jsonl` exists but has no saved offset, the current file length is stored (skipping historical events). The offset is persisted before processing new lines for crash safety.
+
+## Session summaries
+
+```
+~/.claude/projects/{encoded-path}/
++-- {session-id}-summary-001.md    <-- first completion summary
++-- {session-id}-summary-002.md    <-- second, etc.
+```
+
+Summaries are extracted from `Stop` hook events when `last_assistant_message` qualifies as a completion summary. The file is plain markdown content from Claude's final assistant message.
+
+### SummaryFile model
+
+```rust
+SummaryFile {
+    session_id: String,   // the session that produced the summary
+    filename: String,     // e.g. "abc123-summary-001.md"
+    created: u64,         // Unix timestamp (seconds) from file metadata
+    preview: String,      // first 200 characters
+}
+```
+
+### Tauri event
+
+When a summary is saved, a `session-summary` event is emitted:
+
+```json
+{
+  "session_id": "abc123-uuid",
+  "project_path": "C:\\dev\\myproject",
+  "project_dir": "C--dev-myproject",
+  "filename": "abc123-uuid-summary-001.md",
+  "preview": "## Summary\n\nFixed the auth bug..."
+}
+```
+
+The frontend listens for this event and invalidates the `["summaries"]` query cache.

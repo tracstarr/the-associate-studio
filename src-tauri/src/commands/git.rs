@@ -80,6 +80,7 @@ pub async fn cmd_git_log(cwd: String, limit: Option<u32>) -> Result<Vec<CommitIn
 // ─── Remote Branch Types ──────────────────────────────────────────────────────
 
 #[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RemoteBranch {
     pub remote: String,
     pub branch: String,

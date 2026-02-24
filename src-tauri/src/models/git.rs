@@ -8,6 +8,7 @@ pub enum GitFileSection {
 }
 
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct GitFileEntry {
     pub path: String,
     pub section: GitFileSection,

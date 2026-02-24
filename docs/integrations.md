@@ -81,6 +81,20 @@ If the response contains a display name, the key is valid and stored in Windows 
 
 `cmd_linear_logout` deletes the keyring entry.
 
+### Issue listing
+
+`cmd_list_linear_issues(state)` queries the Linear GraphQL API for the authenticated user's issues. The `state` parameter maps to Linear state types:
+
+| state | Linear filter |
+|-------|--------------|
+| `"open"` | `triage`, `backlog`, `unstarted`, `started` |
+| `"closed"` | `completed`, `cancelled` |
+| other | No filter (all issues) |
+
+Returns up to 50 issues ordered by `updatedAt`. Each issue is mapped to the shared `Issue` struct with `source: "linear"` and `identifier` set to the Linear issue ID (e.g., `ENG-123`). `number` is set to 0 (not applicable for Linear). GraphQL-level errors (HTTP 200 with `errors` array) are detected and propagated.
+
+The Issues panel (`IssueListPanel`) merges GitHub and Linear issues into a single list, distinguished by the `source` field. Linear issues are only fetched when a Linear API key is configured (checked via `hasKey` in the TanStack Query cache key).
+
 ### Usage
 
 The Linear API key is available in-memory for the Issues panel (`IssueListPanel`) to query Linear issues. Implementation in `src-tauri/src/commands/issues.rs`.

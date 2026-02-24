@@ -165,9 +165,9 @@ the-associate-studio/
     src/
       lib.rs            -- Tauri app setup, plugin registration, command handler
       main.rs           -- Entry point
-      commands/         -- 13 command modules (sessions, teams, tasks, inbox, todos, plans, git, pty, issues, integrations, hooks, projects, files)
-      data/             -- 11 data modules (sessions, teams, inboxes, tasks, todos, plans, transcripts, git, hook_state, projects, path_encoding)
-      models/           -- 9 model modules (session, team, inbox, task, todo, plan, transcript, git, hook_event)
+      commands/         -- 14 command modules (sessions, teams, tasks, inbox, todos, plans, summaries, git, pty, issues, integrations, hooks, projects, files)
+      data/             -- 13 data modules (sessions, teams, inboxes, tasks, todos, plans, summaries, transcripts, git, hook_state, watcher_state, projects, path_encoding)
+      models/           -- 10 model modules (session, team, inbox, task, todo, plan, summary, transcript, git, hook_event)
       watcher/          -- claude_watcher.rs (file system watcher)
       utils/            -- Shared utilities
     .cargo/config.toml  -- GNU linker config

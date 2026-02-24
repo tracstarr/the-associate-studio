@@ -62,8 +62,7 @@ npm run tauri build      # release build
 | | `src/hooks/useActiveProjectTabs.ts` | Derives tabs/activeTab for current project |
 | Lib | `src/lib/tauri.ts` | All `invoke()` wrappers + TypeScript types for Tauri commands |
 | | `src/lib/commands.ts` | Command palette entries (View, Session, Project, Settings) |
-| | `src/lib/cn.ts` | `cn()` — clsx + tailwind-merge utility |
-| | `src/lib/utils.ts` | `cn()` + `pathToProjectId()` (mirrors Rust `encode_project_path`) |
+| | `src/lib/utils.ts` | `cn()` (clsx + tailwind-merge) + `pathToProjectId()` (mirrors Rust `encode_project_path`) |
 
 ## Key files — Backend (Rust)
 
@@ -81,10 +80,11 @@ npm run tauri build      # release build
 | | `commands/inbox.rs` | Load/send team inbox messages |
 | | `commands/todos.rs` | Load todo files |
 | | `commands/plans.rs` | Load/read/save markdown plan files |
-| | `commands/issues.rs` | List GitHub PRs and issues via `gh` CLI |
+| | `commands/issues.rs` | List GitHub PRs, GitHub issues, and Linear issues |
+| | `commands/summaries.rs` | Load/read session completion summaries |
 | | `commands/files.rs` | Directory listing for file browser |
-| Data layer | `data/` module | File I/O + parsing for each domain: `sessions`, `transcripts`, `teams`, `tasks`, `inboxes`, `todos`, `plans`, `projects`, `git`, `hook_state`, `path_encoding` |
-| Models | `models/` module | Serde structs: `session`, `transcript`, `team`, `task`, `inbox`, `todo`, `plan`, `git`, `hook_event` |
+| Data layer | `data/` module | File I/O + parsing for each domain: `sessions`, `transcripts`, `teams`, `tasks`, `inboxes`, `todos`, `plans`, `summaries`, `projects`, `git`, `hook_state`, `watcher_state`, `path_encoding` |
+| Models | `models/` module | Serde structs: `session`, `transcript`, `team`, `task`, `inbox`, `todo`, `plan`, `summary`, `git`, `hook_event` |
 | Watcher | `watcher/claude_watcher.rs` | Watches `~/.claude/` dirs (teams, tasks, projects, todos, plans, theassociate); emits Tauri events on file changes; parses `hook-events.jsonl` for session/subagent lifecycle |
 
 ## Component areas
