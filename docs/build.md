@@ -130,6 +130,28 @@ If Tauri's bundler is updated to a major version, re-check that `installerHooks`
 is still a supported NSIS config key (see `node_modules/@tauri-apps/cli/config.schema.json`,
 key `NsisConfig.properties.installerHooks`).
 
+## CI / GitHub Actions
+
+### Release (`release.yml`)
+
+Triggers on `v*` tag push. Builds with MSVC + static CRT and publishes `assocs.exe`
+to a GitHub Release.
+
+### PR Build (`pr-build.yml`)
+
+Triggers on every pull request to `main`. Builds the same portable binary as the
+release workflow and uploads it as a GitHub Actions artifact named
+`assocs-pr<number>`. The artifact is retained for 14 days.
+
+Key design decisions:
+- **Concurrency group** cancels in-progress builds when new commits are pushed
+  to the same PR, avoiding wasted runner time.
+- **PR comment** is posted (and updated on subsequent pushes) with a direct link
+  to the Actions run artifacts section for easy download.
+- **Same MSVC + static CRT** build as release to ensure the tested binary matches
+  what ships.
+- **Cargo cache** keyed on `Cargo.lock` hash for fast incremental builds.
+
 ## Project structure
 
 ```
