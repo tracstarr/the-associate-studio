@@ -1,6 +1,17 @@
 use std::path::PathBuf;
 
+use serde::{Deserialize, Serialize};
+
+use crate::data::path_encoding::encode_project_path;
 use crate::data::projects::{discover_orphaned_projects, discover_projects, ProjectInfo};
+
+// ---- Per-project IDE settings ----
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectSettings {
+    pub docs_folder: Option<String>,
+}
 
 fn get_home_dir_str() -> Result<String, String> {
     let home = std::env::var("USERPROFILE")
@@ -120,6 +131,73 @@ pub async fn cmd_run_claude_init(project_path: String) -> Result<String, String>
     } else {
         Err(if combined.trim().is_empty() {
             format!("claude init exited with code {}", output.status)
+        } else {
+            combined.trim().to_string()
+        })
+    }
+}
+
+#[tauri::command]
+pub async fn cmd_get_project_settings(project_path: String) -> Result<ProjectSettings, String> {
+    let claude_home = get_claude_home()?;
+    let encoded = encode_project_path(&PathBuf::from(&project_path));
+    let settings_path = claude_home.join("projects").join(&encoded).join("ide-settings.json");
+
+    if !settings_path.exists() {
+        return Ok(ProjectSettings::default());
+    }
+
+    let content = std::fs::read_to_string(&settings_path).map_err(|e| e.to_string())?;
+    serde_json::from_str(&content).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn cmd_set_project_settings(project_path: String, settings: ProjectSettings) -> Result<(), String> {
+    let claude_home = get_claude_home()?;
+    let encoded = encode_project_path(&PathBuf::from(&project_path));
+    let project_dir = claude_home.join("projects").join(&encoded);
+    std::fs::create_dir_all(&project_dir).map_err(|e| e.to_string())?;
+    let settings_path = project_dir.join("ide-settings.json");
+    let content = serde_json::to_string_pretty(&settings).map_err(|e| e.to_string())?;
+    std::fs::write(&settings_path, content).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn cmd_run_docs_index_gen(project_path: String, docs_folder: String) -> Result<String, String> {
+    let dir = PathBuf::from(&project_path);
+    if !dir.exists() {
+        return Err(format!("Directory does not exist: {}", project_path));
+    }
+
+    let prompt = format!(
+        "Analyze the documentation files in the `{docs_folder}` directory and create a comprehensive \
+        `{docs_folder}/index.md` table of contents. List every file with a brief one-line description, \
+        group related docs into logical sections, and include relative markdown links to each file. \
+        The file should serve as the entry-point for navigating the documentation. \
+        Write the file to disk as `{docs_folder}/index.md`.",
+        docs_folder = docs_folder
+    );
+
+    let output = tokio::task::spawn_blocking(move || {
+        crate::utils::silent_command("claude")
+            .args(["-p", &prompt, "--dangerously-skip-permissions"])
+            .current_dir(&dir)
+            .env_remove("CLAUDECODE")
+            .output()
+    })
+    .await
+    .map_err(|e| format!("Task join error: {}", e))?
+    .map_err(|e| format!("Failed to run claude: {}", e))?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let combined = format!("{}{}", stdout, stderr);
+
+    if output.status.success() {
+        Ok(combined)
+    } else {
+        Err(if combined.trim().is_empty() {
+            format!("claude docs index gen exited with code {}", output.status)
         } else {
             combined.trim().to_string()
         })
