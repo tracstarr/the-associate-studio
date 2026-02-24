@@ -243,7 +243,7 @@ function BlockView({ block }: { block: Block }) {
       return <div className="h-1" />;
     case "code":
       return (
-        <pre className="bg-[var(--color-bg-raised)] border border-[var(--color-border-muted)] rounded p-3 my-2 overflow-x-auto">
+        <pre className="bg-[var(--color-bg-raised)] border border-[var(--color-border-muted)] rounded-lg p-3 my-2 overflow-x-auto">
           <code className="text-xs font-mono text-[var(--color-accent-secondary)]">
             {block.lines.join("\n")}
           </code>
@@ -283,7 +283,7 @@ function renderInline(text: string): ReactNode {
     const token = match[0];
     if (token.startsWith("`")) {
       parts.push(
-        <code key={key++} className="text-[11px] font-mono bg-[var(--color-bg-raised)] text-[var(--color-accent-secondary)] px-1 rounded">
+        <code key={key++} className="text-[11px] font-mono bg-[var(--color-bg-raised)] text-[var(--color-accent-secondary)] px-1 rounded-md">
           {token.slice(1, -1)}
         </code>
       );
