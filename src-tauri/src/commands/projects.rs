@@ -177,11 +177,9 @@ pub async fn cmd_detect_docs_folder(project_path: String) -> Result<Option<Strin
     let mut found_names: Vec<String> = Vec::new();
 
     for entry in entries.flatten() {
-        let ft = match entry.file_type() {
-            Ok(ft) => ft,
-            Err(_) => continue,
-        };
-        if !ft.is_dir() {
+        // Use entry.path().is_dir() instead of entry.file_type().is_dir()
+        // so that symlinked directories (e.g. docs -> ../shared-docs) are followed
+        if !entry.path().is_dir() {
             continue;
         }
         if let Some(name) = entry.file_name().to_str() {
