@@ -353,6 +353,7 @@ export interface PullRequest {
 
 export interface Issue {
   number: number;
+  identifier?: string;
   title: string;
   state: "open" | "closed";
   author: string;
@@ -360,6 +361,7 @@ export interface Issue {
   created_at: string;
   body?: string;
   labels: string[];
+  source: "github" | "linear" | "jira";
 }
 
 export function listPRs(cwd: string, state = "open"): Promise<PullRequest[]> {
@@ -368,6 +370,10 @@ export function listPRs(cwd: string, state = "open"): Promise<PullRequest[]> {
 
 export function listIssues(cwd: string, state = "open"): Promise<Issue[]> {
   return invoke("cmd_list_issues", { cwd, state });
+}
+
+export function listLinearIssues(state = "open"): Promise<Issue[]> {
+  return invoke("cmd_list_linear_issues", { state });
 }
 
 // ---- Hook / Session Tracking Types ----
