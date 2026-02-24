@@ -280,10 +280,19 @@ pub async fn cmd_list_linear_issues(state: String) -> Result<Vec<Issue>, String>
         name: String,
     }
 
+    // Surface GraphQL-level errors (e.g. revoked credentials, query failures) that arrive as HTTP 200
+    if let Some(errors) = json["errors"].as_array() {
+        let msg = errors
+            .first()
+            .and_then(|e| e["message"].as_str())
+            .unwrap_or("unknown GraphQL error");
+        return Err(format!("Linear GraphQL error: {}", msg));
+    }
+
     let nodes = json["data"]["issues"]["nodes"]
         .as_array()
-        .cloned()
-        .unwrap_or_default();
+        .ok_or_else(|| "Linear GraphQL response missing data.issues.nodes".to_string())?
+        .clone();
 
     let issues: Vec<Issue> = nodes
         .into_iter()
