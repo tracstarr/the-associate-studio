@@ -173,10 +173,12 @@ function BranchDropdown({
   cwd,
   currentBranch,
   onClose,
+  toggleRef,
 }: {
   cwd: string;
   currentBranch: string;
   onClose: () => void;
+  toggleRef: React.RefObject<HTMLButtonElement | null>;
 }) {
   const { data: branches } = useGitBranches(cwd);
   const { data: remoteBranches } = useGitRemoteBranches(cwd);
@@ -232,13 +234,15 @@ function BranchDropdown({
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (toggleRef.current?.contains(target)) return;
+      if (ref.current && !ref.current.contains(target)) {
         onClose();
       }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [onClose]);
+  }, [onClose, toggleRef]);
 
   const handleFetch = async () => {
     onClose();
@@ -414,24 +418,28 @@ function ProjectDropdown({
   activeProjectId,
   onSelect,
   onClose,
+  toggleRef,
 }: {
   projects: Project[];
   activeProjectId: string | null;
   onSelect: (id: string) => void;
   onClose: () => void;
+  toggleRef: React.RefObject<HTMLButtonElement | null>;
 }) {
   const pickFolder = useProjectsStore((s) => s.addAndActivateProject);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (toggleRef.current?.contains(target)) return;
+      if (ref.current && !ref.current.contains(target)) {
         onClose();
       }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [onClose]);
+  }, [onClose, toggleRef]);
 
   const open = projects.filter((p) => !p.isWorktree);
   const recent = projects.filter((p) => p.isWorktree);
@@ -537,6 +545,8 @@ function TitleBarComponent() {
 
   const [projectDropdownOpen, setProjectDropdownOpen] = useState(false);
   const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
+  const projectBtnRef = useRef<HTMLButtonElement>(null);
+  const branchBtnRef = useRef<HTMLButtonElement>(null);
 
   const handleBranchClose = useCallback(() => setBranchDropdownOpen(false), []);
   const handleProjectClose = useCallback(() => setProjectDropdownOpen(false), []);
@@ -591,6 +601,7 @@ function TitleBarComponent() {
         {/* Project chip */}
         <div className="relative">
           <button
+            ref={projectBtnRef}
             onClick={() => {
               setProjectDropdownOpen((o) => !o);
               setBranchDropdownOpen(false);
@@ -621,6 +632,7 @@ function TitleBarComponent() {
               activeProjectId={activeProjectId}
               onSelect={setActiveProject}
               onClose={handleProjectClose}
+              toggleRef={projectBtnRef}
             />
           )}
         </div>
@@ -629,6 +641,7 @@ function TitleBarComponent() {
         {activeProjectDir && (
           <div className="relative">
             <button
+              ref={branchBtnRef}
               onClick={() => {
                 setBranchDropdownOpen((o) => !o);
                 setProjectDropdownOpen(false);
@@ -649,6 +662,7 @@ function TitleBarComponent() {
                 cwd={activeProjectDir}
                 currentBranch={currentBranch ?? ""}
                 onClose={handleBranchClose}
+                toggleRef={branchBtnRef}
               />
             )}
           </div>
