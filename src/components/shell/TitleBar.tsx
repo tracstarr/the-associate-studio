@@ -465,8 +465,15 @@ function ProjectDropdown({
         Open…
       </button>
       <button
+        onClick={() => {
+          pickFolderFn().then((path) => {
+            if (path) {
+              pickFolder(path);
+              onClose();
+            }
+          });
+        }}
         className="flex items-center gap-2 w-full px-3 py-1.5 text-text-secondary hover:bg-bg-raised hover:text-text-primary transition-colors"
-        onClick={onClose}
       >
         <Plus size={11} className="shrink-0" />
         New Project…

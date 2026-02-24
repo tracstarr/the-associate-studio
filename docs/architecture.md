@@ -135,6 +135,27 @@ App mount -> loadFromDisk() + loadProjects()
   -> projectsStore loads project list from ~/.claude/projects/
 ```
 
+### Project creation (Open / New Project)
+```
+User clicks "Open…" or "New Project…" in project dropdown
+  -> pickFolder() native file dialog
+  -> addAndActivateProject(path)
+     -> Optimistic: adds project to store + sets active
+     -> Backend: createProject(path)
+        -> Rust: cmd_create_project
+           -> encode_project_path(path)
+           -> mkdir ~/.claude/projects/{encoded}/
+           -> write sessions-index.json with { version: 1, originalPath, entries: [] }
+        -> Returns ProjectInfo
+  -> Project now discoverable by discover_projects() on reload
+  -> User can immediately create Claude sessions in the project
+```
+
+**Key detail**: `discover_projects()` resolves the canonical project path using a 3-tier fallback:
+1. `project_path` from session entries (most authoritative)
+2. `originalPath` from `sessions-index.json` (works for newly created projects with no sessions)
+3. `decode_dir_name()` best-effort decode (lossy — dashes in path segments become slashes)
+
 ### Git actions -> Output panel
 ```
 User triggers git action (fetch, pull, rebase, etc.) in GitStatusPanel
@@ -285,7 +306,7 @@ Summaries can be loaded via `cmd_load_summaries(project_dir, session_id)` and re
 | `summaries` | `cmd_load_summaries`, `cmd_read_summary` |
 | `integrations` | `cmd_load_integration_secrets`, `cmd_github_auth_status`, `cmd_github_device_flow_start`, `cmd_github_device_flow_poll`, `cmd_github_set_token`, `cmd_github_logout`, `cmd_linear_verify_key`, `cmd_linear_logout`, `cmd_jira_verify_token`, `cmd_jira_logout` |
 | `hooks` | `cmd_setup_hooks`, `cmd_remove_hooks`, `cmd_get_active_sessions`, `cmd_hooks_configured` |
-| `projects` | `cmd_list_projects`, `cmd_list_orphaned_projects`, `cmd_pick_folder`, `cmd_delete_project`, `cmd_get_home_dir`, `cmd_read_file`, `cmd_write_file`, `cmd_run_claude_init`, `cmd_run_readme_gen`, `cmd_get_project_settings`, `cmd_set_project_settings`, `cmd_detect_docs_folder`, `cmd_run_docs_index_gen` |
+| `projects` | `cmd_list_projects`, `cmd_list_orphaned_projects`, `cmd_pick_folder`, `cmd_delete_project`, `cmd_create_project`, `cmd_get_home_dir`, `cmd_read_file`, `cmd_write_file`, `cmd_run_claude_init`, `cmd_run_readme_gen`, `cmd_get_project_settings`, `cmd_set_project_settings`, `cmd_detect_docs_folder`, `cmd_run_docs_index_gen` |
 | `files` | `cmd_list_dir` |
 
 ### Data layer (`src-tauri/src/data/`)

@@ -88,6 +88,7 @@ pub fn run() {
             commands::projects::cmd_list_orphaned_projects,
             commands::projects::cmd_pick_folder,
             commands::projects::cmd_delete_project,
+            commands::projects::cmd_create_project,
             commands::projects::cmd_get_home_dir,
             commands::projects::cmd_read_file,
             commands::projects::cmd_write_file,

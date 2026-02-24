@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use crate::data::sessions::load_sessions;
+use crate::data::sessions::{load_session_index, load_sessions};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -37,8 +37,18 @@ pub fn discover_projects(claude_home: &PathBuf) -> Result<Vec<ProjectInfo>> {
             _ => continue,
         };
 
-        // Load sessions to find the canonical project_path
-        let sessions = load_sessions(&path).unwrap_or_default();
+        // Load session index to find the canonical project_path.
+        // Priority: session project_path > index originalPath > decoded dir name
+        let index = load_session_index(&path).ok().flatten();
+        let sessions = match &index {
+            Some(idx) => idx
+                .entries
+                .iter()
+                .filter(|e| e.is_sidechain != Some(true))
+                .cloned()
+                .collect::<Vec<_>>(),
+            None => load_sessions(&path).unwrap_or_default(),
+        };
 
         let project_path = sessions
             .iter()
@@ -46,6 +56,13 @@ pub fn discover_projects(claude_home: &PathBuf) -> Result<Vec<ProjectInfo>> {
             .filter_map(|s| s.project_path.as_deref())
             .find(|p| !p.is_empty())
             .map(|p| p.replace('\\', "/"))
+            .or_else(|| {
+                index
+                    .as_ref()
+                    .and_then(|idx| idx.original_path.as_deref())
+                    .filter(|p| !p.is_empty())
+                    .map(|p| p.replace('\\', "/"))
+            })
             .unwrap_or_else(|| decode_dir_name(&dir_name));
 
         // Skip projects whose directory no longer exists on disk
@@ -116,7 +133,16 @@ pub fn discover_orphaned_projects(claude_home: &PathBuf) -> Result<Vec<ProjectIn
             _ => continue,
         };
 
-        let sessions = load_sessions(&path).unwrap_or_default();
+        let index = load_session_index(&path).ok().flatten();
+        let sessions = match &index {
+            Some(idx) => idx
+                .entries
+                .iter()
+                .filter(|e| e.is_sidechain != Some(true))
+                .cloned()
+                .collect::<Vec<_>>(),
+            None => load_sessions(&path).unwrap_or_default(),
+        };
 
         let project_path = sessions
             .iter()
@@ -124,6 +150,13 @@ pub fn discover_orphaned_projects(claude_home: &PathBuf) -> Result<Vec<ProjectIn
             .filter_map(|s| s.project_path.as_deref())
             .find(|p| !p.is_empty())
             .map(|p| p.replace('\\', "/"))
+            .or_else(|| {
+                index
+                    .as_ref()
+                    .and_then(|idx| idx.original_path.as_deref())
+                    .filter(|p| !p.is_empty())
+                    .map(|p| p.replace('\\', "/"))
+            })
             .unwrap_or_else(|| decode_dir_name(&dir_name));
 
         // Only include projects whose directory does NOT exist

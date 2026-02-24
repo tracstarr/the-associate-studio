@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { listProjects, deleteProject, type Project } from "../lib/tauri";
+import { listProjects, deleteProject, createProject, type Project } from "../lib/tauri";
 import { pathToProjectId } from "../lib/utils";
 import { debugLog } from "./debugStore";
 
@@ -70,6 +70,8 @@ export const useProjectsStore = create<ProjectsStore>((set, get) => ({
     // Derive id using same encoding as Rust encode_project_path
     const id = pathToProjectId(path);
     const name = path.replace(/\\/g, "/").split("/").filter(Boolean).pop() ?? path;
+
+    // Optimistic UI update
     set((s) => {
       const exists = s.projects.find((p) => p.id === id);
       if (exists) {
@@ -80,6 +82,12 @@ export const useProjectsStore = create<ProjectsStore>((set, get) => ({
         projects: [{ id, path, name, sessionCount: 0 }, ...s.projects],
         activeProjectId: id,
       };
+    });
+
+    // Persist to backend (creates ~/.claude/projects/{encoded}/ + sessions-index.json)
+    createProject(path).catch((e) => {
+      console.error("[projects] createProject failed:", e);
+      debugLog("Projects", "Create project failed", { path, error: String(e) }, "error");
     });
   },
 }));

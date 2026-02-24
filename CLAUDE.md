@@ -74,7 +74,7 @@ npm run tauri build      # release build
 | | `commands/sessions.rs` | Load session index + transcripts from `~/.claude/projects/` |
 | | `commands/integrations.rs` | GitHub device flow, Linear, Jira auth; Windows Credential Manager |
 | | `commands/hooks.rs` | Install/remove Claude CLI hooks in `~/.claude/theassociate/` |
-| | `commands/projects.rs` | List/delete projects, pick folder, read/write files, run `claude --init` |
+| | `commands/projects.rs` | List/delete/create projects, pick folder, read/write files, run `claude --init` |
 | | `commands/teams.rs` | Load/delete team configs from `~/.claude/teams/` |
 | | `commands/tasks.rs` | Load tasks from `~/.claude/tasks/` |
 | | `commands/inbox.rs` | Load/send team inbox messages |

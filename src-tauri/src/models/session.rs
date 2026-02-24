@@ -2,7 +2,10 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SessionIndex {
+    #[serde(default)]
+    pub original_path: Option<String>,
     #[serde(default)]
     pub entries: Vec<SessionEntry>,
 }
