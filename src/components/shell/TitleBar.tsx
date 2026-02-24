@@ -1,9 +1,9 @@
-import { memo, useState, useRef, useEffect, useCallback } from "react";
-import { Minus, Square, X, ChevronDown, GitBranch, FolderOpen, Plus, RefreshCw, GitMerge, Radar } from "lucide-react";
+import { memo, useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { Minus, Square, X, ChevronDown, ChevronRight, GitBranch, FolderOpen, Folder, Plus, RefreshCw, GitMerge, Radar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useActiveProjectTabs } from "@/hooks/useActiveProjectTabs";
 import { useProjectsStore } from "@/stores/projectsStore";
-import { useGitCurrentBranch, useGitBranches } from "@/hooks/useClaudeData";
+import { useGitCurrentBranch, useGitBranches, useGitRemoteBranches } from "@/hooks/useClaudeData";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGitAction } from "@/hooks/useGitAction";
 import type { Project } from "@/lib/tauri";
@@ -59,6 +59,114 @@ function ProjectAvatar({ name, size = 16 }: { name: string; size?: number }) {
   );
 }
 
+// ─── Branch Tree Utilities ───────────────────────────────────────────────────
+
+interface BranchTreeNode {
+  name: string;
+  fullPath: string;
+  children: Map<string, BranchTreeNode>;
+}
+
+function buildBranchTree(branches: string[]): BranchTreeNode {
+  const root: BranchTreeNode = { name: "", fullPath: "", children: new Map() };
+  for (const branch of branches) {
+    const parts = branch.split("/");
+    let node = root;
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      if (!node.children.has(part)) {
+        node.children.set(part, {
+          name: part,
+          fullPath: parts.slice(0, i + 1).join("/"),
+          children: new Map(),
+        });
+      }
+      node = node.children.get(part)!;
+    }
+  }
+  return root;
+}
+
+function BranchTreeNodeRow({
+  node,
+  currentBranch,
+  depth,
+  expandedFolders,
+  toggleFolder,
+}: {
+  node: BranchTreeNode;
+  currentBranch: string;
+  depth: number;
+  expandedFolders: Set<string>;
+  toggleFolder: (path: string) => void;
+}) {
+  const isLeaf = node.children.size === 0;
+  const isExpanded = expandedFolders.has(node.fullPath);
+
+  if (isLeaf) {
+    return (
+      <div
+        className={cn(
+          "flex items-center gap-1.5 py-1 cursor-default",
+          node.fullPath === currentBranch
+            ? "text-accent-primary bg-accent-primary/10"
+            : "text-text-secondary hover:bg-bg-raised hover:text-text-primary"
+        )}
+        style={{ paddingLeft: 8 + depth * 12 }}
+      >
+        <GitBranch size={10} className="shrink-0" />
+        <span className="truncate">{node.name}</span>
+      </div>
+    );
+  }
+
+  const sortedChildren = Array.from(node.children.values()).sort((a, b) => {
+    const aIsFolder = a.children.size > 0;
+    const bIsFolder = b.children.size > 0;
+    if (aIsFolder !== bIsFolder) return aIsFolder ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  return (
+    <>
+      <button
+        onClick={() => toggleFolder(node.fullPath)}
+        className="flex items-center gap-1.5 py-1 w-full text-left text-text-muted hover:bg-bg-raised hover:text-text-secondary transition-colors"
+        style={{ paddingLeft: 8 + depth * 12 }}
+      >
+        {isExpanded ? (
+          <ChevronDown size={10} className="shrink-0" />
+        ) : (
+          <ChevronRight size={10} className="shrink-0" />
+        )}
+        <Folder size={10} className="shrink-0" />
+        <span className="truncate">{node.name}</span>
+        <span className="text-text-muted text-[9px] ml-auto pr-2">{countLeaves(node)}</span>
+      </button>
+      {isExpanded &&
+        sortedChildren.map((child) => (
+          <BranchTreeNodeRow
+            key={child.fullPath}
+            node={child}
+            currentBranch={currentBranch}
+            depth={depth + 1}
+            expandedFolders={expandedFolders}
+            toggleFolder={toggleFolder}
+          />
+        ))}
+    </>
+  );
+}
+
+function countLeaves(node: BranchTreeNode): number {
+  if (node.children.size === 0) return 1;
+  let count = 0;
+  for (const child of node.children.values()) {
+    count += countLeaves(child);
+  }
+  return count;
+}
+
 // ─── Branch Dropdown ─────────────────────────────────────────────────────────
 
 function BranchDropdown({
@@ -71,12 +179,56 @@ function BranchDropdown({
   onClose: () => void;
 }) {
   const { data: branches } = useGitBranches(cwd);
+  const { data: remoteBranches } = useGitRemoteBranches(cwd);
   const ref = useRef<HTMLDivElement>(null);
   const runGitAction = useGitAction();
   const queryClient = useQueryClient();
   const [showNewBranchInput, setShowNewBranchInput] = useState(false);
   const [newBranchName, setNewBranchName] = useState("");
   const [newBranchLoading, setNewBranchLoading] = useState(false);
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(() => {
+    // Auto-expand the folder containing the current branch
+    const expanded = new Set<string>();
+    if (currentBranch) {
+      const parts = currentBranch.split("/");
+      for (let i = 1; i < parts.length; i++) {
+        expanded.add(parts.slice(0, i).join("/"));
+      }
+    }
+    return expanded;
+  });
+
+  const toggleFolder = useCallback((path: string) => {
+    setExpandedFolders((prev) => {
+      const next = new Set(prev);
+      if (next.has(path)) {
+        next.delete(path);
+      } else {
+        next.add(path);
+      }
+      return next;
+    });
+  }, []);
+
+  const localBranchSet = useMemo(
+    () => new Set(branches ?? []),
+    [branches]
+  );
+
+  const remoteOnlyBranches = useMemo(() => {
+    if (!remoteBranches) return [];
+    return remoteBranches.filter((rb) => !localBranchSet.has(rb.branch));
+  }, [remoteBranches, localBranchSet]);
+
+  const localTree = useMemo(
+    () => buildBranchTree(branches ?? []),
+    [branches]
+  );
+
+  const remoteTree = useMemo(
+    () => buildBranchTree(remoteOnlyBranches.map((rb) => rb.branch)),
+    [remoteOnlyBranches]
+  );
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -113,10 +265,24 @@ function BranchDropdown({
     }
   };
 
+  const sortedLocalChildren = Array.from(localTree.children.values()).sort((a, b) => {
+    const aIsFolder = a.children.size > 0;
+    const bIsFolder = b.children.size > 0;
+    if (aIsFolder !== bIsFolder) return aIsFolder ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  const sortedRemoteChildren = Array.from(remoteTree.children.values()).sort((a, b) => {
+    const aIsFolder = a.children.size > 0;
+    const bIsFolder = b.children.size > 0;
+    if (aIsFolder !== bIsFolder) return aIsFolder ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
+
   return (
     <div
       ref={ref}
-      className="absolute left-0 top-full mt-1 z-50 min-w-52 bg-bg-overlay border border-border-default rounded shadow-lg py-1 text-xs"
+      className="absolute left-0 top-full mt-1 z-50 min-w-60 max-w-80 bg-bg-overlay border border-border-default rounded shadow-lg py-1 text-xs"
     >
       {/* Action toolbar */}
       <div className="flex items-center gap-1 px-2 py-1.5 border-b border-border-default">
@@ -170,24 +336,73 @@ function BranchDropdown({
         </div>
       )}
 
-      {/* Branch list */}
-      {(branches ?? []).map((b) => (
-        <div
-          key={b}
-          className={cn(
-            "flex items-center gap-2 px-3 py-1.5 cursor-default",
-            b === currentBranch
-              ? "text-accent-primary bg-accent-primary/10"
-              : "text-text-secondary hover:bg-bg-raised hover:text-text-primary"
-          )}
-        >
-          <GitBranch size={10} className="shrink-0" />
-          <span className="truncate">{b}</span>
+      {/* Scrollable branch tree */}
+      <div className="max-h-72 overflow-y-auto">
+        {/* Local branches */}
+        <div className="px-3 py-1 mt-0.5 text-[9px] font-semibold tracking-wider text-text-muted uppercase">
+          Local
         </div>
-      ))}
-      {(branches?.length ?? 0) === 0 && (
-        <div className="px-3 py-2 text-text-muted">No branches</div>
-      )}
+        {sortedLocalChildren.length > 0 ? (
+          sortedLocalChildren.map((child) =>
+            child.children.size > 0 ? (
+              <BranchTreeNodeRow
+                key={child.fullPath}
+                node={child}
+                currentBranch={currentBranch}
+                depth={0}
+                expandedFolders={expandedFolders}
+                toggleFolder={toggleFolder}
+              />
+            ) : (
+              <div
+                key={child.fullPath}
+                className={cn(
+                  "flex items-center gap-1.5 py-1 cursor-default",
+                  child.fullPath === currentBranch
+                    ? "text-accent-primary bg-accent-primary/10"
+                    : "text-text-secondary hover:bg-bg-raised hover:text-text-primary"
+                )}
+                style={{ paddingLeft: 8 }}
+              >
+                <GitBranch size={10} className="shrink-0" />
+                <span className="truncate">{child.name}</span>
+              </div>
+            )
+          )
+        ) : (
+          <div className="px-3 py-1.5 text-text-muted">No local branches</div>
+        )}
+
+        {/* Remote-only branches */}
+        {sortedRemoteChildren.length > 0 && (
+          <>
+            <div className="px-3 py-1 mt-1 text-[9px] font-semibold tracking-wider text-text-muted uppercase border-t border-border-default">
+              Remote
+            </div>
+            {sortedRemoteChildren.map((child) =>
+              child.children.size > 0 ? (
+                <BranchTreeNodeRow
+                  key={`remote-${child.fullPath}`}
+                  node={child}
+                  currentBranch={currentBranch}
+                  depth={0}
+                  expandedFolders={expandedFolders}
+                  toggleFolder={toggleFolder}
+                />
+              ) : (
+                <div
+                  key={`remote-${child.fullPath}`}
+                  className="flex items-center gap-1.5 py-1 cursor-default text-text-muted hover:bg-bg-raised hover:text-text-secondary"
+                  style={{ paddingLeft: 8 }}
+                >
+                  <GitBranch size={10} className="shrink-0" />
+                  <span className="truncate">{child.name}</span>
+                </div>
+              )
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
