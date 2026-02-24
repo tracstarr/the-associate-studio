@@ -7,13 +7,22 @@ use serde::Deserialize;
 
 use crate::models::session::{SessionEntry, SessionIndex};
 
+/// Load the full session index (including originalPath metadata).
+/// Returns None if the index file doesn't exist.
+pub fn load_session_index(project_dir: &Path) -> Result<Option<SessionIndex>> {
+    let index_path = project_dir.join("sessions-index.json");
+    if !index_path.exists() {
+        return Ok(None);
+    }
+    let data = std::fs::read_to_string(&index_path)?;
+    let index: SessionIndex = serde_json::from_str(&data)?;
+    Ok(Some(index))
+}
+
 /// Load the sessions index file for a project.
 /// Falls back to scanning .jsonl files if the index doesn't exist.
 pub fn load_sessions(project_dir: &Path) -> Result<Vec<SessionEntry>> {
-    let index_path = project_dir.join("sessions-index.json");
-    if index_path.exists() {
-        let data = std::fs::read_to_string(&index_path)?;
-        let index: SessionIndex = serde_json::from_str(&data)?;
+    if let Some(index) = load_session_index(project_dir)? {
         let mut entries: Vec<SessionEntry> = index
             .entries
             .into_iter()

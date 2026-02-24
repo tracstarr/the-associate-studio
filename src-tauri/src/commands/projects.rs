@@ -137,6 +137,65 @@ pub async fn cmd_run_claude_init(project_path: String) -> Result<String, String>
     }
 }
 
+/// Create the project structure in ~/.claude/projects/ for a folder that doesn't
+/// have one yet. Writes sessions-index.json with originalPath so the project is
+/// discoverable even before any Claude session has been started.
+#[tauri::command]
+pub async fn cmd_create_project(project_path: String) -> Result<ProjectInfo, String> {
+    let dir = PathBuf::from(&project_path);
+    if !dir.exists() {
+        return Err(format!("Directory does not exist: {}", project_path));
+    }
+
+    let claude_home = get_claude_home()?;
+    let encoded = encode_project_path(&PathBuf::from(&project_path));
+    let project_dir = claude_home.join("projects").join(&encoded);
+
+    // Create the project directory
+    std::fs::create_dir_all(&project_dir).map_err(|e| e.to_string())?;
+
+    // Write sessions-index.json with originalPath (only if it doesn't exist)
+    let index_path = project_dir.join("sessions-index.json");
+    if !index_path.exists() {
+        let index = serde_json::json!({
+            "version": 1,
+            "originalPath": project_path,
+            "entries": []
+        });
+        let content = serde_json::to_string_pretty(&index).map_err(|e| e.to_string())?;
+        std::fs::write(&index_path, content).map_err(|e| e.to_string())?;
+    }
+
+    let canonical = project_path.replace('\\', "/");
+    let name = PathBuf::from(&canonical)
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or(&encoded)
+        .to_string();
+
+    let is_worktree = dir.join(".git").is_file();
+
+    let last_modified = project_dir
+        .metadata()
+        .ok()
+        .and_then(|m| m.modified().ok())
+        .map(|t| {
+            t.duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs()
+                .to_string()
+        });
+
+    Ok(ProjectInfo {
+        id: encoded,
+        path: canonical,
+        name,
+        session_count: 0,
+        last_modified,
+        is_worktree,
+    })
+}
+
 #[tauri::command]
 pub async fn cmd_get_project_settings(project_path: String) -> Result<ProjectSettings, String> {
     let claude_home = get_claude_home()?;

@@ -488,6 +488,10 @@ export function deleteProject(id: string): Promise<void> {
   return invoke("cmd_delete_project", { id });
 }
 
+export function createProject(projectPath: string): Promise<Project> {
+  return invoke("cmd_create_project", { projectPath });
+}
+
 export function listOrphanedProjects(): Promise<Project[]> {
   return invoke("cmd_list_orphaned_projects");
 }
