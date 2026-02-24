@@ -364,6 +364,45 @@ export interface Issue {
   source: "github" | "linear" | "jira";
 }
 
+export interface PRComment {
+  author: string;
+  body: string;
+  created_at: string;
+  association?: string;
+}
+
+export interface PRReviewComment {
+  author: string;
+  body: string;
+  created_at: string;
+  path?: string;
+  diff_hunk?: string;
+}
+
+export interface PRDetail {
+  number: number;
+  title: string;
+  state: "open" | "closed" | "merged";
+  author: string;
+  url: string;
+  created_at: string;
+  body?: string;
+  labels: string[];
+  draft: boolean;
+  head_ref: string;
+  base_ref: string;
+  additions: number;
+  deletions: number;
+  changed_files: number;
+  mergeable?: string;
+  comments: PRComment[];
+  review_comments: PRReviewComment[];
+}
+
+export function getPRDetail(cwd: string, number: number): Promise<PRDetail> {
+  return invoke("cmd_get_pr_detail", { cwd, number });
+}
+
 export function listPRs(cwd: string, state = "open"): Promise<PullRequest[]> {
   return invoke("cmd_list_prs", { cwd, state });
 }

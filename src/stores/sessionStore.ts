@@ -4,7 +4,7 @@ import { useNotificationStore } from "./notificationStore";
 
 export interface SessionTab {
   id: string;
-  type?: "terminal" | "plan" | "readme" | "settings" | "diff" | "session-view" | "file" | "summary";
+  type?: "terminal" | "plan" | "readme" | "settings" | "diff" | "session-view" | "file" | "summary" | "pr-detail";
   projectDir: string;
   sessionId?: string;
   title: string;
@@ -16,6 +16,7 @@ export interface SessionTab {
   diffStaged?: boolean; // whether to show staged changes
   summaryFilename?: string; // only for type === "summary"
   summaryProjectDir?: string; // encoded project dir for type === "summary"
+  prNumber?: number; // only for type === "pr-detail"
 }
 
 interface SessionStore {

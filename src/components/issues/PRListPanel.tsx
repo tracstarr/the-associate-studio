@@ -6,15 +6,31 @@ import {
 } from "lucide-react";
 import { usePRs } from "@/hooks/useClaudeData";
 import { useProjectsStore } from "@/stores/projectsStore";
+import { useSessionStore } from "@/stores/sessionStore";
+import type { SessionTab } from "@/stores/sessionStore";
 import type { PullRequest } from "@/lib/tauri";
-import { cn } from "@/lib/utils";
+import { pathToProjectId, cn } from "@/lib/utils";
 
 export function PRListPanel() {
   const activeProjectDir = useProjectsStore((s) =>
     s.projects.find((p) => p.id === s.activeProjectId)?.path ?? null
   );
+  const openTab = useSessionStore((s) => s.openTab);
   const [state, setState] = useState<"open" | "closed" | "all">("open");
   const { data: prs, isLoading, error, refetch } = usePRs(activeProjectDir, state);
+
+  const openPRDetailTab = (pr: PullRequest) => {
+    if (!activeProjectDir) return;
+    const projectId = pathToProjectId(activeProjectDir);
+    const tab: SessionTab = {
+      id: `pr:${pr.number}`,
+      type: "pr-detail",
+      title: `PR #${pr.number}`,
+      projectDir: activeProjectDir,
+      prNumber: pr.number,
+    };
+    openTab(tab, projectId);
+  };
 
   if (!activeProjectDir) {
     return (
@@ -67,13 +83,19 @@ export function PRListPanel() {
             No {state === "all" ? "" : state} PRs
           </div>
         )}
-        {prs?.map((pr) => <PRItem key={pr.number} pr={pr} />)}
+        {prs?.map((pr) => (
+          <PRItem
+            key={pr.number}
+            pr={pr}
+            onClick={() => openPRDetailTab(pr)}
+          />
+        ))}
       </div>
     </div>
   );
 }
 
-function PRItem({ pr }: { pr: PullRequest }) {
+function PRItem({ pr, onClick }: { pr: PullRequest; onClick: () => void }) {
   const stateIcon =
     pr.state === "merged" ? (
       <GitMerge size={12} className="text-[var(--color-accent-secondary)]" />
@@ -93,7 +115,10 @@ function PRItem({ pr }: { pr: PullRequest }) {
   const timeAgo = formatTimeAgo(pr.created_at);
 
   return (
-    <div className="px-3 py-2 border-b border-[var(--color-border-default)] hover:bg-[var(--color-bg-raised)] transition-colors">
+    <div
+      className="px-3 py-2 border-b border-[var(--color-border-default)] hover:bg-[var(--color-bg-raised)] transition-colors cursor-pointer"
+      onClick={onClick}
+    >
       <div className="flex items-start gap-2">
         <span className="mt-0.5 shrink-0">{stateIcon}</span>
         <div className="flex-1 min-w-0">

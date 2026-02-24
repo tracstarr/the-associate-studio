@@ -69,6 +69,7 @@ pub fn run() {
             commands::issues::cmd_list_prs,
             commands::issues::cmd_list_issues,
             commands::issues::cmd_list_linear_issues,
+            commands::issues::cmd_get_pr_detail,
             commands::integrations::cmd_load_integration_secrets,
             commands::integrations::cmd_github_auth_status,
             commands::integrations::cmd_github_device_flow_start,
