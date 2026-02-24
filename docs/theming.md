@@ -1,98 +1,108 @@
-# Theming
+# Theming — "Black & Gold" Premium Dark Theme
+
+## Design philosophy
+
+The UI uses a **warm "Black & Gold" dark theme** inspired by Warp Terminal, Arc Browser, Zed Editor, Linear, and Raycast. Key principles:
+
+1. **Warmer, not lighter** — backgrounds shifted from cold blue-blacks to warm charcoal-blacks
+2. **Gold as primary accent** — replacing cold blue with rich gold (`#D4A853`) for a distinctive premium identity
+3. **Rounded & breathing** — panels get generous border-radius (12px), gaps between areas, and more padding
+4. **Better text contrast** — secondary/muted text colors bumped significantly for readability
+5. **Depth through shadows** — soft box-shadows and subtle gradients instead of hard 1px borders
+6. **Consistent corner language** — unified rounding scale across all components
 
 ## Color system
 
 All colors are defined as CSS custom properties in `src/index.css` under `@theme`. Tailwind v4 picks these up automatically and generates utility classes.
 
-### Background layers (dark to light)
+### Background layers (warm charcoal, dark to light)
 
 | Variable | Hex | Used for |
 |----------|-----|---------|
-| `--color-bg-base` | `#0D1117` | App root background |
-| `--color-bg-surface` | `#161B22` | Panels, sidebar, titlebar |
-| `--color-bg-raised` | `#1C2128` | Cards, dropdowns |
-| `--color-bg-overlay` | `#21262D` | Command palette, settings modal |
-| `--color-bg-input` | `#0D1117` | Input field backgrounds |
-| `--color-bg-terminal` | `#0A0E14` | xterm.js terminal background |
+| `--color-bg-base` | `#141419` | App root background |
+| `--color-bg-surface` | `#1C1C24` | Panels, sidebar, titlebar |
+| `--color-bg-raised` | `#26262F` | Cards, hovers, dropdowns |
+| `--color-bg-overlay` | `#2E2E3A` | Command palette, settings modal |
+| `--color-bg-input` | `#18181F` | Input field backgrounds |
+| `--color-bg-terminal` | `#111116` | xterm.js terminal background |
 
-### Text
-
-| Variable | Hex | Used for |
-|----------|-----|---------|
-| `--color-text-primary` | `#E6EDF3` | Main content, headings |
-| `--color-text-secondary` | `#8B949E` | Labels, secondary info |
-| `--color-text-muted` | `#484F58` | Placeholders, disabled, timestamps |
-| `--color-text-link` | `#58A6FF` | Hyperlinks |
-| `--color-text-inverse` | `#0D1117` | Text on light backgrounds |
-
-### Accent
+### Text (warm whites, better contrast)
 
 | Variable | Hex | Used for |
 |----------|-----|---------|
-| `--color-accent-primary` | `#58A6FF` | Links, focus rings, active state, cursor |
-| `--color-accent-secondary` | `#BC8CFF` | Claude-related highlights, session icons |
-| `--color-accent-tertiary` | `#79C0FF` | Additional accent (lighter blue) |
+| `--color-text-primary` | `#EEEEF2` | Main content, headings |
+| `--color-text-secondary` | `#9D9DAD` | Labels, secondary info |
+| `--color-text-muted` | `#62627A` | Placeholders, disabled, timestamps |
+| `--color-text-link` | `#D4A853` | Hyperlinks (gold) |
+
+### Accent (gold + purple)
+
+| Variable | Hex | Used for |
+|----------|-----|---------|
+| `--color-accent-primary` | `#D4A853` | Gold — links, focus rings, active state, cursor |
+| `--color-accent-secondary` | `#BC8CFF` | Purple — Claude-related highlights |
+| `--color-accent-tertiary` | `#E8C97A` | Lighter gold — hover highlights |
 
 ### Status
 
 | Variable | Hex | Used for |
 |----------|-----|---------|
-| `--color-status-success` | `#3FB950` | Running, connected, active |
+| `--color-status-success` | `#4ACA62` | Running, connected, active |
 | `--color-status-error` | `#F85149` | Failed, error, disconnected |
-| `--color-status-warning` | `#D29922` | Idle, pending, warning |
-| `--color-status-info` | `#58A6FF` | Informational status |
+| `--color-status-warning` | `#E0A82E` | Idle, pending, warning |
+| `--color-status-info` | `#D4A853` | Informational status (gold) |
 
 ### Agent status
 
 | Variable | Hex | Used for |
 |----------|-----|---------|
-| `--color-agent-running` | `#3FB950` | Agent actively running |
-| `--color-agent-idle` | `#D29922` | Agent idle |
-| `--color-agent-completed` | `#8B949E` | Agent finished |
+| `--color-agent-running` | `#4ACA62` | Agent actively running |
+| `--color-agent-idle` | `#E0A82E` | Agent idle |
+| `--color-agent-completed` | `#9D9DAD` | Agent finished |
 | `--color-agent-error` | `#F85149` | Agent error state |
-| `--color-agent-pending` | `#484F58` | Agent waiting to start |
+| `--color-agent-pending` | `#62627A` | Agent waiting to start |
 
 ### Session status
 
 | Variable | Hex | Used for |
 |----------|-----|---------|
-| `--color-session-running` | `#3FB950` | Session actively running |
-| `--color-session-idle` | `#D29922` | Session idle |
-| `--color-session-completed` | `#8B949E` | Session finished |
+| `--color-session-running` | `#4ACA62` | Session actively running |
+| `--color-session-idle` | `#E0A82E` | Session idle |
+| `--color-session-completed` | `#9D9DAD` | Session finished |
 | `--color-session-error` | `#F85149` | Session error state |
 
-### Git diff
+### Git diff (warmer backgrounds)
 
 | Variable | Hex | Used for |
 |----------|-----|---------|
-| `--color-diff-add-bg` | `#12261E` | Added line background |
-| `--color-diff-add-text` | `#3FB950` | Added line text |
-| `--color-diff-add-highlight` | `#1B4332` | Added word highlight |
-| `--color-diff-remove-bg` | `#2D1215` | Removed line background |
+| `--color-diff-add-bg` | `#152A1F` | Added line background |
+| `--color-diff-add-text` | `#4ACA62` | Added line text |
+| `--color-diff-add-highlight` | `#1E4835` | Added word highlight |
+| `--color-diff-remove-bg` | `#301518` | Removed line background |
 | `--color-diff-remove-text` | `#F85149` | Removed line text |
-| `--color-diff-remove-highlight` | `#5C1D24` | Removed word highlight |
-| `--color-diff-modified-bg` | `#2A1F0B` | Modified line background |
-| `--color-diff-modified-text` | `#D29922` | Modified line text |
-| `--color-diff-hunk-header` | `#1C2128` | Hunk header background |
+| `--color-diff-remove-highlight` | `#5E2027` | Removed word highlight |
+| `--color-diff-modified-bg` | `#2D220E` | Modified line background |
+| `--color-diff-modified-text` | `#E0A82E` | Modified line text |
+| `--color-diff-hunk-header` | `#26262F` | Hunk header background |
 | `--color-diff-hunk-text` | `#BC8CFF` | Hunk header text |
 
 ### Activity bar
 
 | Variable | Hex | Used for |
 |----------|-----|---------|
-| `--color-actbar-bg` | `#0D1117` | Activity bar background |
-| `--color-actbar-icon-default` | `#484F58` | Inactive icon color |
-| `--color-actbar-icon-active` | `#E6EDF3` | Active icon color |
-| `--color-actbar-indicator` | `#58A6FF` | Active view indicator |
+| `--color-actbar-bg` | `#141419` | Activity bar background |
+| `--color-actbar-icon-default` | `#62627A` | Inactive icon color |
+| `--color-actbar-icon-active` | `#EEEEF2` | Active icon color |
+| `--color-actbar-indicator` | `#D4A853` | Active view indicator (gold) |
 | `--color-actbar-badge` | `#F85149` | Notification badge |
 
-### Border
+### Border (softer, warmer)
 
 | Variable | Hex | Used for |
 |----------|-----|---------|
-| `--color-border-default` | `#30363D` | Panel borders, dividers |
-| `--color-border-muted` | `#21262D` | Subtle borders |
-| `--color-border-focus` | `#58A6FF` | Focused inputs (matches accent-primary) |
+| `--color-border-default` | `#2E2E3E` | Panel borders, dividers |
+| `--color-border-muted` | `#242430` | Subtle borders (preferred for most use) |
+| `--color-border-focus` | `#D4A853` | Focused inputs (gold) |
 
 ### Font families
 
@@ -103,21 +113,53 @@ All colors are defined as CSS custom properties in `src/index.css` under `@theme
 
 ### xterm.js theme
 
-The terminal uses these same values mapped to xterm's 16-color palette:
+The terminal uses the gold cursor and warm foreground:
 
 ```ts
 theme: {
-  background:  "#0A0E14",   // bg-terminal
-  foreground:  "#E6EDF3",   // text-primary
-  cursor:      "#58A6FF",   // accent-primary
+  background:  "#111116",   // bg-terminal
+  foreground:  "#EEEEF2",   // text-primary
+  cursor:      "#D4A853",   // accent-primary (gold)
   red:         "#F85149",   // status-error
-  green:       "#3FB950",   // status-success
-  yellow:      "#D29922",   // status-warning
-  blue:        "#58A6FF",   // accent-primary
+  green:       "#4ACA62",   // status-success
+  yellow:      "#E0A82E",   // status-warning
+  blue:        "#D4A853",   // accent-primary (gold)
   magenta:     "#BC8CFF",   // accent-secondary
   // ...
 }
 ```
+
+## Panel design system
+
+### Rounding scale
+- Panels/containers: `rounded-xl` (12px)
+- Cards/buttons: `rounded-lg` (8px)
+- Inputs: `rounded-lg` (8px)
+- Overlays/modals: `rounded-2xl` (16px)
+- Activity bar icons: `rounded-xl` (12px)
+- Small elements: `rounded-md` (6px)
+
+### Spacing
+- IDELayout adds `p-1.5 gap-1.5` between panels for breathing room
+- Panels "float" inside rounded containers instead of touching edges
+- Sidebar, right panel, and bottom panel wrapped in `rounded-xl overflow-hidden bg-bg-surface`
+
+### Shadows
+- Panel: `0 1px 3px rgba(0,0,0,0.2)` — subtle depth
+- Elevated: `0 4px 12px rgba(0,0,0,0.4)` — dropdowns, overlays
+- Overlay: `0 8px 30px rgba(0,0,0,0.5)` — command palette, modals
+
+### CSS utility classes (in `index.css`)
+- `.panel-card` — standard panel surface
+- `.panel-card-elevated` — elevated surface (overlays)
+- `.panel-card-overlay` — full overlay treatment (modals, command palette)
+- `.glow-gold` — gold glow effect for active elements
+- `.panel-inset` — inset/recessed panel
+
+### Gold glow accents
+- Activity bar indicators: `box-shadow: 0 0 6px rgba(212,168,83,0.4)`
+- Resize handles on hover: `box-shadow: 0 0 6px rgba(212,168,83,0.3)`
+- Scrollbar thumb on hover: `color-mix` with accent-primary
 
 ## Tailwind v4 CSS-first setup
 
@@ -128,8 +170,8 @@ Tailwind v4 uses `@theme` in CSS instead of a JS config file. Colors become CSS 
 @import "tailwindcss";
 
 @theme {
-  --color-bg-base: #0D1117;
-  --color-accent-primary: #58A6FF;
+  --color-bg-base: #141419;
+  --color-accent-primary: #D4A853;
   /* ... */
 }
 ```
@@ -137,13 +179,13 @@ Tailwind v4 uses `@theme` in CSS instead of a JS config file. Colors become CSS 
 Generated utility classes:
 - `bg-bg-base` → `background-color: var(--color-bg-base)`
 - `text-accent-primary` → `color: var(--color-accent-primary)`
-- `border-border-default` → `border-color: var(--color-border-default)`
+- `border-border-muted` → `border-color: var(--color-border-muted)`
 
 Inline style access: `style={{ color: "var(--color-accent-primary)" }}`
 
-## Design rationale
+## Decision log
 
-The palette is based on GitHub's dark theme (`#0D1117` base). This was chosen because:
-1. Claude's own UI uses a similar dark palette — sessions feel "native" in the terminal
-2. Users spending time in this IDE are likely already accustomed to GitHub dark theme
-3. The colors have strong contrast ratios suitable for long coding sessions
+| Date | Decision | Rationale |
+|------|----------|-----------|
+| 2026-02-21 | GitHub dark theme base | Initial choice for familiarity |
+| 2026-02-24 | **Replaced with "Black & Gold" warm theme** | Previous palette too dark and cold. User wanted warmer, more premium feel with gold accents. Inspired by Warp Terminal, Arc Browser, Zed Editor, Linear, Raycast. Key changes: warm charcoal backgrounds (#141419 base), gold primary accent (#D4A853), rounded panel design (12px), better text contrast, breathing room between panels. |

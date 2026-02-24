@@ -181,11 +181,11 @@ export function DocsSection({ activeProjectDir, activeProjectId }: DocsSectionPr
   if (settingsLoading) return null;
 
   return (
-    <div className="border-b border-[var(--color-border-default)]">
+    <div className="border-b border-[var(--color-border-muted)]">
       {/* Section header */}
       <div className="flex items-center gap-2 px-3 py-2">
         <button
-          className="flex items-center gap-2 flex-1 text-left hover:bg-[var(--color-bg-surface)] -mx-1 px-1 rounded"
+          className="flex items-center gap-2 flex-1 text-left hover:bg-[var(--color-bg-surface)] -mx-1 px-1 rounded-lg"
           onClick={() => setCollapsed((c) => !c)}
         >
           {collapsed ? (
@@ -205,7 +205,7 @@ export function DocsSection({ activeProjectDir, activeProjectId }: DocsSectionPr
             <button
               onClick={startEdit}
               title={docsFolder ? `Docs folder: ${docsFolder}${isAutoDetected ? " (auto-detected)" : ""}` : "Set docs folder"}
-              className="flex items-center gap-1 text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors max-w-[120px]"
+              className="flex items-center gap-1 text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-all duration-200 max-w-[120px]"
             >
               <span className="truncate">{docsFolder ?? "set folder"}</span>
               <Pencil size={9} className="shrink-0" />
@@ -233,7 +233,7 @@ export function DocsSection({ activeProjectDir, activeProjectId }: DocsSectionPr
                 if (e.key === "Escape") cancelEdit();
               }}
               placeholder="e.g. docs"
-              className="flex-1 min-w-0 bg-[var(--color-bg-raised)] border border-[var(--color-border-default)] rounded px-1.5 py-0.5 text-[10px] text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent-primary)]"
+              className="flex-1 min-w-0 bg-[var(--color-bg-raised)] border border-[var(--color-border-muted)] rounded-lg px-1.5 py-0.5 text-[10px] text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent-primary)]"
             />
             <button onClick={saveFolder} className="text-[var(--color-accent-primary)] hover:opacity-80">
               <Check size={11} />
@@ -272,7 +272,7 @@ export function DocsSection({ activeProjectDir, activeProjectId }: DocsSectionPr
 
               {/* Index prompt */}
               {docsEntries && !hasIndex && (
-                <div className="mx-3 mt-1 mb-1 rounded border border-[var(--color-border-default)] bg-[var(--color-bg-raised)] px-2 py-1.5">
+                <div className="mx-3 mt-1 mb-1 rounded-lg border border-[var(--color-border-muted)] bg-[var(--color-bg-raised)] px-2 py-1.5">
                   <div className="flex items-center gap-1.5 mb-1">
                     <AlertTriangle size={10} className="text-[var(--color-status-warning)] shrink-0" />
                     <span className="text-[10px] text-[var(--color-text-muted)]">
@@ -302,7 +302,7 @@ export function DocsSection({ activeProjectDir, activeProjectId }: DocsSectionPr
 
               {/* CLAUDE.md prompt */}
               {docsEntries && !claudeMdHasDocs && (
-                <div className="mx-3 mt-1 rounded border border-[var(--color-border-default)] bg-[var(--color-bg-raised)] px-2 py-1.5">
+                <div className="mx-3 mt-1 rounded-lg border border-[var(--color-border-muted)] bg-[var(--color-bg-raised)] px-2 py-1.5">
                   <div className="flex items-center gap-1.5 mb-1">
                     <AlertTriangle size={10} className="text-[var(--color-status-warning)] shrink-0" />
                     <span className="text-[10px] text-[var(--color-text-muted)]">

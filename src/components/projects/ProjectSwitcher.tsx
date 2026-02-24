@@ -109,7 +109,7 @@ export function ProjectSwitcher() {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* New session button / inline naming form */}
-      <div className="px-2 py-2 border-b border-[var(--color-border-default)]">
+      <div className="px-2 py-2 border-b border-[var(--color-border-muted)]">
         {namingSession ? (
           <form
             onSubmit={(e) => { e.preventDefault(); handleConfirmName(); }}
@@ -121,11 +121,11 @@ export function ProjectSwitcher() {
               onChange={(e) => setSessionName(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Escape") handleCancelName(); }}
               placeholder="Session name…"
-              className="flex-1 min-w-0 px-2 py-1 rounded text-xs bg-[var(--color-bg-overlay)] border border-[var(--color-accent-primary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none"
+              className="flex-1 min-w-0 px-2 py-1 rounded text-xs bg-[var(--color-bg-input)] border border-[var(--color-accent-primary)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none"
             />
             <button
               type="submit"
-              className="px-2 py-1 rounded text-xs bg-[var(--color-accent-primary)] text-white hover:opacity-90 transition-opacity"
+              className="px-2 py-1 rounded-lg text-xs bg-[var(--color-accent-primary)] text-white hover:opacity-90 transition-opacity"
             >
               Start
             </button>
@@ -141,7 +141,7 @@ export function ProjectSwitcher() {
           <button
             onClick={handleStartNaming}
             disabled={!projectId}
-            className="flex items-center gap-2 w-full px-3 py-1.5 rounded text-xs bg-[var(--color-bg-raised)] hover:bg-[var(--color-bg-overlay)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors border border-[var(--color-border-default)] disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-xs bg-[var(--color-bg-raised)] hover:bg-[var(--color-bg-overlay)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all duration-200 border border-[var(--color-border-muted)] disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Terminal size={12} />
             New Claude Session
@@ -229,7 +229,7 @@ function SessionItem({
     <button
       onClick={onClick}
       className={cn(
-        "flex flex-col w-full px-3 py-2 text-left border-b border-[var(--color-border-default)] transition-colors",
+        "flex flex-col w-full px-3 py-2.5 text-left transition-all duration-200 mx-1 my-0.5 rounded-lg",
         isOpen
           ? "bg-[var(--color-bg-raised)] text-[var(--color-text-primary)]"
           : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-raised)] hover:text-[var(--color-text-primary)]"
@@ -299,7 +299,7 @@ function NewSessionTabItem({
     <button
       onClick={onClick}
       className={cn(
-        "flex items-center gap-1.5 w-full px-3 py-2 text-left border-b border-[var(--color-border-default)] transition-colors text-xs",
+        "flex items-center gap-1.5 w-full px-3 py-2 text-left transition-colors text-xs mx-1 my-0.5 rounded-lg",
         isActive
           ? "bg-[var(--color-bg-raised)] text-[var(--color-text-primary)]"
           : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-raised)]"

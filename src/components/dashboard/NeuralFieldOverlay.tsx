@@ -30,8 +30,8 @@ function HUD() {
           <span
             style={{
               fontSize: 22,
-              color: value > 0 ? "rgba(97,175,239,0.9)" : "rgba(97,175,239,0.25)",
-              textShadow: value > 0 ? "0 0 12px rgba(97,175,239,0.6)" : "none",
+              color: value > 0 ? "rgba(212,168,83,0.9)" : "rgba(212,168,83,0.25)",
+              textShadow: value > 0 ? "0 0 12px rgba(212,168,83,0.6)" : "none",
               transition: "color 0.3s, text-shadow 0.3s",
             }}
           >
@@ -73,9 +73,9 @@ function HoverReadout({
   }, [screenX, screenY]);
 
   const typeColors: Record<FieldNode["type"], string> = {
-    project: "rgba(97,175,239,0.7)",
-    session: "rgba(152,195,121,0.7)",
-    agent: "rgba(198,120,221,0.7)",
+    project: "rgba(212,168,83,0.7)",
+    session: "rgba(74,202,98,0.7)",
+    agent: "rgba(188,140,255,0.7)",
   };
 
   const statusDot = node.isActive
@@ -85,15 +85,16 @@ function HoverReadout({
   return (
     <div
       ref={ref}
-      className="fixed pointer-events-none z-[60] px-3 py-2 rounded"
+      className="fixed pointer-events-none z-[60] px-3 py-2 rounded-xl"
       style={{
         left: pos.x,
         top: pos.y,
-        background: "rgba(0,0,0,0.75)",
-        border: "1px solid rgba(255,255,255,0.1)",
-        backdropFilter: "blur(6px)",
+        background: "rgba(20,20,25,0.85)",
+        border: "1px solid rgba(212,168,83,0.15)",
+        backdropFilter: "blur(8px)",
         fontFamily: "'Courier New', monospace",
         minWidth: 140,
+        boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
       }}
     >
       <div style={{ fontSize: 13, color: "rgba(220,230,255,0.95)", fontWeight: 600 }}>

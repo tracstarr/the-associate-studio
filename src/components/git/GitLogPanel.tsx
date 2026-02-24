@@ -114,7 +114,7 @@ function BranchTree({
     <div className="flex flex-col h-full overflow-y-auto text-xs">
       {/* HEAD */}
       <div
-        className="flex items-center gap-2 px-3 py-2 border-b border-border-default bg-accent-primary/10 cursor-context-menu"
+        className="flex items-center gap-2 px-3 py-2 border-b border-border-muted bg-accent-primary/10 cursor-context-menu"
         onContextMenu={(e) => onBranchContextMenu(e, currentBranch)}
       >
         <GitBranch size={11} className="text-accent-primary shrink-0" />
@@ -157,7 +157,7 @@ function BranchTree({
 
       {/* Remote branches */}
       {(remoteBranches?.length ?? 0) > 0 && (
-        <div className="border-t border-border-default">
+        <div className="border-t border-border-muted">
           <button
             onClick={() => setRemoteOpen((o) => !o)}
             className="flex items-center gap-1 w-full px-3 py-1.5 text-[10px] font-semibold tracking-wider text-text-muted hover:text-text-secondary uppercase"
@@ -346,10 +346,10 @@ export function GitLogPanel() {
   return (
     <div className="flex h-full overflow-hidden">
       {/* Left: Branch tree (35%) */}
-      <div className="w-[35%] border-r border-border-default overflow-hidden flex flex-col">
+      <div className="w-[35%] border-r border-border-muted overflow-hidden flex flex-col">
         {/* Inline new-branch form */}
         {newBranchFrom !== null && (
-          <div className="px-3 py-2 border-b border-border-default flex flex-col gap-1.5 shrink-0">
+          <div className="px-3 py-2 border-b border-border-muted flex flex-col gap-1.5 shrink-0">
             <div className="text-[10px] text-text-muted truncate">
               New branch from{" "}
               <span className="text-text-primary font-medium">{newBranchFrom}</span>:
@@ -364,7 +364,7 @@ export function GitLogPanel() {
                   if (e.key === "Escape") setNewBranchFrom(null);
                 }}
                 placeholder="branch name"
-                className="flex-1 min-w-0 px-2 py-1 text-xs bg-bg-base border border-border-default rounded text-text-primary placeholder-text-muted focus:outline-none focus:border-border-focus"
+                className="flex-1 min-w-0 px-2 py-1 text-xs bg-bg-base border border-border-muted rounded text-text-primary placeholder-text-muted focus:outline-none focus:border-border-focus"
                 autoFocus
               />
               <button
@@ -400,7 +400,7 @@ export function GitLogPanel() {
       {/* Right: Commit log (65%) */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header row */}
-        <div className="flex items-center gap-2 px-3 h-6 border-b border-border-default bg-bg-surface text-[10px] text-text-muted font-semibold uppercase tracking-wider shrink-0">
+        <div className="flex items-center gap-2 px-3 h-6 border-b border-border-muted bg-bg-surface text-[10px] text-text-muted font-semibold uppercase tracking-wider shrink-0">
           <span className="w-14 shrink-0">Hash</span>
           <span className="flex-1">Message</span>
           <span className="w-40 shrink-0">Refs</span>

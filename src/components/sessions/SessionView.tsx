@@ -49,7 +49,7 @@ export function SessionView({ tab, projectId }: { tab: SessionTab; projectId: st
   return (
     <div className="flex flex-col h-full overflow-hidden bg-[var(--color-bg-base)]">
       {/* Header */}
-      <div className="shrink-0 flex items-start justify-between gap-4 px-4 py-3 border-b border-[var(--color-border-default)] bg-[var(--color-bg-surface)]">
+      <div className="shrink-0 flex items-start justify-between gap-4 px-4 py-3 border-b border-[var(--color-border-muted)] bg-[var(--color-bg-surface)]">
         <div className="flex flex-col gap-1 min-w-0">
           <h2 className="text-sm font-medium text-[var(--color-text-primary)] truncate">
             {tab.title}
@@ -87,14 +87,14 @@ export function SessionView({ tab, projectId }: { tab: SessionTab; projectId: st
           </div>
         </div>
         {isActive ? (
-          <div className="shrink-0 flex items-center gap-2 px-4 py-2 rounded border border-[var(--color-status-success)] text-[var(--color-status-success)] text-sm">
+          <div className="shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg border border-[var(--color-status-success)] text-[var(--color-status-success)] text-sm">
             <Zap size={14} />
             Running
           </div>
         ) : (
           <button
             onClick={handleResume}
-            className="shrink-0 flex items-center gap-2 px-4 py-2 rounded bg-[var(--color-accent-primary)] text-white text-sm font-medium hover:opacity-90 transition-opacity"
+            className="shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--color-accent-primary)] text-white text-sm font-medium hover:opacity-90 transition-all duration-200"
             title="Resume Session (Ctrl+R)"
           >
             <Play size={14} fill="currentColor" />
@@ -105,9 +105,9 @@ export function SessionView({ tab, projectId }: { tab: SessionTab; projectId: st
 
       {/* Summaries section */}
       {tab.sessionId && (
-        <div className="shrink-0 border-b border-[var(--color-border-default)]">
+        <div className="shrink-0 border-b border-[var(--color-border-muted)]">
           <button
-            className="w-full flex items-center gap-2 px-4 py-2 text-[11px] font-medium text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-raised)] transition-colors"
+            className="w-full flex items-center gap-2 px-4 py-2 text-[11px] font-medium text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-raised)] transition-all duration-200"
             onClick={() => setSummariesOpen((o) => !o)}
           >
             {summariesOpen ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
@@ -133,7 +133,7 @@ export function SessionView({ tab, projectId }: { tab: SessionTab; projectId: st
                     return (
                       <div
                         key={s.filename}
-                        className="flex items-start justify-between gap-2 py-1.5 border-b border-[var(--color-border-default)] last:border-0"
+                        className="flex items-start justify-between gap-2 py-1.5 border-b border-[var(--color-border-muted)] last:border-0"
                       >
                         <div className="flex flex-col gap-0.5 min-w-0">
                           <div className="flex items-center gap-1.5">
@@ -155,7 +155,7 @@ export function SessionView({ tab, projectId }: { tab: SessionTab; projectId: st
                           onClick={() =>
                             openSummaryTab(tab.sessionId!, s.filename, encodedProjectDir, projectId)
                           }
-                          className="shrink-0 flex items-center gap-1 px-2 py-0.5 rounded text-[10px] bg-[var(--color-status-success)]/15 text-[var(--color-status-success)] hover:bg-[var(--color-status-success)]/25 transition-colors font-medium"
+                          className="shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] bg-[var(--color-status-success)]/15 text-[var(--color-status-success)] hover:bg-[var(--color-status-success)]/25 transition-all duration-200 font-medium"
                         >
                           <ExternalLink size={9} />
                           Open
@@ -205,7 +205,7 @@ function TranscriptRow({ item }: { item: TranscriptItem }) {
   return (
     <div
       className={cn(
-        "flex gap-3 px-4 py-3 border-b border-[var(--color-border-default)]",
+        "flex gap-3 px-4 py-3 border-b border-[var(--color-border-muted)]",
         isUser ? "bg-[var(--color-bg-surface)]" : "bg-[var(--color-bg-base)]"
       )}
     >

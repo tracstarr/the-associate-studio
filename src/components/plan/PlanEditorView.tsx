@@ -59,16 +59,16 @@ export function PlanEditorView({ filename }: PlanEditorViewProps) {
   return (
     <div className="flex flex-col h-full bg-[var(--color-bg-base)]">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 px-4 h-9 border-b border-[var(--color-border-default)] bg-[var(--color-bg-surface)] shrink-0">
+      <div className="flex items-center gap-2 px-4 h-9 border-b border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] shrink-0">
         <span className="text-[11px] text-[var(--color-text-muted)] font-mono truncate flex-1">
           ~/.claude/plans/{filename}
         </span>
 
-        <div className="flex items-center rounded overflow-hidden border border-[var(--color-border-default)]">
+        <div className="flex items-center rounded-lg overflow-hidden border border-[var(--color-border-muted)]">
           <button
             onClick={cancelEdit}
             className={cn(
-              "flex items-center gap-1 px-2 py-1 text-[10px] transition-colors",
+              "flex items-center gap-1 px-2 py-1 text-[10px] transition-all duration-200",
               mode === "preview"
                 ? "bg-[var(--color-bg-raised)] text-[var(--color-text-primary)]"
                 : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-raised)]"
@@ -80,7 +80,7 @@ export function PlanEditorView({ filename }: PlanEditorViewProps) {
           <button
             onClick={enterEdit}
             className={cn(
-              "flex items-center gap-1 px-2 py-1 text-[10px] transition-colors border-l border-[var(--color-border-default)]",
+              "flex items-center gap-1 px-2 py-1 text-[10px] transition-all duration-200 border-l border-[var(--color-border-muted)]",
               mode === "edit"
                 ? "bg-[var(--color-bg-raised)] text-[var(--color-text-primary)]"
                 : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-raised)]"
@@ -96,7 +96,7 @@ export function PlanEditorView({ filename }: PlanEditorViewProps) {
             onClick={handleSave}
             disabled={saving}
             className={cn(
-              "flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-medium transition-all",
+              "flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all duration-200",
               savedFlash
                 ? "bg-[var(--color-status-success)] text-white"
                 : "bg-[var(--color-accent-primary)] text-white hover:opacity-90",
@@ -227,7 +227,7 @@ function BlockView({ block }: { block: Block }) {
       );
     case "h2":
       return (
-        <h2 className="text-base font-semibold text-[var(--color-text-primary)] mt-5 mb-2 pt-2 border-t border-[var(--color-border-default)]">
+        <h2 className="text-base font-semibold text-[var(--color-text-primary)] mt-5 mb-2 pt-2 border-t border-[var(--color-border-muted)]">
           {block.text}
         </h2>
       );
@@ -238,12 +238,12 @@ function BlockView({ block }: { block: Block }) {
         </h3>
       );
     case "hr":
-      return <hr className="border-[var(--color-border-default)] my-4" />;
+      return <hr className="border-[var(--color-border-muted)] my-4" />;
     case "blank":
       return <div className="h-1" />;
     case "code":
       return (
-        <pre className="bg-[var(--color-bg-raised)] border border-[var(--color-border-default)] rounded p-3 my-2 overflow-x-auto">
+        <pre className="bg-[var(--color-bg-raised)] border border-[var(--color-border-muted)] rounded p-3 my-2 overflow-x-auto">
           <code className="text-xs font-mono text-[var(--color-accent-secondary)]">
             {block.lines.join("\n")}
           </code>

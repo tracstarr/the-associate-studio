@@ -37,23 +37,23 @@ function BottomPanelComponent() {
     : BASE_TABS;
 
   return (
-    <div className="flex flex-col h-full bg-bg-surface">
+    <div className="flex flex-col h-full">
       {/* Tab strip */}
-      <div className="flex items-center h-8 border-b border-border-default/60 px-1 gap-1">
+      <div className="flex items-center h-9 border-b border-border-muted px-2 gap-1">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setTab(tab.id)}
             className={cn(
-              "px-3 py-1 text-xs rounded-lg transition-colors flex items-center",
+              "px-4 py-1.5 text-xs rounded-lg transition-all duration-200 flex items-center",
               activeTab === tab.id
-                ? "text-text-primary bg-bg-overlay"
-                : "text-text-muted hover:text-text-secondary"
+                ? "text-accent-primary bg-accent-primary/10 font-medium"
+                : "text-text-muted hover:text-text-secondary hover:bg-bg-raised/50"
             )}
           >
             {tab.label}
             {tab.id === "debug" && debugCount > 0 && (
-              <span className="ml-1 px-1 text-[9px] rounded bg-bg-base text-text-muted font-mono">
+              <span className="ml-1.5 px-1.5 text-[9px] rounded-full bg-bg-base text-text-muted font-mono">
                 {debugCount > 99 ? "99+" : debugCount}
               </span>
             )}

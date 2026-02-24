@@ -68,7 +68,7 @@ function Input({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full text-xs px-2.5 py-1.5 rounded bg-bg-raised border border-border-default text-text-primary placeholder:text-text-muted outline-none focus:border-border-focus"
+      className="w-full text-xs px-2.5 py-1.5 rounded-lg bg-bg-raised border border-border-muted text-text-primary placeholder:text-text-muted outline-none focus:border-border-focus"
     />
   );
 }
@@ -91,10 +91,10 @@ function Btn({
       onClick={onClick}
       disabled={disabled || loading}
       className={cn(
-        "flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors disabled:opacity-50",
+        "flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-all duration-200 disabled:opacity-50",
         variant === "danger"
           ? "border-status-error text-status-error hover:bg-status-error/10"
-          : "border-border-default text-text-secondary hover:bg-bg-overlay hover:text-text-primary"
+          : "border-border-muted text-text-secondary hover:bg-bg-overlay hover:text-text-primary"
       )}
     >
       {loading && <Loader size={11} className="animate-spin" />}
@@ -241,13 +241,13 @@ function GithubSection() {
       ) : (
         <>
           {/* Mode toggle */}
-          <div className="flex rounded border border-border-default overflow-hidden text-xs">
+          <div className="flex rounded-lg border border-border-muted overflow-hidden text-xs">
             {(["oauth", "pat"] as const).map((m) => (
               <button
                 key={m}
                 onClick={() => setMode(m)}
                 className={cn(
-                  "flex-1 py-1 transition-colors",
+                  "flex-1 py-1 transition-all duration-200",
                   mode === m
                     ? "bg-accent-primary/20 text-accent-primary"
                     : "text-text-muted hover:text-text-secondary"
@@ -278,7 +278,7 @@ function GithubSection() {
               />
 
               {status === "polling" && userCode && (
-                <div className="p-3 rounded bg-bg-raised border border-border-focus space-y-2">
+                <div className="p-3 rounded-lg bg-bg-raised border border-border-focus space-y-2">
                   <p className="text-[11px] text-text-secondary">
                     Enter this code at{" "}
                     <span className="text-accent-primary">{verifyUrl}</span>
@@ -305,9 +305,9 @@ function GithubSection() {
             <div className="space-y-2">
               <label className="text-[11px] text-text-muted block">
                 Personal Access Token — needs{" "}
-                <code className="text-[10px] bg-bg-raised px-1 rounded">repo</code>
+                <code className="text-[10px] bg-bg-raised px-1 rounded-md">repo</code>
                 {" + "}
-                <code className="text-[10px] bg-bg-raised px-1 rounded">read:org</code>
+                <code className="text-[10px] bg-bg-raised px-1 rounded-md">read:org</code>
               </label>
               <Input
                 value={patInput}
@@ -607,7 +607,7 @@ function SessionTrackingSection() {
 
 function SectionHeader({ children }: { children: React.ReactNode }) {
   return (
-    <div className="sticky top-0 z-10 py-2 bg-[var(--color-bg-base)] border-b border-[var(--color-border-default)] mb-6 text-xs font-semibold uppercase tracking-widest text-[var(--color-text-muted)]">
+    <div className="sticky top-0 z-10 py-2 bg-[var(--color-bg-base)] border-b border-[var(--color-border-muted)] mb-6 text-xs font-semibold uppercase tracking-widest text-[var(--color-text-muted)]">
       {children}
     </div>
   );
@@ -637,7 +637,7 @@ export function SettingsTab() {
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setFontSize(Math.max(fontSize - 1, 8))}
-                  className="w-7 h-7 rounded bg-bg-raised border border-border-default text-text-secondary hover:bg-bg-overlay text-sm"
+                  className="w-7 h-7 rounded-lg bg-bg-raised border border-border-muted text-text-secondary hover:bg-bg-overlay text-sm transition-all duration-200"
                 >
                   -
                 </button>
@@ -651,7 +651,7 @@ export function SettingsTab() {
                 />
                 <button
                   onClick={() => setFontSize(Math.min(fontSize + 1, 24))}
-                  className="w-7 h-7 rounded bg-bg-raised border border-border-default text-text-secondary hover:bg-bg-overlay text-sm"
+                  className="w-7 h-7 rounded-lg bg-bg-raised border border-border-muted text-text-secondary hover:bg-bg-overlay text-sm transition-all duration-200"
                 >
                   +
                 </button>
@@ -671,7 +671,7 @@ export function SettingsTab() {
                   type="checkbox"
                   checked={openStartupFiles}
                   onChange={(e) => setOpenStartupFiles(e.target.checked)}
-                  className="rounded"
+                  className="rounded-md"
                 />
                 <span className="text-xs font-medium text-text-secondary">
                   Open CLAUDE.md &amp; README.md when switching projects
@@ -690,7 +690,7 @@ export function SettingsTab() {
               <select
                 value={fontFamily}
                 onChange={(e) => setFontFamily(e.target.value)}
-                className="w-full text-xs px-2 py-1.5 rounded bg-bg-raised border border-border-default text-text-secondary outline-none focus:border-border-focus"
+                className="w-full text-xs px-2 py-1.5 rounded-lg bg-bg-raised border border-border-muted text-text-secondary outline-none focus:border-border-focus"
               >
                 {FONT_FAMILIES.map((f) => (
                   <option key={f.value} value={f.value}>
@@ -706,7 +706,7 @@ export function SettingsTab() {
                 Preview
               </label>
               <div
-                className="p-3 rounded bg-bg-terminal text-text-primary"
+                className="p-3 rounded-lg bg-bg-terminal text-text-primary"
                 style={{ fontFamily, fontSize }}
               >
                 <span className="text-accent-primary">claude</span>
@@ -731,7 +731,7 @@ export function SettingsTab() {
                   ["Ctrl+=/-", "Font size"],
                 ].map(([key, desc]) => (
                   <div key={key} className="flex items-center gap-2">
-                    <kbd className="text-[10px] border border-border-default px-1.5 py-0.5 rounded font-mono text-text-muted">
+                    <kbd className="text-[10px] border border-border-muted px-1.5 py-0.5 rounded-md font-mono text-text-muted">
                       {key}
                     </kbd>
                     <span className="text-[10px] text-text-muted">{desc}</span>
@@ -747,9 +747,9 @@ export function SettingsTab() {
           <SectionHeader>Integrations</SectionHeader>
           <div className="space-y-6">
             <GithubSection />
-            <div className="border-t border-border-default" />
+            <div className="border-t border-border-muted" />
             <LinearSection />
-            <div className="border-t border-border-default" />
+            <div className="border-t border-border-muted" />
             <JiraSection />
           </div>
         </section>

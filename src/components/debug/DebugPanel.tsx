@@ -42,7 +42,7 @@ function DebugEntryRow({ entry }: { entry: DebugEntry }) {
 
   return (
     <div
-      className="px-3 py-1.5 border-b border-[var(--color-border-default)]/50 text-xs hover:bg-[var(--color-bg-surface)] transition-colors"
+      className="px-3 py-1.5 border-b border-[var(--color-border-muted)]/50 text-xs hover:bg-[var(--color-bg-surface)] transition-all duration-200"
       style={{ color: LEVEL_COLORS[entry.level] }}
     >
       <div className="flex items-start gap-2">
@@ -53,7 +53,7 @@ function DebugEntryRow({ entry }: { entry: DebugEntry }) {
           {entry.timestamp}
         </span>
         <span
-          className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium"
+          className="shrink-0 px-1.5 py-0.5 rounded-md text-[10px] font-medium"
           style={{
             color: getCategoryColor(entry.category),
             backgroundColor: "var(--color-bg-base)",
@@ -68,7 +68,7 @@ function DebugEntryRow({ entry }: { entry: DebugEntry }) {
         <div className="mt-1 ml-[72px]">
           <button
             onClick={() => setExpanded(!expanded)}
-            className="inline-flex items-center gap-0.5 text-[10px] font-mono hover:text-[var(--color-accent-primary)] transition-colors"
+            className="inline-flex items-center gap-0.5 text-[10px] font-mono hover:text-[var(--color-accent-primary)] transition-all duration-200"
             style={{ color: "var(--color-text-muted)" }}
           >
             {expanded ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
@@ -76,11 +76,11 @@ function DebugEntryRow({ entry }: { entry: DebugEntry }) {
           </button>
           {expanded && (
             <pre
-              className="mt-1 p-2 rounded text-[10px] font-mono whitespace-pre-wrap break-all"
+              className="mt-1 p-2 rounded-md text-[10px] font-mono whitespace-pre-wrap break-all"
               style={{
                 backgroundColor: "var(--color-bg-base)",
                 color: "var(--color-text-secondary)",
-                border: "1px solid var(--color-border-default)",
+                border: "1px solid var(--color-border-muted)",
               }}
             >
               {JSON.stringify(entry.data, null, 2)}
@@ -114,7 +114,7 @@ export function DebugPanel() {
       {/* Header */}
       <div
         className="flex items-center gap-2 px-3 py-1.5 border-b shrink-0 flex-wrap"
-        style={{ borderColor: "var(--color-border-default)" }}
+        style={{ borderColor: "var(--color-border-muted)" }}
       >
         <span
           className="text-xs font-semibold"
@@ -123,11 +123,11 @@ export function DebugPanel() {
           Debug
         </span>
         <span
-          className="px-1.5 py-0.5 rounded text-[10px] font-mono"
+          className="px-1.5 py-0.5 rounded-md text-[10px] font-mono"
           style={{
             backgroundColor: "var(--color-bg-base)",
             color: "var(--color-text-muted)",
-            border: "1px solid var(--color-border-default)",
+            border: "1px solid var(--color-border-muted)",
           }}
         >
           {entries.length}
@@ -139,7 +139,7 @@ export function DebugPanel() {
               key={f.id}
               onClick={() => setLevelFilter(f.id)}
               className={cn(
-                "px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors",
+                "px-1.5 py-0.5 rounded-md text-[10px] font-mono transition-all duration-200",
                 levelFilter === f.id
                   ? "bg-bg-overlay text-text-primary"
                   : "text-text-muted hover:text-text-secondary"
@@ -152,7 +152,7 @@ export function DebugPanel() {
         <div className="flex-1" />
         <button
           onClick={clearLog}
-          className="p-1 rounded hover:bg-[var(--color-bg-surface)] transition-colors"
+          className="p-1 rounded-md hover:bg-[var(--color-bg-surface)] transition-all duration-200"
           style={{ color: "var(--color-text-muted)" }}
           title="Clear log"
         >

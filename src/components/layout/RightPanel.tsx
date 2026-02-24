@@ -8,8 +8,8 @@ function RightPanelComponent() {
   const activeTab = useUIStore((s) => s.activeRightTab);
 
   return (
-    <div className="flex flex-col h-full bg-bg-surface">
-      <div className="px-3 py-1.5 text-xs font-semibold text-text-muted border-b border-border-default capitalize shrink-0">
+    <div className="flex flex-col h-full">
+      <div className="px-5 py-2.5 text-xs font-semibold text-accent-primary border-b border-border-muted capitalize shrink-0">
         {activeTab}
       </div>
       <div className="flex-1 overflow-hidden">

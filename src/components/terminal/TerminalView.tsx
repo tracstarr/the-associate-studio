@@ -46,24 +46,24 @@ export function TerminalView({ sessionId, resumeSessionId, cwd, isActive }: Term
 
     const term = new Terminal({
       theme: {
-        background: "#0A0E14",
-        foreground: "#E6EDF3",
-        cursor: "#58A6FF",
-        cursorAccent: "#0A0E14",
-        selectionBackground: "rgba(88, 166, 255, 0.3)",
-        black: "#1C2128",
+        background: "#111116",
+        foreground: "#EEEEF2",
+        cursor: "#D4A853",
+        cursorAccent: "#111116",
+        selectionBackground: "rgba(212, 168, 83, 0.25)",
+        black: "#26262F",
         red: "#F85149",
-        green: "#3FB950",
-        yellow: "#D29922",
-        blue: "#58A6FF",
+        green: "#4ACA62",
+        yellow: "#E0A82E",
+        blue: "#D4A853",
         magenta: "#BC8CFF",
         cyan: "#39C5CF",
-        white: "#E6EDF3",
-        brightBlack: "#484F58",
+        white: "#EEEEF2",
+        brightBlack: "#62627A",
         brightRed: "#F85149",
-        brightGreen: "#3FB950",
-        brightYellow: "#D29922",
-        brightBlue: "#79C0FF",
+        brightGreen: "#4ACA62",
+        brightYellow: "#E8C97A",
+        brightBlue: "#E8C97A",
         brightMagenta: "#D2A8FF",
         brightCyan: "#56D364",
         brightWhite: "#FFFFFF",
@@ -187,7 +187,7 @@ export function TerminalView({ sessionId, resumeSessionId, cwd, isActive }: Term
     <div
       ref={containerRef}
       className="w-full h-full"
-      style={{ backgroundColor: "#0A0E14" }}
+      style={{ backgroundColor: "#111116" }}
     />
   );
 }

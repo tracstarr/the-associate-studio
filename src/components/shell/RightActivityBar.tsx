@@ -31,8 +31,8 @@ function RightActivityBarComponent() {
   };
 
   return (
-    <div className="flex flex-col items-center w-12 bg-bg-base border-l border-border-default py-2 shrink-0">
-      <div className="flex flex-col items-center gap-1">
+    <div className="flex flex-col items-center w-12 bg-bg-base py-3 shrink-0">
+      <div className="flex flex-col items-center gap-2">
         {rightItems.map((item) => {
           const isActive = rightPanelOpen && activeRightTab === item.id;
           const Icon = item.icon;
@@ -42,17 +42,17 @@ function RightActivityBarComponent() {
               onClick={() => handleClick(item.id)}
               title={item.label}
               className={cn(
-                "relative flex items-center justify-center w-10 h-10 rounded-md transition-colors",
+                "relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200",
                 isActive
-                  ? "text-actbar-icon-active"
-                  : "text-actbar-icon-default hover:text-text-secondary"
+                  ? "text-actbar-icon-active bg-bg-raised"
+                  : "text-actbar-icon-default hover:text-text-secondary hover:bg-bg-surface"
               )}
               aria-label={item.label}
             >
               {isActive && (
-                <div className="absolute right-0 top-1.5 bottom-1.5 w-0.5 rounded-l bg-actbar-indicator" />
+                <div className="absolute right-0 top-2 bottom-2 w-[3px] rounded-l-full bg-actbar-indicator" style={{ boxShadow: "0 0 6px rgba(212,168,83,0.4)" }} />
               )}
-              <Icon size={22} />
+              <Icon size={20} />
             </button>
           );
         })}

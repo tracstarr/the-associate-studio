@@ -22,19 +22,21 @@ function IDELayoutComponent() {
   ];
 
   return (
-    <PanelGroup direction="vertical" className="flex-1 overflow-hidden">
+    <PanelGroup direction="vertical" className="flex-1 overflow-hidden p-1.5 gap-1.5 bg-bg-base">
       {/* Top section: activity bars + sidebar + main + right panel */}
       <Panel minSize={30}>
-        <div className="flex h-full overflow-hidden">
+        <div className="flex h-full overflow-hidden gap-1.5">
           <ActivityBar />
 
-          <PanelGroup direction="horizontal" className="flex-1">
+          <PanelGroup direction="horizontal" className="flex-1 gap-1.5">
             {sidebarOpen && (
               <>
                 <Panel defaultSize={18} minSize={10} maxSize={30}>
-                  <Sidebar />
+                  <div className="h-full rounded-xl overflow-hidden bg-bg-surface" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }}>
+                    <Sidebar />
+                  </div>
                 </Panel>
-                <PanelResizeHandle className="w-px bg-border-default/40 hover:bg-accent-primary transition-colors" />
+                <PanelResizeHandle className="w-1 rounded-full hover:bg-accent-primary/60 transition-all duration-200" />
               </>
             )}
 
@@ -44,7 +46,7 @@ function IDELayoutComponent() {
               }
               minSize={30}
             >
-              <div className="relative w-full h-full">
+              <div className="relative w-full h-full rounded-xl overflow-hidden" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }}>
                 {projectIds.map((pid) => (
                   <div
                     key={pid}
@@ -59,9 +61,11 @@ function IDELayoutComponent() {
 
             {rightPanelOpen && (
               <>
-                <PanelResizeHandle className="w-px bg-border-default/40 hover:bg-accent-primary transition-colors" />
+                <PanelResizeHandle className="w-1 rounded-full hover:bg-accent-primary/60 transition-all duration-200" />
                 <Panel defaultSize={25} minSize={15} maxSize={40}>
-                  <RightPanel />
+                  <div className="h-full rounded-xl overflow-hidden bg-bg-surface" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }}>
+                    <RightPanel />
+                  </div>
                 </Panel>
               </>
             )}
@@ -74,9 +78,11 @@ function IDELayoutComponent() {
       {/* Full-width bottom panel */}
       {bottomPanelOpen && (
         <>
-          <PanelResizeHandle className="h-1 bg-border-default/30 hover:bg-accent-primary/50 cursor-row-resize transition-colors" />
+          <PanelResizeHandle className="h-1 rounded-full hover:bg-accent-primary/60 cursor-row-resize transition-all duration-200" />
           <Panel defaultSize={25} minSize={10} maxSize={60}>
-            <BottomPanel />
+            <div className="h-full rounded-xl overflow-hidden bg-bg-surface" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }}>
+              <BottomPanel />
+            </div>
           </Panel>
         </>
       )}

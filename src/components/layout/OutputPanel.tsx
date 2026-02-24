@@ -16,14 +16,14 @@ export function OutputPanel() {
   return (
     <div className="flex flex-col h-full bg-bg-surface">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 h-6 border-b border-border-default/60 shrink-0">
+      <div className="flex items-center justify-between px-3 h-6 border-b border-border-muted/60 shrink-0">
         <span className="text-[10px] font-semibold tracking-wider text-text-muted uppercase">
           Output
         </span>
         {messages.length > 0 && (
           <button
             onClick={clear}
-            className="text-[10px] text-text-muted hover:text-text-primary transition-colors"
+            className="text-[10px] text-text-muted hover:text-text-primary transition-all duration-200"
           >
             Clear
           </button>

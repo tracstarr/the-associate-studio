@@ -34,7 +34,7 @@ export function FileTreeNode({
     return (
       <button
         onClick={() => onToggle(entry.path)}
-        className="flex items-center gap-1.5 w-full px-2 py-0.5 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-raised)] hover:text-[var(--color-text-primary)] transition-colors text-left group"
+        className="flex items-center gap-1.5 w-full px-2 py-0.5 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-raised)] hover:text-[var(--color-text-primary)] transition-all duration-200 text-left group rounded-md mx-0.5"
         style={{ paddingLeft: `${8 + indent}px` }}
       >
         <span className="shrink-0 text-[var(--color-text-muted)]">
@@ -64,7 +64,7 @@ export function FileTreeNode({
   return (
     <button
       onClick={() => onFileClick(entry)}
-      className="flex items-center gap-1.5 w-full px-2 py-0.5 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-raised)] hover:text-[var(--color-text-primary)] transition-colors text-left group"
+      className="flex items-center gap-1.5 w-full px-2 py-0.5 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-raised)] hover:text-[var(--color-text-primary)] transition-all duration-200 text-left group rounded-md mx-0.5"
       style={{ paddingLeft: `${8 + indent + 14}px` }}
     >
       <span className="shrink-0 text-[var(--color-text-muted)]">

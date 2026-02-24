@@ -332,8 +332,8 @@ export function NeuralFieldCanvas({
 
       // ── Background ──
       const bg = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) / 1.5);
-      bg.addColorStop(0, "#090912");
-      bg.addColorStop(1, "#000005");
+      bg.addColorStop(0, "#0E0E14");
+      bg.addColorStop(1, "#08080C");
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, w, h);
 
@@ -343,7 +343,7 @@ export function NeuralFieldCanvas({
         s.ny = (s.ny + s.vy * delta + 1) % 1;
         ctx.beginPath();
         ctx.arc(s.nx * w, s.ny * h, s.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(180,200,255,${s.opacity})`;
+        ctx.fillStyle = `rgba(212,190,160,${s.opacity})`;
         ctx.fill();
       }
 
@@ -439,7 +439,7 @@ export function NeuralFieldCanvas({
             ctx.beginPath();
             ctx.moveTo(parent.x, parent.y);
             ctx.lineTo(p.x, p.y);
-            ctx.strokeStyle = "rgba(100,140,255,0.08)";
+            ctx.strokeStyle = "rgba(212,168,83,0.08)";
             ctx.lineWidth = 0.5;
             ctx.stroke();
           }
@@ -460,10 +460,10 @@ export function NeuralFieldCanvas({
           for (let i = 1; i < arc.segments.length; i++) {
             ctx.lineTo(arc.segments[i].x, arc.segments[i].y);
           }
-          ctx.strokeStyle = `rgba(140,240,255,${alpha})`;
+          ctx.strokeStyle = `rgba(212,168,83,${alpha})`;
           ctx.lineWidth = 1;
           ctx.shadowBlur = 8;
-          ctx.shadowColor = `rgba(140,240,255,${alpha * 0.7})`;
+          ctx.shadowColor = `rgba(212,168,83,${alpha * 0.7})`;
           ctx.stroke();
           ctx.restore();
         }
@@ -510,12 +510,12 @@ export function NeuralFieldCanvas({
 
         // Labels
         const la = isHov ? 0.9 : 0.35;
-        ctx.fillStyle = `rgba(200,220,255,${la})`;
+        ctx.fillStyle = `rgba(238,238,242,${la})`;
         ctx.font = `${isHov ? "bold " : ""}11px 'Courier New',monospace`;
         ctx.textAlign = "center";
         ctx.fillText(p.label, p.x, p.y + r + 14);
         if (p.sublabel) {
-          ctx.fillStyle = `rgba(140,160,200,${la * 0.7})`;
+          ctx.fillStyle = `rgba(157,157,173,${la * 0.7})`;
           ctx.font = "9px 'Courier New',monospace";
           ctx.fillText(p.sublabel, p.x, p.y + r + 25);
         }

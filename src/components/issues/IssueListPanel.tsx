@@ -38,13 +38,13 @@ export function IssueListPanel() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="flex items-center border-b border-[var(--color-border-default)] px-2 py-1 gap-1">
+      <div className="flex items-center border-b border-[var(--color-border-muted)] px-2 py-1 gap-1">
         {(["open", "closed", "all"] as const).map((s) => (
           <button
             key={s}
             onClick={() => setState(s)}
             className={cn(
-              "px-2 py-0.5 rounded text-[10px] capitalize transition-colors",
+              "px-2 py-0.5 rounded-lg text-[10px] capitalize transition-all duration-200",
               state === s
                 ? "bg-[var(--color-bg-raised)] text-[var(--color-text-primary)]"
                 : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
@@ -117,7 +117,7 @@ function IssueItem({ issue }: { issue: Issue }) {
   const displayId = issue.identifier ?? `#${issue.number}`;
 
   return (
-    <div className="px-3 py-2 border-b border-[var(--color-border-default)] hover:bg-[var(--color-bg-raised)] transition-colors">
+    <div className="px-3 py-2 border-b border-[var(--color-border-muted)] hover:bg-[var(--color-bg-raised)] transition-all duration-200">
       <div className="flex items-start gap-2">
         <SourceBadge source={issue.source} />
         {issue.state === "open" ? (

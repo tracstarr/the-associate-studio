@@ -51,7 +51,7 @@ function StatusBarComponent() {
     <div
       className={cn(
         "flex items-center justify-between",
-        "h-6 px-3 bg-bg-surface border-t border-border-default",
+        "h-7 px-4 bg-bg-surface",
         "text-xs text-text-secondary select-none shrink-0"
       )}
     >

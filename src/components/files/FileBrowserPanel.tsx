@@ -132,7 +132,7 @@ export function FileBrowserPanel() {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Search bar */}
-      <div className="flex items-center gap-2 px-2 py-1.5 border-b border-[var(--color-border-default)]">
+      <div className="flex items-center gap-2 px-2 py-1.5 border-b border-[var(--color-border-muted)]">
         <Search size={11} className="text-[var(--color-text-muted)] shrink-0" />
         <input
           type="text"
@@ -144,7 +144,7 @@ export function FileBrowserPanel() {
         <button
           onClick={loadRoot}
           title="Refresh"
-          className="text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors"
+          className="text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-all duration-200 rounded-md p-0.5 hover:bg-[var(--color-bg-raised)]"
         >
           <RefreshCw size={11} />
         </button>

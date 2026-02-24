@@ -334,7 +334,7 @@ export function GitStatusPanel() {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Branch header */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-border-default">
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-border-muted">
         <GitBranch size={12} className="text-accent-primary shrink-0" />
         <span className="text-xs text-text-primary font-medium truncate flex-1">
           {currentBranch}
@@ -363,7 +363,7 @@ export function GitStatusPanel() {
       </div>
 
       {/* Quick commit actions */}
-      <div className="flex items-center gap-1 px-3 py-1.5 border-b border-border-default">
+      <div className="flex items-center gap-1 px-3 py-1.5 border-b border-border-muted">
         {[
           { action: "commit" as const, label: "Commit", icon: GitCommitHorizontal },
           { action: "commit_push" as const, label: "+ Push", icon: Upload },
@@ -374,7 +374,7 @@ export function GitStatusPanel() {
             onClick={() => handleGitAction(action)}
             disabled={!!gitActionLoading}
             title={action === "commit" ? "Commit all changes" : action === "commit_push" ? "Commit & push" : "Commit, push & create PR"}
-            className="flex items-center gap-1 px-2 py-0.5 text-[10px] rounded border border-border-default text-text-muted hover:text-text-primary hover:border-border-focus disabled:opacity-50 transition-colors"
+            className="flex items-center gap-1 px-2.5 py-1 text-[10px] rounded-lg border border-border-muted text-text-muted hover:text-text-primary hover:border-border-focus disabled:opacity-50 transition-all duration-200"
           >
             {gitActionLoading === action
               ? <Loader2 size={9} className="animate-spin" />
@@ -387,7 +387,7 @@ export function GitStatusPanel() {
       {/* Result message */}
       {gitActionResult && (
         <div className={cn(
-          "px-3 py-1 text-[10px] border-b border-border-default",
+          "px-3 py-1 text-[10px] border-b border-border-muted",
           gitActionResult.ok ? "text-status-success" : "text-status-error"
         )}>
           {gitActionResult.msg.split("\n").slice(-3).join(" · ")}
@@ -402,7 +402,7 @@ export function GitStatusPanel() {
 
       {/* Inline new branch form */}
       {showNewBranchForm && (
-        <div className="px-3 py-2 border-b border-border-default flex flex-col gap-1.5">
+        <div className="px-3 py-2 border-b border-border-muted flex flex-col gap-1.5">
           <div className="text-[10px] text-text-muted">
             New branch from <span className="text-text-primary font-medium">{currentBranch}</span>:
           </div>
@@ -416,13 +416,13 @@ export function GitStatusPanel() {
                 if (e.key === "Escape") setShowNewBranchForm(false);
               }}
               placeholder="branch name"
-              className="flex-1 min-w-0 px-2 py-1 text-xs bg-bg-base border border-border-default rounded text-text-primary placeholder-text-muted focus:outline-none focus:border-border-focus"
+              className="flex-1 min-w-0 px-2 py-1 text-xs bg-bg-base border border-border-muted rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:border-border-focus"
               autoFocus
             />
             <button
               onClick={handleCreateNewBranch}
               disabled={newBranchLoading || !newBranchName.trim()}
-              className="flex items-center gap-1 px-2 py-1 text-xs bg-accent-primary text-white rounded hover:opacity-90 disabled:opacity-50 transition-opacity shrink-0"
+              className="flex items-center gap-1 px-2 py-1 text-xs bg-accent-primary text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity shrink-0"
             >
               {newBranchLoading ? <Loader2 size={10} className="animate-spin" /> : null}
               Create
@@ -442,7 +442,7 @@ export function GitStatusPanel() {
 
       {/* Inline worktree creation form */}
       {showWorktreeForm && (
-        <div className="px-3 py-2 border-b border-border-default flex flex-col gap-1.5">
+        <div className="px-3 py-2 border-b border-border-muted flex flex-col gap-1.5">
           <div className="flex items-center gap-1.5">
             <input
               type="text"
@@ -453,13 +453,13 @@ export function GitStatusPanel() {
                 if (e.key === "Escape") setShowWorktreeForm(false);
               }}
               placeholder="branch name"
-              className="flex-1 min-w-0 px-2 py-1 text-xs bg-bg-base border border-border-default rounded text-text-primary placeholder-text-muted focus:outline-none focus:border-border-focus"
+              className="flex-1 min-w-0 px-2 py-1 text-xs bg-bg-base border border-border-muted rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:border-border-focus"
               autoFocus
             />
             <button
               onClick={handleCreateWorktree}
               disabled={worktreeLoading || !worktreeBranch.trim()}
-              className="flex items-center gap-1 px-2 py-1 text-xs bg-accent-primary text-white rounded hover:opacity-90 disabled:opacity-50 transition-opacity shrink-0"
+              className="flex items-center gap-1 px-2 py-1 text-xs bg-accent-primary text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity shrink-0"
             >
               {worktreeLoading ? <Loader2 size={10} className="animate-spin" /> : null}
               Create
@@ -480,7 +480,7 @@ export function GitStatusPanel() {
       <div className="flex-1 overflow-y-auto">
         {/* ── Worktrees section ── */}
         {worktrees && worktrees.length > 0 && (
-          <div className="border-b border-border-default">
+          <div className="border-b border-border-muted">
             <button
               onClick={() => setWorktreesOpen((o) => !o)}
               className="flex items-center gap-1 w-full px-3 py-1.5 text-[10px] font-semibold tracking-wider text-text-muted hover:text-text-secondary uppercase"
@@ -539,7 +539,7 @@ export function GitStatusPanel() {
         )}
 
         {/* ── Copy on create (main) / Copied files (worktree) ── */}
-        <div className="border-b border-border-default">
+        <div className="border-b border-border-muted">
           <button
             onClick={() => setCopyOpen((o) => !o)}
             className="flex items-center gap-1 w-full px-3 py-1.5 text-[10px] font-semibold tracking-wider text-text-muted hover:text-text-secondary uppercase"
@@ -587,7 +587,7 @@ export function GitStatusPanel() {
                     {showFilePicker ? "Close picker" : "Browse files"}
                   </button>
                   {showFilePicker && (
-                    <div className="border-t border-border-default max-h-[180px] overflow-y-auto">
+                    <div className="border-t border-border-muted max-h-[180px] overflow-y-auto">
                       {pickerLoading ? (
                         <div className="px-4 py-1 text-[10px] text-text-muted">Loading...</div>
                       ) : pickerRootEntries.length === 0 ? (
@@ -720,7 +720,7 @@ function FileEntry({ file, onClick, isSelected, onContextMenu }: { file: GitFile
       onClick={onClick}
       onContextMenu={onContextMenu}
       className={cn(
-        "flex items-center gap-2 w-full px-4 py-1 text-xs text-left transition-colors",
+        "flex items-center gap-2 w-full px-4 py-1 text-xs text-left transition-all duration-200 rounded-md mx-1",
         isSelected
           ? "bg-bg-raised text-text-primary"
           : "text-text-secondary hover:bg-bg-raised hover:text-text-primary"

@@ -45,7 +45,7 @@ function avatarInitials(name: string): string {
 function ProjectAvatar({ name, size = 16 }: { name: string; size?: number }) {
   return (
     <span
-      className="inline-flex items-center justify-center rounded-sm font-bold shrink-0"
+      className="inline-flex items-center justify-center rounded-md font-bold shrink-0"
       style={{
         width: size,
         height: size,
@@ -286,14 +286,14 @@ function BranchDropdown({
   return (
     <div
       ref={ref}
-      className="absolute left-0 top-full mt-1 z-50 min-w-60 max-w-80 bg-bg-overlay border border-border-default rounded shadow-lg py-1 text-xs"
+      className="panel-card-overlay absolute left-0 top-full mt-2 z-50 min-w-60 max-w-80 py-1.5 text-xs"
     >
       {/* Action toolbar */}
-      <div className="flex items-center gap-1 px-2 py-1.5 border-b border-border-default">
+      <div className="flex items-center gap-1 px-2 py-1.5 border-b border-border-muted mx-1">
         <button
           onClick={handleFetch}
           title="Fetch all remotes"
-          className="flex items-center gap-1 px-2 py-1 rounded text-text-secondary hover:bg-bg-raised hover:text-text-primary transition-colors"
+          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-text-secondary hover:bg-bg-raised hover:text-text-primary transition-all duration-200"
         >
           <RefreshCw size={11} />
           Fetch
@@ -301,7 +301,7 @@ function BranchDropdown({
         <button
           onClick={handlePull}
           title="Pull current branch"
-          className="flex items-center gap-1 px-2 py-1 rounded text-text-secondary hover:bg-bg-raised hover:text-text-primary transition-colors"
+          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-text-secondary hover:bg-bg-raised hover:text-text-primary transition-all duration-200"
         >
           <GitMerge size={11} />
           Pull
@@ -310,7 +310,7 @@ function BranchDropdown({
           onClick={() => setShowNewBranchInput((v) => !v)}
           title="New branch"
           className={cn(
-            "flex items-center gap-1 px-2 py-1 rounded transition-colors",
+            "flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-all duration-200",
             showNewBranchInput
               ? "text-accent-primary bg-accent-primary/10"
               : "text-text-secondary hover:bg-bg-raised hover:text-text-primary"
@@ -323,7 +323,7 @@ function BranchDropdown({
 
       {/* New branch input */}
       {showNewBranchInput && (
-        <div className="px-2 py-1.5 border-b border-border-default">
+        <div className="px-2.5 py-2 border-b border-border-muted mx-1">
           <input
             autoFocus
             type="text"
@@ -334,7 +334,7 @@ function BranchDropdown({
               if (e.key === "Escape") setShowNewBranchInput(false);
             }}
             placeholder={`from ${currentBranch}`}
-            className="w-full bg-bg-surface border border-border-default rounded px-2 py-1 text-xs text-text-primary placeholder-text-muted outline-none focus:border-accent-primary"
+            className="w-full bg-bg-input border border-border-muted rounded-lg px-2.5 py-1.5 text-xs text-text-primary placeholder-text-muted outline-none focus:border-accent-primary transition-colors"
             disabled={newBranchLoading}
           />
         </div>
@@ -361,7 +361,7 @@ function BranchDropdown({
               <div
                 key={child.fullPath}
                 className={cn(
-                  "flex items-center gap-1.5 py-1 cursor-default",
+                  "flex items-center gap-1.5 py-1 mx-1 rounded-lg cursor-default transition-all duration-150",
                   child.fullPath === currentBranch
                     ? "text-accent-primary bg-accent-primary/10"
                     : "text-text-secondary hover:bg-bg-raised hover:text-text-primary"
@@ -380,7 +380,7 @@ function BranchDropdown({
         {/* Remote-only branches */}
         {sortedRemoteChildren.length > 0 && (
           <>
-            <div className="px-3 py-1 mt-1 text-[9px] font-semibold tracking-wider text-text-muted uppercase border-t border-border-default">
+            <div className="px-3 py-1 mt-1 text-[9px] font-semibold tracking-wider text-text-muted uppercase border-t border-border-muted">
               Remote
             </div>
             {sortedRemoteChildren.map((child) =>
@@ -396,7 +396,7 @@ function BranchDropdown({
               ) : (
                 <div
                   key={`remote-${child.fullPath}`}
-                  className="flex items-center gap-1.5 py-1 cursor-default text-text-muted hover:bg-bg-raised hover:text-text-secondary"
+                  className="flex items-center gap-1.5 py-1 mx-1 rounded-lg cursor-default text-text-muted hover:bg-bg-raised hover:text-text-secondary transition-all duration-150"
                   style={{ paddingLeft: 8 }}
                 >
                   <GitBranch size={10} className="shrink-0" />
@@ -447,7 +447,7 @@ function ProjectDropdown({
   return (
     <div
       ref={ref}
-      className="absolute left-0 top-full mt-1 z-50 w-72 bg-bg-overlay border border-border-default rounded shadow-lg py-1 text-xs"
+      className="panel-card-overlay absolute left-0 top-full mt-2 z-50 w-72 py-1.5 text-xs"
     >
       {/* Actions */}
       <button
@@ -459,7 +459,7 @@ function ProjectDropdown({
             }
           });
         }}
-        className="flex items-center gap-2 w-full px-3 py-1.5 text-text-secondary hover:bg-bg-raised hover:text-text-primary transition-colors"
+        className="flex items-center gap-2 w-full px-3 py-2 mx-0 rounded-lg text-text-secondary hover:bg-bg-raised hover:text-text-primary transition-all duration-200"
       >
         <FolderOpen size={11} className="shrink-0" />
         Open…
@@ -473,7 +473,7 @@ function ProjectDropdown({
             }
           });
         }}
-        className="flex items-center gap-2 w-full px-3 py-1.5 text-text-secondary hover:bg-bg-raised hover:text-text-primary transition-colors"
+        className="flex items-center gap-2 w-full px-3 py-2 mx-0 rounded-lg text-text-secondary hover:bg-bg-raised hover:text-text-primary transition-all duration-200"
       >
         <Plus size={11} className="shrink-0" />
         New Project…
@@ -482,7 +482,7 @@ function ProjectDropdown({
       {/* Open projects */}
       {open.length > 0 && (
         <>
-          <div className="px-3 py-1 mt-1 text-[9px] font-semibold tracking-wider text-text-muted uppercase border-t border-border-default">
+          <div className="px-3 py-1.5 mt-1 text-[9px] font-semibold tracking-wider text-text-muted uppercase border-t border-border-muted mx-2">
             Open Projects
           </div>
           {open.map((p) => (
@@ -490,7 +490,7 @@ function ProjectDropdown({
               key={p.id}
               onClick={() => { onSelect(p.id); onClose(); }}
               className={cn(
-                "flex items-center gap-2 w-full px-3 py-1.5 transition-colors text-left",
+                "flex items-center gap-2 w-[calc(100%-8px)] mx-1 px-3 py-2 rounded-lg transition-all duration-200 text-left",
                 p.id === activeProjectId
                   ? "text-accent-primary bg-accent-primary/10"
                   : "text-text-secondary hover:bg-bg-raised hover:text-text-primary"
@@ -509,7 +509,7 @@ function ProjectDropdown({
       {/* Recent (worktrees shown as "recent" in this context) */}
       {recent.length > 0 && (
         <>
-          <div className="px-3 py-1 mt-1 text-[9px] font-semibold tracking-wider text-text-muted uppercase border-t border-border-default">
+          <div className="px-3 py-1.5 mt-1 text-[9px] font-semibold tracking-wider text-text-muted uppercase border-t border-border-muted mx-2">
             Worktrees
           </div>
           {recent.map((p) => (
@@ -517,7 +517,7 @@ function ProjectDropdown({
               key={p.id}
               onClick={() => { onSelect(p.id); onClose(); }}
               className={cn(
-                "flex items-center gap-2 w-full px-3 py-1.5 transition-colors text-left",
+                "flex items-center gap-2 w-[calc(100%-8px)] mx-1 px-3 py-2 rounded-lg transition-all duration-200 text-left",
                 p.id === activeProjectId
                   ? "text-accent-primary bg-accent-primary/10"
                   : "text-text-secondary hover:bg-bg-raised hover:text-text-primary"
@@ -598,13 +598,13 @@ function TitleBarComponent() {
     <div
       className={cn(
         "flex items-center justify-between",
-        "h-9 bg-bg-surface border-b border-border-default",
+        "h-10 bg-bg-surface",
         "select-none shrink-0"
       )}
       data-tauri-drag-region
     >
       {/* Left: Project chip + Branch chip */}
-      <div className="flex items-center gap-1 pl-2 shrink-0">
+      <div className="flex items-center gap-1.5 pl-3 shrink-0">
         {/* Project chip */}
         <div className="relative">
           <button
@@ -614,10 +614,10 @@ function TitleBarComponent() {
               setBranchDropdownOpen(false);
             }}
             className={cn(
-              "flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors",
+              "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs transition-all duration-200",
               projectDropdownOpen
                 ? "bg-bg-overlay text-text-primary"
-                : "text-text-secondary hover:bg-bg-overlay hover:text-text-primary"
+                : "text-text-secondary hover:bg-bg-raised hover:text-text-primary"
             )}
           >
             {activeProject ? (
@@ -627,8 +627,8 @@ function TitleBarComponent() {
               </>
             ) : (
               <>
-                <div className="w-3.5 h-3.5 rounded-sm bg-accent-primary/60" />
-                <span className="font-semibold text-accent-secondary">The Associate Studio</span>
+                <div className="w-3.5 h-3.5 rounded-md bg-accent-primary/60" />
+                <span className="font-semibold text-accent-primary">The Associate Studio</span>
               </>
             )}
             <ChevronDown size={10} className="shrink-0 text-text-muted" />
@@ -654,10 +654,10 @@ function TitleBarComponent() {
                 setProjectDropdownOpen(false);
               }}
               className={cn(
-                "flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors",
+                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs transition-all duration-200",
                 branchDropdownOpen
                   ? "bg-bg-overlay text-text-primary"
-                  : "text-text-muted hover:bg-bg-overlay hover:text-text-secondary"
+                  : "text-text-muted hover:bg-bg-raised hover:text-text-secondary"
               )}
             >
               <GitBranch size={11} className="shrink-0" />
@@ -691,7 +691,7 @@ function TitleBarComponent() {
           <button
             onClick={() => ui.toggleNeuralField()}
             title="Neural Field (Ctrl+Shift+Space)"
-            className="flex items-center justify-center w-7 h-7 rounded text-text-muted hover:text-accent-primary hover:bg-bg-overlay transition-colors"
+            className="flex items-center justify-center w-8 h-8 rounded-lg text-text-muted hover:text-accent-primary hover:bg-bg-raised transition-all duration-200"
           >
             <Radar size={14} />
           </button>
@@ -699,21 +699,21 @@ function TitleBarComponent() {
         </div>
         <button
           onClick={handleMinimize}
-          className="flex items-center justify-center w-12 h-full text-text-secondary hover:bg-bg-overlay transition-colors"
+          className="flex items-center justify-center w-12 h-full text-text-muted hover:bg-bg-raised hover:text-text-primary transition-all duration-200"
           aria-label="Minimize"
         >
           <Minus size={16} />
         </button>
         <button
           onClick={handleMaximize}
-          className="flex items-center justify-center w-12 h-full text-text-secondary hover:bg-bg-overlay transition-colors"
+          className="flex items-center justify-center w-12 h-full text-text-muted hover:bg-bg-raised hover:text-text-primary transition-all duration-200"
           aria-label="Maximize"
         >
           <Square size={14} />
         </button>
         <button
           onClick={handleClose}
-          className="flex items-center justify-center w-12 h-full text-text-secondary hover:bg-status-error hover:text-white transition-colors"
+          className="flex items-center justify-center w-12 h-full text-text-muted hover:bg-status-error hover:text-white transition-all duration-200 rounded-tr-xl"
           aria-label="Close"
         >
           <X size={16} />

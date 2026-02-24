@@ -70,14 +70,14 @@ export function UntrackedContextMenu({
     <div
       ref={menuRef}
       style={{ left, top, zIndex: 9999 }}
-      className="fixed min-w-[200px] py-1 rounded-md shadow-lg border border-[var(--color-border-default)] bg-[var(--color-bg-surface)]"
+      className="fixed min-w-[200px] py-1 panel-card-overlay"
     >
       {file === null ? (
         <MenuItem onClick={handleAddAll}>Add all to git</MenuItem>
       ) : (
         <>
           <MenuItem onClick={handleAddFile}>Add to git</MenuItem>
-          <div className="my-1 border-t border-[var(--color-border-default)]" />
+          <div className="my-1 border-t border-[var(--color-border-muted)]" />
           <MenuItem onClick={handleIgnoreFile}>Add to .gitignore</MenuItem>
         </>
       )}
@@ -97,7 +97,7 @@ function MenuItem({
   return (
     <button
       className={cn(
-        "w-full text-left px-3 py-1.5 text-xs transition-colors",
+        "w-full text-left px-3 py-1.5 text-xs transition-all duration-200 rounded-lg mx-1",
         disabled
           ? "text-[var(--color-text-muted)] cursor-default"
           : "text-[var(--color-text-primary)] hover:bg-[var(--color-bg-raised)]"

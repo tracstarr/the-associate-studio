@@ -140,7 +140,7 @@ export function FileEditorTab({ filePath, tabId }: FileEditorTabProps) {
   return (
     <div className="flex flex-col h-full bg-[var(--color-bg-base)]">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 px-3 h-9 border-b border-[var(--color-border-default)] bg-[var(--color-bg-surface)] shrink-0">
+      <div className="flex items-center gap-2 px-3 h-9 border-b border-[var(--color-border-muted)] bg-[var(--color-bg-surface)] shrink-0">
         <span
           className="font-mono text-xs text-[var(--color-text-secondary)] truncate flex-1"
           title={filePath}
@@ -156,7 +156,7 @@ export function FileEditorTab({ filePath, tabId }: FileEditorTabProps) {
           onClick={() => { void handleSave(); }}
           disabled={!dirty || saving}
           className={cn(
-            "flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors",
+            "flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-all duration-200",
             dirty && !saving
               ? "bg-[var(--color-accent-primary)] text-white hover:opacity-90"
               : "text-[var(--color-text-muted)] cursor-default"
