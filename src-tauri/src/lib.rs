@@ -1,3 +1,4 @@
+mod cleanup;
 mod commands;
 mod data;
 mod models;
@@ -8,6 +9,14 @@ use commands::pty::PtyState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // NSIS uninstaller calls us with `--cleanup` before removing app files.
+    // Run cleanup and exit without showing any window.
+    let args: Vec<String> = std::env::args().collect();
+    if args.len() > 1 && args[1] == "--cleanup" {
+        cleanup::run();
+        return;
+    }
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())

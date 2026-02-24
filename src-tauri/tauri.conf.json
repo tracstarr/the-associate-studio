@@ -43,6 +43,9 @@
     "windows": {
       "webviewInstallMode": {
         "type": "offlineInstaller"
+      },
+      "nsis": {
+        "installerHooks": "nsis/installer-hooks.nsh"
       }
     }
   }
