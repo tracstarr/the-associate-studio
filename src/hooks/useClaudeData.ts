@@ -192,7 +192,7 @@ export function useIssues(cwd: string | null, state = "open") {
 
 export function useLinearIssues(hasKey: boolean, state = "open") {
   return useQuery({
-    queryKey: ["linear-issues", state],
+    queryKey: ["linear-issues", state, hasKey],
     queryFn: () => tauri.listLinearIssues(state),
     enabled: hasKey,
     staleTime: 60_000,
