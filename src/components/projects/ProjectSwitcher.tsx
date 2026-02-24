@@ -47,7 +47,7 @@ export function ProjectSwitcher() {
       },
       projectId
     );
-  }, [activeProjectId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeProjectId, openStartupFiles]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleNewSession = (title = "New Session") => {
     if (!projectId) return;
