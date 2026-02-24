@@ -98,7 +98,7 @@ export function ReadmeTab({ filePath, projectDir, isActive, tabId }: ReadmeTabPr
             <p className="text-sm font-medium text-[var(--color-text-secondary)]">CLAUDE.md not found</p>
             <p className="text-xs mt-1 mb-4">{resolvedPath}</p>
             {initError && (
-              <div className="mb-4 px-4 py-2 rounded text-xs text-[var(--color-status-error)] bg-[var(--color-bg-raised)] border border-[var(--color-status-error)]/30 max-w-sm mx-auto">
+              <div className="mb-4 px-4 py-2 rounded-lg text-xs text-[var(--color-status-error)] bg-[var(--color-bg-raised)] border border-[var(--color-status-error)]/30 max-w-sm mx-auto">
                 <p className="font-medium mb-1">{isClaudeMd ? "Error running claude /init" : "Error generating README.md"}</p>
                 <p className="whitespace-pre-wrap">{initError}</p>
               </div>
@@ -121,7 +121,7 @@ export function ReadmeTab({ filePath, projectDir, isActive, tabId }: ReadmeTabPr
                     setTabInitStatus(tabId, 'error');
                   }
                 }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs bg-[var(--color-accent-primary)] text-white hover:opacity-80 transition-opacity"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-[var(--color-accent-primary)] text-white hover:opacity-80 transition-opacity"
               >
                 <Sparkles size={12} />
                 {initError ? "Try again" : "Create with Claude CLI"}
@@ -134,7 +134,7 @@ export function ReadmeTab({ filePath, projectDir, isActive, tabId }: ReadmeTabPr
                   setDirty(false);
                   setTabInitError(tabId, null);
                 }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs bg-[var(--color-bg-raised)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors border border-[var(--color-border-muted)]"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-[var(--color-bg-raised)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all duration-200 border border-[var(--color-border-muted)]"
               >
                 <FilePlus size={12} />
                 Create empty file
@@ -158,7 +158,7 @@ export function ReadmeTab({ filePath, projectDir, isActive, tabId }: ReadmeTabPr
           </p>
           <p className="text-xs mt-1 mb-4">{resolvedPath}</p>
           {initError && isReadmeMd && (
-            <div className="mb-4 px-4 py-2 rounded text-xs text-[var(--color-status-error)] bg-[var(--color-bg-raised)] border border-[var(--color-status-error)]/30 max-w-sm mx-auto">
+            <div className="mb-4 px-4 py-2 rounded-lg text-xs text-[var(--color-status-error)] bg-[var(--color-bg-raised)] border border-[var(--color-status-error)]/30 max-w-sm mx-auto">
               <p className="font-medium mb-1">Error generating README.md</p>
               <p className="whitespace-pre-wrap">{initError}</p>
             </div>
@@ -182,7 +182,7 @@ export function ReadmeTab({ filePath, projectDir, isActive, tabId }: ReadmeTabPr
                     setTabInitError(tabId, String(err));
                   }
                 }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs bg-[var(--color-accent-primary)] text-white hover:opacity-80 transition-opacity"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-[var(--color-accent-primary)] text-white hover:opacity-80 transition-opacity"
               >
                 <Sparkles size={12} />
                 {initError ? "Try again" : "Generate with Claude"}
@@ -197,8 +197,8 @@ export function ReadmeTab({ filePath, projectDir, isActive, tabId }: ReadmeTabPr
                 setTabInitError(tabId, null);
               }}
               className={isReadmeMd
-                ? "inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs bg-[var(--color-bg-raised)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors border border-[var(--color-border-muted)]"
-                : "inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs bg-[var(--color-accent-primary)] text-white hover:opacity-80 transition-opacity"
+                ? "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-[var(--color-bg-raised)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all duration-200 border border-[var(--color-border-muted)]"
+                : "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-[var(--color-accent-primary)] text-white hover:opacity-80 transition-opacity"
               }
             >
               <FilePlus size={12} />
@@ -227,7 +227,7 @@ export function ReadmeTab({ filePath, projectDir, isActive, tabId }: ReadmeTabPr
               setEditing(false);
               setDirty(false);
             }}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs bg-[var(--color-status-success)] text-white hover:opacity-80 transition-opacity"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-[var(--color-status-success)] text-white hover:opacity-80 transition-opacity"
           >
             <Save size={11} />
             Save
@@ -237,7 +237,7 @@ export function ReadmeTab({ filePath, projectDir, isActive, tabId }: ReadmeTabPr
               setEditing(false);
               setDirty(false);
             }}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs bg-[var(--color-bg-raised)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors border border-[var(--color-border-muted)]"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-[var(--color-bg-raised)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all duration-200 border border-[var(--color-border-muted)]"
           >
             <X size={11} />
             Cancel
@@ -268,7 +268,7 @@ export function ReadmeTab({ filePath, projectDir, isActive, tabId }: ReadmeTabPr
           setDirty(false);
         }}
         title="Edit"
-        className="absolute top-4 right-4 z-10 p-1.5 rounded bg-[var(--color-bg-raised)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] border border-[var(--color-border-muted)] transition-colors"
+        className="absolute top-4 right-4 z-10 p-1.5 rounded-lg bg-[var(--color-bg-raised)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] border border-[var(--color-border-muted)] transition-all duration-200"
       >
         <Pencil size={14} />
       </button>
@@ -362,7 +362,7 @@ const markdownComponents = {
     }
     return (
       <code
-        className="px-1.5 py-0.5 rounded text-xs font-mono bg-[var(--color-bg-raised)] text-[var(--color-accent-secondary)] border border-[var(--color-border-muted)]"
+        className="px-1.5 py-0.5 rounded-md text-xs font-mono bg-[var(--color-bg-raised)] text-[var(--color-accent-secondary)] border border-[var(--color-border-muted)]"
         {...props}
       >
         {children}
