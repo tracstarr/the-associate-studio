@@ -127,7 +127,7 @@ function TeamCard({ team }: { team: Team }) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error("[deleteTeam] failed for", team.dirName, "—", msg, e);
       failed = true;
-      setDeleteError("Delete failed");
+      setDeleteError(msg || "Delete failed");
     } finally {
       setDeleting(false);
       if (!failed) setConfirmDelete(false);
@@ -170,7 +170,10 @@ function TeamCard({ team }: { team: Team }) {
           ) : (
             <div className="flex items-center gap-1 shrink-0">
               {deleteError && (
-                <span className="text-[10px] text-[var(--color-status-error)]">
+                <span
+                  className="text-[10px] text-[var(--color-status-error)] max-w-[140px] truncate"
+                  title={deleteError}
+                >
                   {deleteError}
                 </span>
               )}
