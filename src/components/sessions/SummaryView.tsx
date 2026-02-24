@@ -54,7 +54,7 @@ export function SummaryView({ tab, projectId }: SummaryViewProps) {
   return (
     <div className="flex flex-col h-full bg-[var(--color-bg-base)]">
       {/* Header */}
-      <div className="shrink-0 flex items-center justify-between gap-4 px-4 h-10 border-b border-[var(--color-border-default)] bg-[var(--color-bg-surface)]">
+      <div className="shrink-0 flex items-center justify-between gap-4 px-4 h-10 border-b border-[var(--color-border-muted)] bg-[var(--color-bg-surface)]">
         <div className="flex items-center gap-2 min-w-0">
           <FileText size={13} className="shrink-0 text-[var(--color-status-success)]" />
           <span className="text-sm font-medium text-[var(--color-text-primary)] truncate">
@@ -74,7 +74,7 @@ export function SummaryView({ tab, projectId }: SummaryViewProps) {
           {tab.sessionId && (
             <button
               onClick={handleOpenSession}
-              className="flex items-center gap-1 px-2.5 py-1 rounded bg-[var(--color-accent-primary)] text-white text-[10px] font-medium hover:opacity-90 transition-opacity"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[var(--color-accent-primary)] text-white text-[10px] font-medium hover:opacity-90 transition-all duration-200"
             >
               <Play size={10} fill="currentColor" />
               Open Session
@@ -166,16 +166,16 @@ function BlockView({ block }: { block: Block }) {
     case "h1":
       return <h1 className="text-xl font-bold text-[var(--color-text-primary)] mt-6 mb-3 first:mt-0">{block.text}</h1>;
     case "h2":
-      return <h2 className="text-base font-semibold text-[var(--color-text-primary)] mt-5 mb-2 pt-2 border-t border-[var(--color-border-default)]">{block.text}</h2>;
+      return <h2 className="text-base font-semibold text-[var(--color-text-primary)] mt-5 mb-2 pt-2 border-t border-[var(--color-border-muted)]">{block.text}</h2>;
     case "h3":
       return <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mt-3 mb-1">{block.text}</h3>;
     case "hr":
-      return <hr className="border-[var(--color-border-default)] my-4" />;
+      return <hr className="border-[var(--color-border-muted)] my-4" />;
     case "blank":
       return <div className="h-1" />;
     case "code":
       return (
-        <pre className="bg-[var(--color-bg-raised)] border border-[var(--color-border-default)] rounded p-3 my-2 overflow-x-auto">
+        <pre className="bg-[var(--color-bg-raised)] border border-[var(--color-border-muted)] rounded-lg p-3 my-2 overflow-x-auto">
           <code className="text-xs font-mono text-[var(--color-accent-secondary)]">{block.lines.join("\n")}</code>
         </pre>
       );

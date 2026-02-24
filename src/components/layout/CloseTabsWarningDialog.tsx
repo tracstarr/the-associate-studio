@@ -22,7 +22,7 @@ export function CloseTabsWarningDialog({ warnings, onConfirm, onCancel }: CloseT
         if (e.target === e.currentTarget) onCancel();
       }}
     >
-      <div className="bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-lg shadow-xl w-full max-w-sm mx-4 p-5">
+      <div className="bg-[var(--color-bg-overlay)] border border-[var(--color-border-muted)] rounded-2xl shadow-xl w-full max-w-sm mx-4 p-5">
         <h2 className="text-sm font-semibold text-[var(--color-text-primary)] mb-3">Close tabs?</h2>
         <ul className="space-y-1.5 mb-5">
           {warnings.map((w, i) => (
@@ -35,13 +35,13 @@ export function CloseTabsWarningDialog({ warnings, onConfirm, onCancel }: CloseT
         <div className="flex justify-end gap-2">
           <button
             onClick={onCancel}
-            className="px-3 py-1.5 rounded text-xs bg-[var(--color-bg-raised)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border-default)] transition-colors"
+            className="px-3 py-1.5 rounded-xl text-xs bg-[var(--color-bg-raised)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border-muted)] transition-all duration-200"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
-            className="px-3 py-1.5 rounded text-xs bg-[var(--color-status-error)] text-white hover:opacity-90 transition-opacity"
+            className="px-3 py-1.5 rounded-xl text-xs bg-[var(--color-status-error)] text-white hover:opacity-90 transition-all duration-200"
           >
             Close Anyway
           </button>

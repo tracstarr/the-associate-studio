@@ -107,9 +107,9 @@ function MainAreaComponent({ projectId: projectIdProp }: { projectId?: string })
   return (
     <div className="flex flex-col h-full bg-bg-base">
       {/* Tab bar */}
-      <div className="flex items-center h-9 bg-bg-surface border-b border-border-default overflow-x-auto shrink-0">
+      <div className="flex items-center h-10 bg-bg-surface border-b border-border-muted overflow-x-auto shrink-0 px-1 gap-0.5">
         {openTabs.length === 0 ? (
-          <div className="flex items-center h-7 px-3 mx-1 rounded-t bg-bg-base text-text-primary text-xs border border-border-default border-b-0">
+          <div className="flex items-center h-7 px-4 mx-1 rounded-lg bg-bg-raised text-text-primary text-xs">
             Welcome
           </div>
         ) : (
@@ -120,10 +120,10 @@ function MainAreaComponent({ projectId: projectIdProp }: { projectId?: string })
             <div
               key={tab.id}
               className={cn(
-                "flex items-center gap-2 px-3 h-full border-r border-border-default cursor-pointer text-xs whitespace-nowrap select-none",
+                "flex items-center gap-2 px-3 py-1.5 cursor-pointer text-xs whitespace-nowrap select-none rounded-lg transition-all duration-200",
                 isActive
-                  ? cn("text-text-primary bg-bg-base border-t-2", accent.border)
-                  : "text-text-muted hover:text-text-secondary hover:bg-bg-raised"
+                  ? cn("text-text-primary bg-bg-base border border-border-muted", accent.border.replace("border-t-", "border-t-2 border-t-"))
+                  : "text-text-muted hover:text-text-secondary hover:bg-bg-raised/50"
               )}
               onClick={() => setActiveTab(tab.id, projectId)}
               onContextMenu={(e) => {
@@ -160,7 +160,7 @@ function MainAreaComponent({ projectId: projectIdProp }: { projectId?: string })
               )}
               {tab.title}
               <button
-                className="text-text-muted hover:text-text-primary transition-colors"
+                className="text-text-muted hover:text-text-primary rounded-full hover:bg-bg-overlay p-0.5 transition-all duration-200"
                 onClick={(e) => {
                   e.stopPropagation();
                   closeTab(tab.id, projectId);
@@ -180,17 +180,17 @@ function MainAreaComponent({ projectId: projectIdProp }: { projectId?: string })
         {openTabs.length === 0 ? (
           <div className="flex items-center justify-center w-full h-full">
             <div className="text-center text-text-muted">
-              <p className="text-4xl mb-4 opacity-20">&#x2328;</p>
-              <p className="text-sm font-medium text-text-secondary">
+              <p className="text-5xl mb-6 opacity-15" style={{ color: "var(--color-accent-primary)" }}>&#x2328;</p>
+              <p className="text-sm font-semibold text-accent-primary">
                 The Associate Studio
               </p>
-              <p className="text-xs mt-2">Select a session or open a project to start</p>
-              <div className="mt-6 grid grid-cols-2 gap-2 text-xs text-left max-w-xs">
-                <kbd className="px-2 py-1 bg-bg-raised border border-border-default rounded text-center">Ctrl+1</kbd>
+              <p className="text-xs mt-2 text-text-secondary">Select a session or open a project to start</p>
+              <div className="mt-8 grid grid-cols-2 gap-3 text-xs text-left max-w-xs">
+                <kbd className="px-3 py-1.5 bg-bg-raised border border-border-muted rounded-lg text-center text-text-secondary">Ctrl+1</kbd>
                 <span className="flex items-center text-text-muted">Projects</span>
-                <kbd className="px-2 py-1 bg-bg-raised border border-border-default rounded text-center">Ctrl+2</kbd>
+                <kbd className="px-3 py-1.5 bg-bg-raised border border-border-muted rounded-lg text-center text-text-secondary">Ctrl+2</kbd>
                 <span className="flex items-center text-text-muted">Git</span>
-                <kbd className="px-2 py-1 bg-bg-raised border border-border-default rounded text-center">Ctrl+P</kbd>
+                <kbd className="px-3 py-1.5 bg-bg-raised border border-border-muted rounded-lg text-center text-text-secondary">Ctrl+P</kbd>
                 <span className="flex items-center text-text-muted">Command palette</span>
               </div>
             </div>

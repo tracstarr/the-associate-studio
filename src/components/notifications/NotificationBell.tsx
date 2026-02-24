@@ -66,7 +66,7 @@ function NotificationBellComponent() {
       <button
         onClick={() => setOpen((o) => !o)}
         className={cn(
-          "relative flex items-center justify-center w-8 h-8 rounded transition-colors",
+          "relative flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200",
           open
             ? "bg-bg-overlay text-text-primary"
             : "text-text-secondary hover:bg-bg-overlay hover:text-text-primary"
@@ -88,13 +88,13 @@ function NotificationBellComponent() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-50 w-72 bg-bg-overlay border border-border-default rounded shadow-lg text-xs">
-          <div className="flex items-center justify-between px-3 py-2 border-b border-border-default">
+        <div className="absolute right-0 top-full mt-1 z-50 w-72 bg-bg-overlay border border-border-muted rounded-lg panel-card-overlay text-xs">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-border-muted">
             <span className="font-semibold text-text-primary">Notifications</span>
             {hasAny && (
               <button
                 onClick={() => { clearAll(); setOpen(false); }}
-                className="text-text-muted hover:text-text-secondary transition-colors"
+                className="text-text-muted hover:text-text-secondary transition-all duration-200"
               >
                 Clear all
               </button>
@@ -108,14 +108,14 @@ function NotificationBellComponent() {
               {/* Completions section */}
               {sortedCompletions.length > 0 && (
                 <>
-                  <div className="px-3 py-1.5 text-[10px] font-semibold text-[var(--color-status-success)] uppercase tracking-wide border-b border-border-default bg-[var(--color-bg-raised)]">
+                  <div className="px-3 py-1.5 text-[10px] font-semibold text-[var(--color-status-success)] uppercase tracking-wide border-b border-border-muted bg-[var(--color-bg-raised)]">
                     Completions
                   </div>
                   {sortedCompletions.map((n) => (
                     <div
                       key={n.id}
                       className={cn(
-                        "flex flex-col gap-1 px-3 py-2.5 border-b border-border-default last:border-0 transition-colors",
+                        "flex flex-col gap-1 px-3 py-2.5 border-b border-border-muted last:border-0 transition-all duration-200",
                         n.read ? "opacity-50" : "hover:bg-bg-raised"
                       )}
                     >
@@ -128,7 +128,7 @@ function NotificationBellComponent() {
                         </div>
                         <button
                           onClick={() => removeNotification(n.id)}
-                          className="shrink-0 text-text-muted hover:text-text-secondary transition-colors mt-0.5"
+                          className="shrink-0 text-text-muted hover:text-text-secondary transition-all duration-200 mt-0.5"
                           aria-label="Remove"
                         >
                           <X size={11} />
@@ -140,7 +140,7 @@ function NotificationBellComponent() {
                       {!n.read && (
                         <button
                           onClick={() => handleViewSummary(n)}
-                          className="self-start mt-0.5 px-2 py-0.5 rounded bg-[var(--color-status-success)]/15 text-[var(--color-status-success)] hover:bg-[var(--color-status-success)]/25 transition-colors font-medium"
+                          className="self-start mt-0.5 px-2 py-0.5 rounded-lg bg-[var(--color-status-success)]/15 text-[var(--color-status-success)] hover:bg-[var(--color-status-success)]/25 transition-all duration-200 font-medium"
                         >
                           View Summary
                         </button>
@@ -154,14 +154,14 @@ function NotificationBellComponent() {
               {/* Questions section */}
               {sortedQuestions.length > 0 && (
                 <>
-                  <div className="px-3 py-1.5 text-[10px] font-semibold text-amber-400 uppercase tracking-wide border-b border-border-default bg-[var(--color-bg-raised)]">
+                  <div className="px-3 py-1.5 text-[10px] font-semibold text-amber-400 uppercase tracking-wide border-b border-border-muted bg-[var(--color-bg-raised)]">
                     Questions
                   </div>
                   {sortedQuestions.map((n) => (
                     <div
                       key={n.id}
                       className={cn(
-                        "flex flex-col gap-1 px-3 py-2.5 border-b border-border-default last:border-0 transition-colors",
+                        "flex flex-col gap-1 px-3 py-2.5 border-b border-border-muted last:border-0 transition-all duration-200",
                         n.read ? "opacity-50" : "hover:bg-bg-raised"
                       )}
                     >
@@ -174,7 +174,7 @@ function NotificationBellComponent() {
                         </div>
                         <button
                           onClick={() => removeNotification(n.id)}
-                          className="shrink-0 text-text-muted hover:text-text-secondary transition-colors mt-0.5"
+                          className="shrink-0 text-text-muted hover:text-text-secondary transition-all duration-200 mt-0.5"
                           aria-label="Remove"
                         >
                           <X size={11} />
@@ -186,7 +186,7 @@ function NotificationBellComponent() {
                       {!n.read && (
                         <button
                           onClick={() => handleJumpToQuestion(n)}
-                          className="self-start mt-0.5 px-2 py-0.5 rounded bg-accent-primary/15 text-accent-primary hover:bg-accent-primary/25 transition-colors font-medium"
+                          className="self-start mt-0.5 px-2 py-0.5 rounded-lg bg-accent-primary/15 text-accent-primary hover:bg-accent-primary/25 transition-all duration-200 font-medium"
                         >
                           Jump to Session
                         </button>

@@ -48,7 +48,7 @@ export function PlansPanel() {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--color-bg-raised)] border-b border-[var(--color-border-default)]">
+      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--color-bg-raised)] border-b border-[var(--color-border-muted)]">
         <Layers size={10} className="text-[var(--color-accent-primary)]" />
         <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
           Session Plans
@@ -82,8 +82,8 @@ function PlanRow({
   sessionLabel?: string;
 }) {
   return (
-    <div className="border-b border-[var(--color-border-default)] group">
-      <div className="flex items-center gap-1 w-full px-2 py-1.5 hover:bg-[var(--color-bg-raised)] transition-colors">
+    <div className="border-b border-[var(--color-border-muted)] group">
+      <div className="flex items-center gap-1 w-full px-2 py-1.5 hover:bg-[var(--color-bg-raised)] transition-all duration-200">
         <button
           onClick={onToggle}
           className="flex items-center justify-center w-4 h-4 shrink-0 text-[var(--color-text-muted)]"
@@ -97,13 +97,13 @@ function PlanRow({
         <button
           onClick={onOpen}
           className={cn(
-            "text-xs text-[var(--color-text-primary)] truncate flex-1 text-left hover:text-[var(--color-accent-primary)] transition-colors",
+            "text-xs text-[var(--color-text-primary)] truncate flex-1 text-left hover:text-[var(--color-accent-primary)] transition-all duration-200",
           )}
         >
           {plan.title || plan.filename}
         </button>
         {sessionLabel && (
-          <span className="text-[10px] text-[var(--color-accent-secondary)] bg-[var(--color-bg-raised)] px-1.5 py-0.5 rounded shrink-0">
+          <span className="text-[10px] text-[var(--color-accent-secondary)] bg-[var(--color-bg-raised)] px-1.5 py-0.5 rounded-lg shrink-0">
             {sessionLabel}
           </span>
         )}

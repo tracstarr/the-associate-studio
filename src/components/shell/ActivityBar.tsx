@@ -27,9 +27,9 @@ function ActivityBarComponent() {
   const activeProjectId = useProjectsStore((s) => s.activeProjectId);
 
   return (
-    <div className="flex flex-col items-center justify-between w-12 bg-bg-base border-r border-border-default py-2">
+    <div className="flex flex-col items-center justify-between w-12 bg-bg-base py-3">
       {/* Top icons */}
-      <div className="flex flex-col items-center gap-1">
+      <div className="flex flex-col items-center gap-2">
         {topItems.map((item) => {
           const isActive = activeSidebarView === item.id;
           const Icon = item.icon;
@@ -39,44 +39,44 @@ function ActivityBarComponent() {
               onClick={() => setSidebarView(item.id)}
               title={item.label}
               className={cn(
-                "relative flex items-center justify-center w-10 h-10 rounded-md transition-colors",
+                "relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200",
                 isActive
-                  ? "text-actbar-icon-active"
-                  : "text-actbar-icon-default hover:text-text-secondary"
+                  ? "text-actbar-icon-active bg-bg-raised"
+                  : "text-actbar-icon-default hover:text-text-secondary hover:bg-bg-surface"
               )}
               aria-label={item.label}
             >
               {isActive && (
-                <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r bg-actbar-indicator" />
+                <div className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full bg-actbar-indicator" style={{ boxShadow: "0 0 6px rgba(212,168,83,0.4)" }} />
               )}
-              <Icon size={22} />
+              <Icon size={20} />
             </button>
           );
         })}
       </div>
 
       {/* Bottom icons */}
-      <div className="flex flex-col items-center gap-1">
+      <div className="flex flex-col items-center gap-2">
         <button
           title="Toggle Bottom Panel (Ctrl+J)"
           onClick={toggleBottomPanel}
           className={cn(
-            "flex items-center justify-center w-10 h-10 rounded-md transition-colors",
+            "flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200",
             bottomPanelOpen
-              ? "text-actbar-icon-active"
-              : "text-actbar-icon-default hover:text-text-secondary"
+              ? "text-actbar-icon-active bg-bg-raised"
+              : "text-actbar-icon-default hover:text-text-secondary hover:bg-bg-surface"
           )}
           aria-label="Toggle Bottom Panel"
         >
-          {bottomPanelOpen ? <PanelBottomClose size={22} /> : <PanelBottomOpen size={22} />}
+          {bottomPanelOpen ? <PanelBottomClose size={20} /> : <PanelBottomOpen size={20} />}
         </button>
         <button
           title="Settings (Ctrl+,)"
           onClick={() => { if (activeProjectId) openSettingsTab(activeProjectId); }}
-          className="flex items-center justify-center w-10 h-10 rounded-md text-actbar-icon-default hover:text-text-secondary transition-colors"
+          className="flex items-center justify-center w-10 h-10 rounded-xl text-actbar-icon-default hover:text-text-secondary hover:bg-bg-surface transition-all duration-200"
           aria-label="Settings"
         >
-          <Settings size={22} />
+          <Settings size={20} />
         </button>
       </div>
     </div>

@@ -17,11 +17,11 @@ export interface FieldNode {
   projectId?: string; // root project this node belongs to
 }
 
-const PROJECT_COLOR = "#61afef";
-const SESSION_COLOR = "#98c379";
-const TEAM_COLOR = "#e5c07b";
-const AGENT_COLOR = "#c678dd";
-const MEMBER_COLOR = "#d19a66";
+const PROJECT_COLOR = "#D4A853";
+const SESSION_COLOR = "#4ACA62";
+const TEAM_COLOR = "#E8C97A";
+const AGENT_COLOR = "#BC8CFF";
+const MEMBER_COLOR = "#E0A82E";
 
 export function useNeuralFieldData(): FieldNode[] {
   const projects = useProjectsStore((s) => s.projects);

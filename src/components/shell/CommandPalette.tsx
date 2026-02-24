@@ -50,10 +50,10 @@ export function CommandPalette() {
       onClick={(e) => {
         if (e.target === e.currentTarget) closeCommandPalette();
       }}
-      style={{ backgroundColor: "rgba(0,0,0,0.6)", backdropFilter: "blur(2px)" }}
+      style={{ backgroundColor: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)" }}
     >
       <Command
-        className="w-[600px] max-h-[480px] bg-bg-overlay border border-border-default rounded-lg shadow-2xl overflow-hidden flex flex-col"
+        className="w-[600px] max-h-[480px] panel-card-overlay overflow-hidden flex flex-col"
         onKeyDown={(e) => {
           if (e.key === "Escape") {
             closeCommandPalette();
@@ -62,7 +62,7 @@ export function CommandPalette() {
         }}
         shouldFilter={false}
       >
-        <div className="flex items-center border-b border-border-default px-3 shrink-0">
+        <div className="flex items-center border-b border-border-muted px-3 shrink-0">
           <span className="text-text-muted text-xs mr-2">&gt;</span>
           <Command.Input
             ref={inputRef}
@@ -71,7 +71,7 @@ export function CommandPalette() {
             placeholder="Type a command..."
             className="flex-1 py-3 bg-transparent text-text-primary text-sm outline-none placeholder:text-text-muted"
           />
-          <kbd className="text-[10px] text-text-muted border border-border-default px-1.5 py-0.5 rounded">
+          <kbd className="text-[10px] text-text-muted border border-border-muted px-1.5 py-0.5 rounded-md">
             Esc
           </kbd>
         </div>
@@ -92,7 +92,7 @@ export function CommandPalette() {
                   key={cmd.id}
                   value={cmd.id}
                   onSelect={() => handleSelect(cmd)}
-                  className="flex items-center gap-3 px-3 py-2 mx-1 rounded cursor-pointer text-sm text-text-secondary data-[selected=true]:bg-bg-raised data-[selected=true]:text-text-primary hover:bg-bg-raised transition-colors"
+                  className="flex items-center gap-3 px-4 py-2.5 mx-1.5 rounded-xl cursor-pointer text-sm text-text-secondary data-[selected=true]:bg-bg-raised data-[selected=true]:text-text-primary hover:bg-bg-raised transition-all duration-200"
                 >
                   <span className="flex-1">{cmd.label}</span>
                   {cmd.description && (
@@ -101,7 +101,7 @@ export function CommandPalette() {
                     </span>
                   )}
                   {cmd.keybinding && (
-                    <kbd className="text-[10px] text-text-muted border border-border-default px-1.5 py-0.5 rounded font-mono shrink-0">
+                    <kbd className="text-[10px] text-text-muted border border-border-muted px-1.5 py-0.5 rounded-md font-mono shrink-0">
                       {cmd.keybinding}
                     </kbd>
                   )}
@@ -111,21 +111,21 @@ export function CommandPalette() {
           ))}
         </Command.List>
 
-        <div className="border-t border-border-default px-3 py-2 flex items-center gap-4 text-[10px] text-text-muted shrink-0">
+        <div className="border-t border-border-muted px-3 py-2 flex items-center gap-4 text-[10px] text-text-muted shrink-0">
           <span>
-            <kbd className="border border-border-default px-1 rounded">
+            <kbd className="border border-border-muted px-1 rounded-md">
               ↑↓
             </kbd>{" "}
             navigate
           </span>
           <span>
-            <kbd className="border border-border-default px-1 rounded">
+            <kbd className="border border-border-muted px-1 rounded-md">
               ↵
             </kbd>{" "}
             run
           </span>
           <span>
-            <kbd className="border border-border-default px-1 rounded">
+            <kbd className="border border-border-muted px-1 rounded-md">
               Esc
             </kbd>{" "}
             close

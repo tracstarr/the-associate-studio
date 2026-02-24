@@ -51,10 +51,10 @@ export function TabContextMenu({ x, y, tab, tabs, onClose, onAction }: TabContex
     <div
       ref={menuRef}
       style={{ left, top, zIndex: 9999 }}
-      className="fixed min-w-[180px] py-1 rounded-md shadow-lg border border-[var(--color-border-default)] bg-[var(--color-bg-surface)]"
+      className="fixed min-w-[180px] py-1 panel-card-overlay"
     >
       <MenuItem onClick={() => handleAction("close")}>Close</MenuItem>
-      <div className="my-1 border-t border-[var(--color-border-default)]" />
+      <div className="my-1 border-t border-[var(--color-border-muted)]" />
       <MenuItem onClick={() => handleAction("closeAll")}>Close All</MenuItem>
       <MenuItem
         onClick={() => !isOnly && handleAction("closeOthers")}
@@ -85,8 +85,8 @@ function MenuItem({
     <button
       className={
         disabled
-          ? "w-full text-left px-3 py-1.5 text-xs text-[var(--color-text-muted)] cursor-default"
-          : "w-full text-left px-3 py-1.5 text-xs text-[var(--color-text-primary)] hover:bg-[var(--color-bg-raised)] transition-colors"
+          ? "w-full text-left px-3 py-1.5 text-xs text-[var(--color-text-muted)] cursor-default rounded-lg mx-1"
+          : "w-full text-left px-3 py-1.5 text-xs text-[var(--color-text-primary)] hover:bg-[var(--color-bg-raised)] transition-all duration-200 rounded-lg mx-1"
       }
       onClick={disabled ? undefined : onClick}
       disabled={disabled}

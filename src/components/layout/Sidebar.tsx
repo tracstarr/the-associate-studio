@@ -16,10 +16,10 @@ function SidebarComponent() {
   const activeView = useUIStore((s) => s.activeSidebarView);
 
   return (
-    <div className="flex flex-col h-full bg-bg-surface">
+    <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center h-9 px-4 border-b border-border-default shrink-0">
-        <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
+      <div className="flex items-center h-10 px-5 border-b border-border-muted shrink-0">
+        <span className="text-xs font-semibold uppercase tracking-wider text-accent-primary">
           {viewLabels[activeView]}
         </span>
       </div>

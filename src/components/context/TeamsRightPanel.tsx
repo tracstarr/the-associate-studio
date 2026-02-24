@@ -142,9 +142,9 @@ function TeamCard({ team }: { team: Team }) {
     team.config.members.find((m) => m.name === name);
 
   return (
-    <div className="border border-[var(--color-border-default)] rounded bg-[var(--color-bg-surface)]">
+    <div className="border border-[var(--color-border-muted)] rounded-lg bg-[var(--color-bg-surface)]">
       {/* Card Header */}
-      <div className="px-3 py-2 border-b border-[var(--color-border-default)]">
+      <div className="px-3 py-2 border-b border-[var(--color-border-muted)]">
         <div className="flex items-center gap-2">
           {leadSessionId ? (
             <button
@@ -183,7 +183,7 @@ function TeamCard({ team }: { team: Team }) {
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-status-error)] text-white disabled:opacity-40"
+                className="text-[10px] px-1.5 py-0.5 rounded-lg bg-[var(--color-status-error)] text-white disabled:opacity-40"
               >
                 {deleting ? "..." : "Yes"}
               </button>
@@ -192,7 +192,7 @@ function TeamCard({ team }: { team: Team }) {
                   setConfirmDelete(false);
                   setDeleteError(null);
                 }}
-                className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-bg-raised)] text-[var(--color-text-secondary)]"
+                className="text-[10px] px-1.5 py-0.5 rounded-lg bg-[var(--color-bg-raised)] text-[var(--color-text-secondary)]"
               >
                 No
               </button>
@@ -200,7 +200,7 @@ function TeamCard({ team }: { team: Team }) {
           )}
         </div>
         {originalPrompt && (
-          <p className="text-[10px] italic text-[var(--color-text-muted)] mt-1 line-clamp-2 border-l-2 border-[var(--color-border-default)] pl-2">
+          <p className="text-[10px] italic text-[var(--color-text-muted)] mt-1 line-clamp-2 border-l-2 border-[var(--color-border-muted)] pl-2">
             {originalPrompt}
           </p>
         )}
@@ -208,7 +208,7 @@ function TeamCard({ team }: { team: Team }) {
 
       {/* Tasks Section */}
       {sortedTasks.length > 0 && (
-        <div className="border-b border-[var(--color-border-default)]">
+        <div className="border-b border-[var(--color-border-muted)]">
           <p className="px-3 pt-2 pb-1 text-[9px] uppercase tracking-wider text-[var(--color-text-secondary)] font-semibold">
             Tasks
           </p>
@@ -258,7 +258,7 @@ function TeamCard({ team }: { team: Team }) {
 
                   {/* Blocked badge */}
                   {isBlocked && !isDoneTask && (
-                    <span className="text-[9px] px-1 py-px rounded bg-[var(--color-status-warning)] bg-opacity-20 text-[var(--color-status-warning)] shrink-0">
+                    <span className="text-[9px] px-1 py-px rounded-lg bg-[var(--color-status-warning)] bg-opacity-20 text-[var(--color-status-warning)] shrink-0">
                       blocked
                     </span>
                   )}
@@ -281,7 +281,7 @@ function TeamCard({ team }: { team: Team }) {
       )}
 
       {/* Agents Section */}
-      <div className="divide-y divide-[var(--color-border-default)]">
+      <div className="divide-y divide-[var(--color-border-muted)]">
         <p className="px-3 pt-2 pb-1 text-[9px] uppercase tracking-wider text-[var(--color-text-secondary)] font-semibold">
           Agents
         </p>
@@ -341,7 +341,7 @@ function TeamCard({ team }: { team: Team }) {
 
                 {/* Model badge */}
                 {member.model && (
-                  <span className="text-[9px] px-1 py-px rounded bg-[var(--color-bg-raised)] text-[var(--color-text-secondary)] shrink-0 font-mono border border-[var(--color-border-default)]">
+                  <span className="text-[9px] px-1 py-px rounded-lg bg-[var(--color-bg-raised)] text-[var(--color-text-secondary)] shrink-0 font-mono border border-[var(--color-border-muted)]">
                     {shortModel(member.model)}
                   </span>
                 )}
@@ -444,9 +444,9 @@ function MemberDetail({
     <div className="bg-[var(--color-bg-raised)]">
       {/* Agent metadata */}
       {(member.agentType || member.model) && (
-        <div className="px-3 py-1.5 border-b border-[var(--color-border-default)] flex items-center gap-2 flex-wrap">
+        <div className="px-3 py-1.5 border-b border-[var(--color-border-muted)] flex items-center gap-2 flex-wrap">
           {member.agentType && (
-            <span className="text-[9px] px-1.5 py-px rounded bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] text-[var(--color-text-secondary)] font-mono">
+            <span className="text-[9px] px-1.5 py-px rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border-muted)] text-[var(--color-text-secondary)] font-mono">
               {member.agentType}
             </span>
           )}
@@ -460,7 +460,7 @@ function MemberDetail({
 
       {/* Member Tasks */}
       {memberTasks.length > 0 && (
-        <div className="px-3 py-2 border-b border-[var(--color-border-default)]">
+        <div className="px-3 py-2 border-b border-[var(--color-border-muted)]">
           <p className="text-[10px] text-[var(--color-text-muted)] mb-1">
             Tasks
           </p>
@@ -485,7 +485,7 @@ function MemberDetail({
 
       {/* Inbox Messages */}
       {visibleMessages.length > 0 && (
-        <div className="max-h-32 overflow-y-auto divide-y divide-[var(--color-border-default)]">
+        <div className="max-h-32 overflow-y-auto divide-y divide-[var(--color-border-muted)]">
           {visibleMessages.map((msg, i) => {
             let text = msg.text;
             if (text.startsWith("{")) {
@@ -531,7 +531,7 @@ function MemberDetail({
       )}
 
       {/* Compose */}
-      <div className="p-2 border-t border-[var(--color-border-default)]">
+      <div className="p-2 border-t border-[var(--color-border-muted)]">
         <div className="flex gap-1">
           <input
             value={composeText}
@@ -543,12 +543,12 @@ function MemberDetail({
                 handleSend();
               }
             }}
-            className="flex-1 text-[10px] px-2 py-1 rounded bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none focus:border-[var(--color-border-focus)]"
+            className="flex-1 text-[10px] px-2 py-1 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border-muted)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none focus:border-[var(--color-border-focus)]"
           />
           <button
             onClick={handleSend}
             disabled={!composeText.trim() || sending}
-            className="px-1.5 py-1 rounded bg-[var(--color-accent-primary)] text-white disabled:opacity-40"
+            className="px-1.5 py-1 rounded-lg bg-[var(--color-accent-primary)] text-white disabled:opacity-40 transition-all duration-200"
           >
             <Send size={10} />
           </button>

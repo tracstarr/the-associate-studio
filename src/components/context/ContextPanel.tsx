@@ -63,7 +63,7 @@ export function ContextPanel() {
     <div className="flex flex-col h-full overflow-hidden">
       {/* Team tasks section */}
       {activeTeam && teamTasks && (
-        <div className="border-b border-[var(--color-border-default)]">
+        <div className="border-b border-[var(--color-border-muted)]">
           <div className="flex items-center gap-2 px-3 py-2">
             <CheckSquare
               size={12}
@@ -113,7 +113,7 @@ export function ContextPanel() {
 
       {/* Global todos fallback */}
       {!activeTeam && todos && todos.length > 0 && (
-        <div className="border-b border-[var(--color-border-default)]">
+        <div className="border-b border-[var(--color-border-muted)]">
           <div className="flex items-center gap-2 px-3 py-2">
             <CheckSquare
               size={12}
@@ -305,9 +305,9 @@ function MemorySection({
   const projRulesMd = (projRulesEntries ?? []).filter((f) => !f.is_dir && f.name.endsWith(".md"));
 
   return (
-    <div className="border-b border-[var(--color-border-default)]">
+    <div className="border-b border-[var(--color-border-muted)]">
       <button
-        className="flex items-center gap-2 px-3 py-2 w-full hover:bg-[var(--color-bg-surface)] text-left"
+        className="flex items-center gap-2 px-3 py-2 w-full hover:bg-[var(--color-bg-raised)] text-left"
         onClick={() => setCollapsed((c) => !c)}
       >
         {collapsed ? (
@@ -405,7 +405,7 @@ function MemFileRow({
     <div
       className={cn(
         "flex items-center gap-2 px-4 py-0.5",
-        exists && onClick ? "cursor-pointer hover:bg-[var(--color-bg-surface)]" : ""
+        exists && onClick ? "cursor-pointer rounded-lg hover:bg-[var(--color-bg-raised)]" : ""
       )}
       onClick={onClick}
     >
@@ -461,7 +461,7 @@ function TranscriptItemRow({ item }: { item: TranscriptItem }) {
   return (
     <div
       className={cn(
-        "px-3 py-2 border-b border-[var(--color-border-default)]",
+        "px-3 py-2 border-b border-[var(--color-border-muted)]",
         item.kind === "User" ? "bg-[var(--color-bg-surface)]" : ""
       )}
     >

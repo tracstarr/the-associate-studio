@@ -134,7 +134,7 @@ export function ReadmeTab({ filePath, projectDir, isActive, tabId }: ReadmeTabPr
                   setDirty(false);
                   setTabInitError(tabId, null);
                 }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs bg-[var(--color-bg-raised)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors border border-[var(--color-border-default)]"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs bg-[var(--color-bg-raised)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors border border-[var(--color-border-muted)]"
               >
                 <FilePlus size={12} />
                 Create empty file
@@ -197,7 +197,7 @@ export function ReadmeTab({ filePath, projectDir, isActive, tabId }: ReadmeTabPr
                 setTabInitError(tabId, null);
               }}
               className={isReadmeMd
-                ? "inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs bg-[var(--color-bg-raised)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors border border-[var(--color-border-default)]"
+                ? "inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs bg-[var(--color-bg-raised)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors border border-[var(--color-border-muted)]"
                 : "inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs bg-[var(--color-accent-primary)] text-white hover:opacity-80 transition-opacity"
               }
             >
@@ -214,7 +214,7 @@ export function ReadmeTab({ filePath, projectDir, isActive, tabId }: ReadmeTabPr
     return (
       <div className="flex flex-col w-full h-full bg-[var(--color-bg-surface)]">
         {/* Toolbar */}
-        <div className="flex items-center gap-2 px-4 py-2 border-b border-[var(--color-border-default)] shrink-0">
+        <div className="flex items-center gap-2 px-4 py-2 border-b border-[var(--color-border-muted)] shrink-0">
           {dirty && (
             <span className="text-[10px] text-[var(--color-status-warning)]">Unsaved changes</span>
           )}
@@ -237,7 +237,7 @@ export function ReadmeTab({ filePath, projectDir, isActive, tabId }: ReadmeTabPr
               setEditing(false);
               setDirty(false);
             }}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs bg-[var(--color-bg-raised)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors border border-[var(--color-border-default)]"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs bg-[var(--color-bg-raised)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors border border-[var(--color-border-muted)]"
           >
             <X size={11} />
             Cancel
@@ -268,7 +268,7 @@ export function ReadmeTab({ filePath, projectDir, isActive, tabId }: ReadmeTabPr
           setDirty(false);
         }}
         title="Edit"
-        className="absolute top-4 right-4 z-10 p-1.5 rounded bg-[var(--color-bg-raised)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] border border-[var(--color-border-default)] transition-colors"
+        className="absolute top-4 right-4 z-10 p-1.5 rounded bg-[var(--color-bg-raised)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] border border-[var(--color-border-muted)] transition-colors"
       >
         <Pencil size={14} />
       </button>
@@ -282,13 +282,13 @@ export function ReadmeTab({ filePath, projectDir, isActive, tabId }: ReadmeTabPr
 const markdownComponents = {
   h1: (props: React.ComponentProps<"h1">) => (
     <h1
-      className="text-2xl font-bold text-[var(--color-text-primary)] mt-6 mb-4 pb-2 border-b border-[var(--color-border-default)]"
+      className="text-2xl font-bold text-[var(--color-text-primary)] mt-6 mb-4 pb-2 border-b border-[var(--color-border-muted)]"
       {...props}
     />
   ),
   h2: (props: React.ComponentProps<"h2">) => (
     <h2
-      className="text-xl font-semibold text-[var(--color-text-primary)] mt-6 mb-3 pb-1.5 border-b border-[var(--color-border-default)]"
+      className="text-xl font-semibold text-[var(--color-text-primary)] mt-6 mb-3 pb-1.5 border-b border-[var(--color-border-muted)]"
       {...props}
     />
   ),
@@ -344,7 +344,7 @@ const markdownComponents = {
   ),
   blockquote: (props: React.ComponentProps<"blockquote">) => (
     <blockquote
-      className="border-l-4 border-[var(--color-border-default)] pl-4 my-3 text-sm text-[var(--color-text-secondary)] italic"
+      className="border-l-4 border-[var(--color-border-muted)] pl-4 my-3 text-sm text-[var(--color-text-secondary)] italic"
       {...props}
     />
   ),
@@ -362,7 +362,7 @@ const markdownComponents = {
     }
     return (
       <code
-        className="px-1.5 py-0.5 rounded text-xs font-mono bg-[var(--color-bg-raised)] text-[var(--color-accent-secondary)] border border-[var(--color-border-default)]"
+        className="px-1.5 py-0.5 rounded text-xs font-mono bg-[var(--color-bg-raised)] text-[var(--color-accent-secondary)] border border-[var(--color-border-muted)]"
         {...props}
       >
         {children}
@@ -371,16 +371,16 @@ const markdownComponents = {
   },
   pre: (props: React.ComponentProps<"pre">) => (
     <pre
-      className="my-3 p-4 rounded-md bg-[var(--color-bg-base)] border border-[var(--color-border-default)] overflow-x-auto text-xs leading-relaxed"
+      className="my-3 p-4 rounded-md bg-[var(--color-bg-base)] border border-[var(--color-border-muted)] overflow-x-auto text-xs leading-relaxed"
       {...props}
     />
   ),
   hr: (props: React.ComponentProps<"hr">) => (
-    <hr className="my-6 border-[var(--color-border-default)]" {...props} />
+    <hr className="my-6 border-[var(--color-border-muted)]" {...props} />
   ),
   table: (props: React.ComponentProps<"table">) => (
     <div className="my-3 overflow-x-auto">
-      <table className="w-full text-sm border-collapse border border-[var(--color-border-default)]" {...props} />
+      <table className="w-full text-sm border-collapse border border-[var(--color-border-muted)]" {...props} />
     </div>
   ),
   thead: (props: React.ComponentProps<"thead">) => (
@@ -388,13 +388,13 @@ const markdownComponents = {
   ),
   th: (props: React.ComponentProps<"th">) => (
     <th
-      className="px-3 py-2 text-left text-xs font-semibold text-[var(--color-text-primary)] border border-[var(--color-border-default)]"
+      className="px-3 py-2 text-left text-xs font-semibold text-[var(--color-text-primary)] border border-[var(--color-border-muted)]"
       {...props}
     />
   ),
   td: (props: React.ComponentProps<"td">) => (
     <td
-      className="px-3 py-2 text-xs text-[var(--color-text-primary)] border border-[var(--color-border-default)]"
+      className="px-3 py-2 text-xs text-[var(--color-text-primary)] border border-[var(--color-border-muted)]"
       {...props}
     />
   ),
