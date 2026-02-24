@@ -40,6 +40,218 @@ pub struct Issue {
     pub source: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PRComment {
+    pub author: String,
+    pub body: String,
+    pub created_at: String,
+    pub association: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PRReviewComment {
+    pub author: String,
+    pub body: String,
+    pub created_at: String,
+    pub path: Option<String>,
+    pub diff_hunk: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PRDetail {
+    pub number: u32,
+    pub title: String,
+    pub state: String,
+    pub author: String,
+    pub url: String,
+    pub created_at: String,
+    pub body: Option<String>,
+    pub labels: Vec<String>,
+    pub draft: bool,
+    pub head_ref: String,
+    pub base_ref: String,
+    pub additions: u32,
+    pub deletions: u32,
+    pub changed_files: u32,
+    pub mergeable: Option<String>,
+    pub comments: Vec<PRComment>,
+    pub review_comments: Vec<PRReviewComment>,
+}
+
+#[tauri::command]
+pub async fn cmd_get_pr_detail(cwd: String, number: u32) -> Result<PRDetail, String> {
+    // Fetch PR details via `gh pr view`
+    let output = silent_command("gh")
+        .args([
+            "pr",
+            "view",
+            &number.to_string(),
+            "--json",
+            "number,title,state,author,url,createdAt,body,labels,isDraft,headRefName,baseRefName,additions,deletions,changedFiles,mergeStateStatus,comments,reviews",
+        ])
+        .current_dir(&cwd)
+        .output()
+        .map_err(|e| format!("gh not found or failed: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("gh pr view failed: {}", stderr));
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    #[derive(Deserialize)]
+    struct GhPrDetail {
+        number: u32,
+        title: String,
+        state: String,
+        author: GhAuthor,
+        url: String,
+        #[serde(rename = "createdAt")]
+        created_at: String,
+        body: Option<String>,
+        labels: Vec<GhLabel>,
+        #[serde(rename = "isDraft")]
+        is_draft: bool,
+        #[serde(rename = "headRefName")]
+        head_ref_name: String,
+        #[serde(rename = "baseRefName")]
+        base_ref_name: String,
+        additions: u32,
+        deletions: u32,
+        #[serde(rename = "changedFiles")]
+        changed_files: u32,
+        #[serde(rename = "mergeStateStatus")]
+        merge_state_status: Option<String>,
+        comments: Vec<GhComment>,
+        reviews: Vec<GhReview>,
+    }
+
+    #[derive(Deserialize)]
+    struct GhAuthor {
+        login: String,
+    }
+
+    #[derive(Deserialize)]
+    struct GhLabel {
+        name: String,
+    }
+
+    #[derive(Deserialize)]
+    struct GhComment {
+        author: GhAuthor,
+        body: String,
+        #[serde(rename = "createdAt")]
+        created_at: String,
+        #[serde(rename = "authorAssociation")]
+        author_association: Option<String>,
+    }
+
+    #[derive(Deserialize)]
+    struct GhReview {
+        author: GhAuthor,
+        body: String,
+        #[serde(rename = "submittedAt")]
+        submitted_at: Option<String>,
+        state: String,
+    }
+
+    let pr: GhPrDetail =
+        serde_json::from_str(&stdout).map_err(|e| format!("Failed to parse gh output: {}", e))?;
+
+    let mut comments: Vec<PRComment> = pr
+        .comments
+        .into_iter()
+        .map(|c| PRComment {
+            author: c.author.login,
+            body: c.body,
+            created_at: c.created_at,
+            association: c.author_association,
+        })
+        .collect();
+
+    // Add reviews that have a body (non-empty review comments)
+    for r in pr.reviews {
+        if !r.body.is_empty() {
+            comments.push(PRComment {
+                author: r.author.login,
+                body: format!("[{}] {}", r.state, r.body),
+                created_at: r.submitted_at.unwrap_or_default(),
+                association: None,
+            });
+        }
+    }
+
+    // Sort all comments by date
+    comments.sort_by(|a, b| a.created_at.cmp(&b.created_at));
+
+    // Fetch review (inline) comments via gh api
+    let review_comments = fetch_review_comments(&cwd, number).unwrap_or_default();
+
+    Ok(PRDetail {
+        number: pr.number,
+        title: pr.title,
+        state: pr.state.to_lowercase(),
+        author: pr.author.login,
+        url: pr.url,
+        created_at: pr.created_at,
+        body: pr.body,
+        labels: pr.labels.into_iter().map(|l| l.name).collect(),
+        draft: pr.is_draft,
+        head_ref: pr.head_ref_name,
+        base_ref: pr.base_ref_name,
+        additions: pr.additions,
+        deletions: pr.deletions,
+        changed_files: pr.changed_files,
+        mergeable: pr.merge_state_status,
+        comments,
+        review_comments,
+    })
+}
+
+fn fetch_review_comments(cwd: &str, number: u32) -> Result<Vec<PRReviewComment>, String> {
+    let endpoint = format!("repos/{{owner}}/{{repo}}/pulls/{}/comments", number);
+    let output = silent_command("gh")
+        .args(["api", &endpoint, "--paginate"])
+        .current_dir(cwd)
+        .output()
+        .map_err(|e| format!("gh api failed: {}", e))?;
+
+    if !output.status.success() {
+        return Ok(vec![]);
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    #[derive(Deserialize)]
+    struct ApiReviewComment {
+        user: ApiUser,
+        body: String,
+        created_at: String,
+        path: Option<String>,
+        diff_hunk: Option<String>,
+    }
+
+    #[derive(Deserialize)]
+    struct ApiUser {
+        login: String,
+    }
+
+    let items: Vec<ApiReviewComment> =
+        serde_json::from_str(&stdout).unwrap_or_default();
+
+    Ok(items
+        .into_iter()
+        .map(|c| PRReviewComment {
+            author: c.user.login,
+            body: c.body,
+            created_at: c.created_at,
+            path: c.path,
+            diff_hunk: c.diff_hunk,
+        })
+        .collect())
+}
+
 #[tauri::command]
 pub async fn cmd_list_prs(cwd: String, state: String) -> Result<Vec<PullRequest>, String> {
     let state_arg = match state.as_str() {

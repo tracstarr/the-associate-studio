@@ -170,6 +170,16 @@ export function useWorktreeCopy(projectPath: string) {
 
 // ---- PR / Issues Hooks ----
 
+export function usePRDetail(cwd: string | null, number: number) {
+  return useQuery({
+    queryKey: ["pr-detail", cwd, number],
+    queryFn: () => tauri.getPRDetail(cwd!, number),
+    enabled: !!cwd && number > 0,
+    staleTime: 60_000,
+    retry: false,
+  });
+}
+
 export function usePRs(cwd: string | null, state = "open") {
   return useQuery({
     queryKey: ["prs", cwd, state],
