@@ -1,6 +1,15 @@
 use serde::{Deserialize, Serialize};
 use crate::utils::silent_command;
 
+const KEYRING_SERVICE: &str = "the-associate-studio";
+
+fn get_linear_api_key() -> Option<String> {
+    keyring::Entry::new(KEYRING_SERVICE, "linear-api-key")
+        .ok()?
+        .get_password()
+        .ok()
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PullRequest {
     pub number: u32,
@@ -19,6 +28,7 @@ pub struct PullRequest {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Issue {
     pub number: u32,
+    pub identifier: Option<String>,
     pub title: String,
     pub state: String,
     pub author: String,
@@ -27,6 +37,7 @@ pub struct Issue {
     pub body: Option<String>,
     #[serde(default)]
     pub labels: Vec<String>,
+    pub source: String,
 }
 
 #[tauri::command]
@@ -174,6 +185,7 @@ pub async fn cmd_list_issues(cwd: String, state: String) -> Result<Vec<Issue>, S
         .into_iter()
         .map(|i| Issue {
             number: i.number,
+            identifier: None,
             title: i.title,
             state: i.state.to_lowercase(),
             author: i.author.login,
@@ -181,6 +193,120 @@ pub async fn cmd_list_issues(cwd: String, state: String) -> Result<Vec<Issue>, S
             created_at: i.created_at,
             body: i.body,
             labels: i.labels.into_iter().map(|l| l.name).collect(),
+            source: "github".to_string(),
         })
         .collect())
+}
+
+#[tauri::command]
+pub async fn cmd_list_linear_issues(state: String) -> Result<Vec<Issue>, String> {
+    let api_key = match get_linear_api_key() {
+        Some(k) => k,
+        None => return Ok(vec![]),
+    };
+
+    let gql_query = r#"
+        query IssueList($filter: IssueFilter) {
+          issues(first: 50, filter: $filter, orderBy: updatedAt) {
+            nodes {
+              id identifier title
+              state { name type }
+              creator { name }
+              url createdAt
+              labels { nodes { name } }
+            }
+          }
+        }
+    "#;
+
+    let variables: serde_json::Value = match state.as_str() {
+        "open" => serde_json::json!({
+            "filter": { "state": { "type": { "in": ["triage", "backlog", "unstarted", "started"] } } }
+        }),
+        "closed" => serde_json::json!({
+            "filter": { "state": { "type": { "in": ["completed", "cancelled"] } } }
+        }),
+        _ => serde_json::json!({}),
+    };
+
+    let body = serde_json::json!({ "query": gql_query, "variables": variables });
+
+    let client = reqwest::Client::new();
+    let res = client
+        .post("https://api.linear.app/graphql")
+        .header("Authorization", &api_key)
+        .header("Content-Type", "application/json")
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| format!("Linear API request failed: {}", e))?;
+
+    if !res.status().is_success() {
+        return Err(format!("Linear API returned status {}", res.status()));
+    }
+
+    let json: serde_json::Value = res.json().await.map_err(|e| e.to_string())?;
+
+    #[derive(Deserialize)]
+    struct LinearIssue {
+        identifier: String,
+        title: String,
+        state: LinearState,
+        creator: Option<LinearUser>,
+        url: String,
+        #[serde(rename = "createdAt")]
+        created_at: String,
+        labels: LinearLabelConnection,
+    }
+
+    #[derive(Deserialize)]
+    struct LinearState {
+        #[serde(rename = "type")]
+        state_type: String,
+    }
+
+    #[derive(Deserialize)]
+    struct LinearUser {
+        name: String,
+    }
+
+    #[derive(Deserialize)]
+    struct LinearLabelConnection {
+        nodes: Vec<LinearLabel>,
+    }
+
+    #[derive(Deserialize)]
+    struct LinearLabel {
+        name: String,
+    }
+
+    let nodes = json["data"]["issues"]["nodes"]
+        .as_array()
+        .cloned()
+        .unwrap_or_default();
+
+    let issues: Vec<Issue> = nodes
+        .into_iter()
+        .filter_map(|n| serde_json::from_value::<LinearIssue>(n).ok())
+        .map(|i| {
+            let state_str = match i.state.state_type.as_str() {
+                "completed" | "cancelled" => "closed",
+                _ => "open",
+            };
+            Issue {
+                number: 0,
+                identifier: Some(i.identifier),
+                title: i.title,
+                state: state_str.to_string(),
+                author: i.creator.map(|u| u.name).unwrap_or_default(),
+                url: i.url,
+                created_at: i.created_at,
+                body: None,
+                labels: i.labels.nodes.into_iter().map(|l| l.name).collect(),
+                source: "linear".to_string(),
+            }
+        })
+        .collect();
+
+    Ok(issues)
 }

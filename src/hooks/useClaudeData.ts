@@ -190,6 +190,16 @@ export function useIssues(cwd: string | null, state = "open") {
   });
 }
 
+export function useLinearIssues(hasKey: boolean, state = "open") {
+  return useQuery({
+    queryKey: ["linear-issues", state],
+    queryFn: () => tauri.listLinearIssues(state),
+    enabled: hasKey,
+    staleTime: 60_000,
+    retry: false,
+  });
+}
+
 // ---- File Watcher Hook ----
 
 
