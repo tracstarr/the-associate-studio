@@ -85,9 +85,25 @@ pub fn start_claude_watcher(app_handle: tauri::AppHandle) {
         .watch(&ide_dir, RecursiveMode::NonRecursive)
         .ok();
 
+    std::fs::create_dir_all(&ide_dir).ok();
+    let mut watcher_state = crate::data::watcher_state::WatcherState::load(&ide_dir);
+
+    // Pre-populate offset for any existing hook-events.jsonl that has no saved offset.
+    // This ensures historical events are skipped on first launch without losing events
+    // that arrive while the app is already running.
+    let hook_file = ide_dir.join("hook-events.jsonl");
+    let hook_key = hook_file.to_string_lossy().to_string();
+    if hook_file.exists() && watcher_state.get_offset(&hook_key).is_none() {
+        if let Ok(meta) = std::fs::metadata(&hook_file) {
+            watcher_state.set_offset(hook_key, meta.len());
+            watcher_state.save(&ide_dir);
+        }
+    }
+
+    let ide_dir_for_thread = ide_dir.clone();
+
     std::thread::spawn(move || {
         let _watcher = watcher; // Keep alive
-        let mut last_hook_offset: u64 = 0;
         for result in rx {
             match result {
                 Ok(event) => {
@@ -118,11 +134,26 @@ pub fn start_claude_watcher(app_handle: tauri::AppHandle) {
                         use std::io::{Read, Seek, SeekFrom};
                         if let Ok(mut file) = std::fs::File::open(path) {
                             if let Ok(file_len) = file.seek(SeekFrom::End(0)) {
-                                if file_len > last_hook_offset {
-                                    file.seek(SeekFrom::Start(last_hook_offset)).ok();
+                                let saved = watcher_state.get_offset(&path_str);
+
+                                let start_offset: u64 = match saved {
+                                    // File created after startup (no history to skip): read from 0
+                                    None => 0,
+                                    // File truncated/rotated: reset to beginning
+                                    Some(saved_offset) if saved_offset > file_len => 0,
+                                    // Normal: resume from last position
+                                    Some(saved_offset) => saved_offset,
+                                };
+
+                                if file_len > start_offset {
+                                    file.seek(SeekFrom::Start(start_offset)).ok();
                                     let mut buf = String::new();
                                     file.read_to_string(&mut buf).ok();
-                                    last_hook_offset = file_len;
+
+                                    // Persist BEFORE processing (crash safety)
+                                    watcher_state.set_offset(path_str.clone(), file_len);
+                                    watcher_state.save(&ide_dir_for_thread);
+
                                     for line in buf.lines() {
                                         let line = line.trim();
                                         if line.is_empty() {
