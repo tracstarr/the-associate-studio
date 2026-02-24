@@ -7,6 +7,7 @@ interface SettingsStore {
   // Appearance
   fontSize: number;
   fontFamily: string;
+  openStartupFiles: boolean;
 
   // GitHub (token in Windows Credential Manager, rest in settings.json)
   githubClientId: string;
@@ -26,6 +27,7 @@ interface SettingsStore {
   // Actions
   setFontSize: (size: number) => void;
   setFontFamily: (family: string) => void;
+  setOpenStartupFiles: (value: boolean) => void;
   setGithubClientId: (id: string) => void;
   setGithubToken: (token: string) => void;
   setGithubUsername: (name: string | null) => void;
@@ -41,6 +43,7 @@ interface SettingsStore {
 export const useSettingsStore = create<SettingsStore>((set, get) => ({
   fontSize: 14,
   fontFamily: "Cascadia Code, JetBrains Mono, Fira Code, monospace",
+  openStartupFiles: false,
   githubClientId: "",
   githubToken: "",
   githubUsername: null,
@@ -53,15 +56,19 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
 
   setFontSize: (fontSize) => {
     set({ fontSize });
-    persistConfig({ fontSize, fontFamily: get().fontFamily, githubClientId: get().githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail: get().jiraEmail });
+    persistConfig({ fontSize, fontFamily: get().fontFamily, githubClientId: get().githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail: get().jiraEmail, openStartupFiles: get().openStartupFiles });
   },
   setFontFamily: (fontFamily) => {
     set({ fontFamily });
-    persistConfig({ fontSize: get().fontSize, fontFamily, githubClientId: get().githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail: get().jiraEmail });
+    persistConfig({ fontSize: get().fontSize, fontFamily, githubClientId: get().githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail: get().jiraEmail, openStartupFiles: get().openStartupFiles });
+  },
+  setOpenStartupFiles: (openStartupFiles) => {
+    set({ openStartupFiles });
+    persistConfig({ fontSize: get().fontSize, fontFamily: get().fontFamily, githubClientId: get().githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail: get().jiraEmail, openStartupFiles });
   },
   setGithubClientId: (githubClientId) => {
     set({ githubClientId });
-    persistConfig({ fontSize: get().fontSize, fontFamily: get().fontFamily, githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail: get().jiraEmail });
+    persistConfig({ fontSize: get().fontSize, fontFamily: get().fontFamily, githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail: get().jiraEmail, openStartupFiles: get().openStartupFiles });
   },
   setGithubToken: (githubToken) => set({ githubToken }),
   setGithubUsername: (githubUsername) => set({ githubUsername }),
@@ -69,11 +76,11 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   setLinearUsername: (linearUsername) => set({ linearUsername }),
   setJiraBaseUrl: (jiraBaseUrl) => {
     set({ jiraBaseUrl });
-    persistConfig({ fontSize: get().fontSize, fontFamily: get().fontFamily, githubClientId: get().githubClientId, jiraBaseUrl, jiraEmail: get().jiraEmail });
+    persistConfig({ fontSize: get().fontSize, fontFamily: get().fontFamily, githubClientId: get().githubClientId, jiraBaseUrl, jiraEmail: get().jiraEmail, openStartupFiles: get().openStartupFiles });
   },
   setJiraEmail: (jiraEmail) => {
     set({ jiraEmail });
-    persistConfig({ fontSize: get().fontSize, fontFamily: get().fontFamily, githubClientId: get().githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail });
+    persistConfig({ fontSize: get().fontSize, fontFamily: get().fontFamily, githubClientId: get().githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail, openStartupFiles: get().openStartupFiles });
   },
   setJiraApiToken: (jiraApiToken) => set({ jiraApiToken }),
   setJiraUsername: (jiraUsername) => set({ jiraUsername }),
@@ -88,12 +95,14 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       const githubClientId = await store.get<string>("githubClientId");
       const jiraBaseUrl = await store.get<string>("jiraBaseUrl");
       const jiraEmail = await store.get<string>("jiraEmail");
+      const openStartupFiles = await store.get<boolean>("openStartupFiles");
       set({
         ...(fontSize != null && { fontSize }),
         ...(fontFamily != null && { fontFamily }),
         ...(githubClientId != null && { githubClientId }),
         ...(jiraBaseUrl != null && { jiraBaseUrl }),
         ...(jiraEmail != null && { jiraEmail }),
+        ...(openStartupFiles != null && { openStartupFiles }),
       });
       debugLog("Settings", "Config loaded from disk", { fontSize, fontFamily, githubClientId }, "success");
     } catch {
@@ -125,6 +134,7 @@ interface Config {
   githubClientId: string;
   jiraBaseUrl: string;
   jiraEmail: string;
+  openStartupFiles: boolean;
 }
 
 let persistTimer: ReturnType<typeof setTimeout> | null = null;
@@ -140,6 +150,7 @@ function persistConfig(config: Config) {
       await store.set("githubClientId", config.githubClientId);
       await store.set("jiraBaseUrl", config.jiraBaseUrl);
       await store.set("jiraEmail", config.jiraEmail);
+      await store.set("openStartupFiles", config.openStartupFiles);
       await store.save();
     } catch {
       // not in Tauri context

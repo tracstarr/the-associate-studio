@@ -249,13 +249,21 @@ function MemorySection({
   const getFilePath = (entries: FileEntry[] | undefined, name: string) =>
     entries?.find((f) => !f.is_dir && f.name === name)?.path;
 
-  const openMemFile = (filePath: string, fileName: string, isProjectClaudeMd = false) => {
+  const openMemFile = (filePath: string, fileName: string, isProjectClaudeMd = false, isProjectReadme = false) => {
     openTab(
       isProjectClaudeMd
         ? {
             id: `claude:${activeProjectId}`,
             type: "readme",
             title: "CLAUDE.md",
+            filePath,
+            projectDir: activeProjectDir,
+          }
+        : isProjectReadme
+        ? {
+            id: `readme:${activeProjectId}`,
+            type: "readme",
+            title: "README.md",
             filePath,
             projectDir: activeProjectDir,
           }
@@ -279,6 +287,8 @@ function MemorySection({
 
   const projClaudeExists = hasFile(projRootEntries, "CLAUDE.md");
   const projClaudePath = getFilePath(projRootEntries, "CLAUDE.md") ?? `${activeProjectDir}/CLAUDE.md`;
+  const projReadmeExists = hasFile(projRootEntries, "README.md");
+  const projReadmePath = getFilePath(projRootEntries, "README.md") ?? `${activeProjectDir}/README.md`;
   const projDotClaudeExists = hasFile(projDotEntries, "CLAUDE.md");
   const projDotClaudePath = getFilePath(projDotEntries, "CLAUDE.md") ?? `${projDotDir}/CLAUDE.md`;
   const projLocalExists = hasFile(projRootEntries, "CLAUDE.local.md");
@@ -343,6 +353,11 @@ function MemorySection({
             label="CLAUDE.md"
             exists={projClaudeExists}
             onClick={projClaudeExists ? () => openMemFile(projClaudePath, "CLAUDE.md", true) : undefined}
+          />
+          <MemFileRow
+            label="README.md"
+            exists={projReadmeExists}
+            onClick={projReadmeExists ? () => openMemFile(projReadmePath, "README.md", false, true) : undefined}
           />
           <MemFileRow
             label=".claude/CLAUDE.md"

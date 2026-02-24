@@ -2,6 +2,7 @@ import { Terminal, GitBranch, X } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useProjectsStore } from "@/stores/projectsStore";
 import { useSessionStore } from "@/stores/sessionStore";
+import { useSettingsStore } from "@/stores/settingsStore";
 import { useActiveProjectTabs } from "@/hooks/useActiveProjectTabs";
 import { useSessions } from "@/hooks/useClaudeData";
 import type { SessionEntry } from "@/lib/tauri";
@@ -19,12 +20,13 @@ export function ProjectSwitcher() {
   const knownSessions = useSessionStore((s) => s.knownSessions);
   const activeSubagents = useSessionStore((s) => s.activeSubagents);
 
+  const openStartupFiles = useSettingsStore((s) => s.openStartupFiles);
   const activeProject = projects.find((p) => p.id === activeProjectId);
   const { data: sessions, isLoading } = useSessions(activeProject?.path ?? "");
 
-  // Auto-open README + CLAUDE.md tabs when the active project changes
+  // Auto-open README + CLAUDE.md tabs when the active project changes (opt-in)
   useEffect(() => {
-    if (!activeProject || !projectId) return;
+    if (!activeProject || !projectId || !openStartupFiles) return;
     openTab(
       {
         id: `claude:${projectId}`,
