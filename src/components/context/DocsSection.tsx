@@ -16,6 +16,7 @@ import {
   writeFile,
   getProjectSettings,
   setProjectSettings,
+  detectDocsFolder,
   runDocsIndexGen,
   type FileEntry,
 } from "../../lib/tauri";
@@ -48,7 +49,17 @@ export function DocsSection({ activeProjectDir, activeProjectId }: DocsSectionPr
     enabled: !!activeProjectDir,
   });
 
-  const docsFolder = settings?.docsFolder;
+  // Auto-detect docs folder when none is configured
+  const { data: detectedFolder } = useQuery({
+    queryKey: ["detect-docs-folder", activeProjectDir],
+    queryFn: () => detectDocsFolder(activeProjectDir),
+    staleTime: 60_000,
+    enabled: !!activeProjectDir && !settings?.docsFolder,
+  });
+
+  const configuredFolder = settings?.docsFolder;
+  const docsFolder = configuredFolder ?? detectedFolder ?? undefined;
+  const isAutoDetected = !configuredFolder && !!detectedFolder;
   const docsFolderAbs = docsFolder ? `${activeProjectDir}/${docsFolder}` : null;
 
   const { data: docsEntries } = useQuery({
@@ -77,6 +88,13 @@ export function DocsSection({ activeProjectDir, activeProjectId }: DocsSectionPr
   const claudeMdHasDocs =
     !docsFolder ||
     (claudeMdContent != null && claudeMdContent.includes(docsFolder));
+
+  // ---- Save auto-detected folder to settings ----
+  const confirmDetected = async () => {
+    if (!detectedFolder) return;
+    await setProjectSettings(activeProjectDir, { ...settings, docsFolder: detectedFolder });
+    queryClient.invalidateQueries({ queryKey: ["project-settings", activeProjectDir] });
+  };
 
   // ---- Folder edit ----
   const startEdit = () => {
@@ -184,14 +202,25 @@ export function DocsSection({ activeProjectDir, activeProjectId }: DocsSectionPr
 
         {/* Folder configurator */}
         {!collapsed && !editing && (
-          <button
-            onClick={startEdit}
-            title={docsFolder ? `Docs folder: ${docsFolder}` : "Set docs folder"}
-            className="flex items-center gap-1 text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors max-w-[120px]"
-          >
-            <span className="truncate">{docsFolder ?? "set folder"}</span>
-            <Pencil size={9} className="shrink-0" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={startEdit}
+              title={docsFolder ? `Docs folder: ${docsFolder}${isAutoDetected ? " (auto-detected)" : ""}` : "Set docs folder"}
+              className="flex items-center gap-1 text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors max-w-[120px]"
+            >
+              <span className="truncate">{docsFolder ?? "set folder"}</span>
+              <Pencil size={9} className="shrink-0" />
+            </button>
+            {isAutoDetected && (
+              <button
+                onClick={confirmDetected}
+                title="Save auto-detected folder to settings"
+                className="text-[9px] text-[var(--color-accent-primary)] hover:underline shrink-0"
+              >
+                save
+              </button>
+            )}
+          </div>
         )}
 
         {!collapsed && editing && (
@@ -221,7 +250,7 @@ export function DocsSection({ activeProjectDir, activeProjectId }: DocsSectionPr
         <div className="pb-2">
           {!docsFolder ? (
             <div className="px-4 py-1 text-[10px] text-[var(--color-text-muted)] italic">
-              No docs folder configured
+              No docs folder found
             </div>
           ) : (
             <>

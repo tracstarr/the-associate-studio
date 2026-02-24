@@ -285,7 +285,7 @@ Summaries can be loaded via `cmd_load_summaries(project_dir, session_id)` and re
 | `summaries` | `cmd_load_summaries`, `cmd_read_summary` |
 | `integrations` | `cmd_load_integration_secrets`, `cmd_github_auth_status`, `cmd_github_device_flow_start`, `cmd_github_device_flow_poll`, `cmd_github_set_token`, `cmd_github_logout`, `cmd_linear_verify_key`, `cmd_linear_logout`, `cmd_jira_verify_token`, `cmd_jira_logout` |
 | `hooks` | `cmd_setup_hooks`, `cmd_remove_hooks`, `cmd_get_active_sessions`, `cmd_hooks_configured` |
-| `projects` | `cmd_list_projects`, `cmd_list_orphaned_projects`, `cmd_pick_folder`, `cmd_delete_project`, `cmd_get_home_dir`, `cmd_read_file`, `cmd_write_file`, `cmd_run_claude_init`, `cmd_run_readme_gen`, `cmd_get_project_settings`, `cmd_set_project_settings`, `cmd_run_docs_index_gen` |
+| `projects` | `cmd_list_projects`, `cmd_list_orphaned_projects`, `cmd_pick_folder`, `cmd_delete_project`, `cmd_get_home_dir`, `cmd_read_file`, `cmd_write_file`, `cmd_run_claude_init`, `cmd_run_readme_gen`, `cmd_get_project_settings`, `cmd_set_project_settings`, `cmd_detect_docs_folder`, `cmd_run_docs_index_gen` |
 | `files` | `cmd_list_dir` |
 
 ### Data layer (`src-tauri/src/data/`)
@@ -334,6 +334,10 @@ Settings specific to a project (e.g., the docs folder path) are stored in `~/.cl
 ```
 
 This keeps them alongside session data and out of the project repository. The Rust struct is `ProjectSettings` in `commands/projects.rs`; read/write via `cmd_get_project_settings` / `cmd_set_project_settings`.
+
+### Docs folder auto-detection
+
+When no `docsFolder` is configured, the Docs section in the context panel automatically scans the project root for common documentation folder names. The Rust command `cmd_detect_docs_folder` checks for directories matching (case-insensitive, in priority order): `docs`, `doc`, `documents`, `documentation`. If found, the first match is used as the effective docs folder without persisting to settings. The user sees a "save" link to confirm the auto-detected folder into `ide-settings.json`.
 
 ## Key architectural patterns
 

@@ -493,6 +493,10 @@ export function setProjectSettings(projectPath: string, settings: ProjectSetting
   return invoke("cmd_set_project_settings", { projectPath, settings });
 }
 
+export function detectDocsFolder(projectPath: string): Promise<string | null> {
+  return invoke("cmd_detect_docs_folder", { projectPath });
+}
+
 export function runDocsIndexGen(projectPath: string, docsFolder: string): Promise<string> {
   return invoke("cmd_run_docs_index_gen", { projectPath, docsFolder });
 }

@@ -162,6 +162,46 @@ pub async fn cmd_set_project_settings(project_path: String, settings: ProjectSet
     std::fs::write(&settings_path, content).map_err(|e| e.to_string())
 }
 
+/// Scan project root for common documentation folder names.
+/// Returns the first match in priority order: docs, doc, documents, documentation.
+#[tauri::command]
+pub async fn cmd_detect_docs_folder(project_path: String) -> Result<Option<String>, String> {
+    let dir = PathBuf::from(&project_path);
+    if !dir.exists() {
+        return Err(format!("Directory does not exist: {}", project_path));
+    }
+
+    let candidates = ["docs", "doc", "documents", "documentation"];
+
+    let entries = std::fs::read_dir(&dir).map_err(|e| e.to_string())?;
+    let mut found_names: Vec<String> = Vec::new();
+
+    for entry in entries.flatten() {
+        let ft = match entry.file_type() {
+            Ok(ft) => ft,
+            Err(_) => continue,
+        };
+        if !ft.is_dir() {
+            continue;
+        }
+        if let Some(name) = entry.file_name().to_str() {
+            let lower = name.to_lowercase();
+            if candidates.contains(&lower.as_str()) {
+                found_names.push(name.to_string());
+            }
+        }
+    }
+
+    // Return the first match according to candidate priority order
+    for candidate in &candidates {
+        if let Some(name) = found_names.iter().find(|n| n.to_lowercase() == *candidate) {
+            return Ok(Some(name.clone()));
+        }
+    }
+
+    Ok(None)
+}
+
 #[tauri::command]
 pub async fn cmd_run_docs_index_gen(project_path: String, docs_folder: String) -> Result<String, String> {
     // Reject any docs_folder containing parent-path segments to prevent writes outside the project

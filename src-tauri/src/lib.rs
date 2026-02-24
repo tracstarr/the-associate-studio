@@ -94,6 +94,7 @@ pub fn run() {
             commands::projects::cmd_run_readme_gen,
             commands::projects::cmd_get_project_settings,
             commands::projects::cmd_set_project_settings,
+            commands::projects::cmd_detect_docs_folder,
             commands::projects::cmd_run_docs_index_gen,
             commands::files::cmd_list_dir,
             commands::summaries::cmd_load_summaries,
