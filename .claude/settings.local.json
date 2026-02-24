@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep:*)",
+      "Bash(tail:*)",
+      "Bash(cd /c/dev/feature-docs && export PATH=\"/c/msys64/mingw64/bin:$HOME/.cargo/bin:$PATH\" && export PKG_CONFIG_PATH=\"/c/msys64/mingw64/lib/pkgconfig\" && cargo build --manifest-path src-tauri/Cargo.toml 2>&1)",
+      "Bash(npm run --prefix /c/dev/feature-docs typecheck 2>&1 || npx --prefix /c/dev/feature-docs tsc --noEmit 2>&1)",
+      "Bash(ls /c/dev/feature-docs/node_modules/.bin/tsc* 2>&1 || ls /c/dev/feature-docs/node_modules/typescript/bin/ 2>&1)"
+    ]
+  }
+}

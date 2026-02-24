@@ -473,6 +473,24 @@ export function getHomeDir(): Promise<string> {
   return invoke("cmd_get_home_dir");
 }
 
+// ---- Project Settings ----
+
+export interface ProjectSettings {
+  docsFolder?: string;
+}
+
+export function getProjectSettings(projectPath: string): Promise<ProjectSettings> {
+  return invoke("cmd_get_project_settings", { projectPath });
+}
+
+export function setProjectSettings(projectPath: string, settings: ProjectSettings): Promise<void> {
+  return invoke("cmd_set_project_settings", { projectPath, settings });
+}
+
+export function runDocsIndexGen(projectPath: string, docsFolder: string): Promise<string> {
+  return invoke("cmd_run_docs_index_gen", { projectPath, docsFolder });
+}
+
 // ---- Summary Invoke Wrappers ----
 
 export function loadSummaries(projectDir: string, sessionId: string): Promise<SummaryFile[]> {
