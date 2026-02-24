@@ -104,6 +104,32 @@ On first build, these crates are slow:
 
 Total cold build: ~4-6 min. Incremental (Rust file change only): ~15-30s.
 
+## NSIS installer hooks
+
+`src-tauri/nsis/installer-hooks.nsh` adds a pre-uninstall step via Tauri's
+`bundle.windows.nsis.installerHooks` config. The `NSIS_HOOK_PREUNINSTALL` macro
+runs before the uninstaller removes any files, while the app binary is still
+on disk.
+
+The hook calls:
+```
+"$INSTDIR\the-associate-studio.exe" --cleanup
+```
+
+The app detects `--cleanup` as the first argument in `lib.rs` (before Tauri
+starts), runs `cleanup::run()`, and exits with no window shown. The cleanup:
+1. Removes our hook entries from `~/.claude/settings.json` (leaves file intact)
+2. Deletes `~/.claude/theassociate/` (`hook.js` + `hook-events.jsonl`)
+3. Deletes `%APPDATA%\com.keith.the-associate-studio\` (plugin-store + WebView2 cache)
+4. Deletes Windows Credential Manager entries for the `the-associate-studio` service
+
+Summary files (`~/.claude/projects/*/??-summary-*.md`) and all other Claude
+CLI data are preserved.
+
+If Tauri's bundler is updated to a major version, re-check that `installerHooks`
+is still a supported NSIS config key (see `node_modules/@tauri-apps/cli/config.schema.json`,
+key `NsisConfig.properties.installerHooks`).
+
 ## Project structure
 
 ```
