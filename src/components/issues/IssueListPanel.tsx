@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { CircleDot, CheckCircle2, Github } from "lucide-react";
-import { useIssues, useLinearIssues } from "@/hooks/useClaudeData";
+import { useIssues, useLinearIssues, useJiraIssues } from "@/hooks/useClaudeData";
 import { useProjectsStore } from "@/stores/projectsStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import type { Issue } from "@/lib/tauri";
@@ -11,21 +11,27 @@ export function IssueListPanel() {
     s.projects.find((p) => p.id === s.activeProjectId)?.path ?? null
   );
   const linearApiKey = useSettingsStore((s) => s.linearApiKey);
+  const jiraBaseUrl = useSettingsStore((s) => s.jiraBaseUrl);
+  const jiraEmail = useSettingsStore((s) => s.jiraEmail);
+  const jiraApiToken = useSettingsStore((s) => s.jiraApiToken);
+  const hasJira = !!(jiraBaseUrl && jiraEmail && jiraApiToken);
   const [state, setState] = useState<"open" | "closed" | "all">("open");
 
   const { data: ghIssues, isLoading: ghLoading, error: ghError, refetch: ghRefetch } = useIssues(activeProjectDir, state);
   const { data: linearIssues, isLoading: linearLoading, refetch: linearRefetch } = useLinearIssues(!!linearApiKey, state);
+  const { data: jiraIssues, isLoading: jiraLoading, refetch: jiraRefetch } = useJiraIssues(hasJira, jiraBaseUrl, jiraEmail, state);
 
   const issues = useMemo(() => {
-    const all = [...(ghIssues ?? []), ...(linearIssues ?? [])];
+    const all = [...(ghIssues ?? []), ...(linearIssues ?? []), ...(jiraIssues ?? [])];
     return all.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  }, [ghIssues, linearIssues]);
+  }, [ghIssues, linearIssues, jiraIssues]);
 
-  const isLoading = ghLoading || linearLoading;
+  const isLoading = ghLoading || linearLoading || jiraLoading;
 
   function refetch() {
     ghRefetch();
     linearRefetch();
+    jiraRefetch();
   }
 
   if (!activeProjectDir) {

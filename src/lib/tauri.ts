@@ -415,6 +415,10 @@ export function listLinearIssues(state = "open"): Promise<Issue[]> {
   return invoke("cmd_list_linear_issues", { state });
 }
 
+export function listJiraIssues(baseUrl: string, email: string, state = "open"): Promise<Issue[]> {
+  return invoke("cmd_list_jira_issues", { baseUrl, email, state });
+}
+
 // ---- Hook / Session Tracking Types ----
 
 export interface ActiveSubagent {
