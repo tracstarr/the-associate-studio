@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Brain, Users, FileText } from "lucide-react";
+import { Brain, Users, FileText, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUIStore, type RightTab } from "@/stores/uiStore";
 
@@ -13,6 +13,7 @@ const rightItems: RightActivityItem[] = [
   { id: "context", icon: Brain, label: "Context" },
   { id: "teams", icon: Users, label: "Teams" },
   { id: "plans", icon: FileText, label: "Plans" },
+  { id: "docs", icon: BookOpen, label: "Docs" },
 ];
 
 function RightActivityBarComponent() {

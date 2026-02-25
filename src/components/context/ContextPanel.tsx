@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Wrench, CheckSquare, Brain, MessageSquare, ChevronDown, ChevronRight } from "lucide-react";
-import { DocsSection } from "./DocsSection";
 import { useQuery } from "@tanstack/react-query";
 import { useTranscript, useTodos, useTeams, useTasks } from "../../hooks/useClaudeData";
 import { useActiveProjectTabs } from "../../hooks/useActiveProjectTabs";
@@ -156,14 +155,6 @@ export function ContextPanel() {
       {activeProjectDir && homeDir && (
         <MemorySection
           homeDir={homeDir}
-          activeProjectDir={activeProjectDir}
-          activeProjectId={activeProjectId}
-        />
-      )}
-
-      {/* Docs section */}
-      {activeProjectDir && (
-        <DocsSection
           activeProjectDir={activeProjectDir}
           activeProjectId={activeProjectId}
         />

@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 export type SidebarView = "sessions" | "git" | "prs" | "files";
-export type RightTab = "context" | "teams" | "plans";
+export type RightTab = "context" | "teams" | "plans" | "docs";
 export type BottomTab = "log" | "git" | "prs" | "issues" | "output" | "debug";
 
 export interface SelectedDiffFile {
