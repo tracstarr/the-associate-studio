@@ -210,6 +210,16 @@ export function useLinearIssues(hasKey: boolean, state = "open") {
   });
 }
 
+export function useJiraIssues(hasCredentials: boolean, baseUrl: string, email: string, state = "open") {
+  return useQuery({
+    queryKey: ["jira-issues", state, baseUrl, email, hasCredentials],
+    queryFn: () => tauri.listJiraIssues(baseUrl, email, state),
+    enabled: hasCredentials,
+    staleTime: 60_000,
+    retry: false,
+  });
+}
+
 // ---- File Watcher Hook ----
 
 

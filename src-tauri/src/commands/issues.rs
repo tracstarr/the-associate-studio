@@ -10,6 +10,13 @@ fn get_linear_api_key() -> Option<String> {
         .ok()
 }
 
+fn get_jira_api_token() -> Option<String> {
+    keyring::Entry::new(KEYRING_SERVICE, "jira-api-token")
+        .ok()?
+        .get_password()
+        .ok()
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PullRequest {
     pub number: u32,
@@ -525,6 +532,88 @@ pub async fn cmd_list_linear_issues(state: String) -> Result<Vec<Issue>, String>
                 body: None,
                 labels: i.labels.nodes.into_iter().map(|l| l.name).collect(),
                 source: "linear".to_string(),
+            }
+        })
+        .collect();
+
+    Ok(issues)
+}
+
+#[tauri::command]
+pub async fn cmd_list_jira_issues(
+    base_url: String,
+    email: String,
+    state: String,
+) -> Result<Vec<Issue>, String> {
+    let token = match get_jira_api_token() {
+        Some(t) => t,
+        None => return Ok(vec![]),
+    };
+
+    let jql = match state.as_str() {
+        "open"   => "statusCategory in (new, indeterminate) ORDER BY created DESC",
+        "closed" => "statusCategory = done ORDER BY created DESC",
+        _        => "ORDER BY created DESC",
+    };
+
+    let url = format!("{}/rest/api/3/search", base_url.trim_end_matches('/'));
+    let client = reqwest::Client::new();
+    let res = client
+        .get(&url)
+        .basic_auth(&email, Some(&token))
+        .query(&[
+            ("jql", jql),
+            ("maxResults", "50"),
+            ("fields", "summary,status,creator,created,labels"),
+        ])
+        .send()
+        .await
+        .map_err(|e| format!("Jira request failed: {}", e))?;
+
+    if !res.status().is_success() {
+        return Err(format!("Jira returned status {}", res.status()));
+    }
+
+    let json: serde_json::Value = res.json().await.map_err(|e| e.to_string())?;
+
+    #[derive(Deserialize)] struct JiraIssue { key: String, fields: JiraFields }
+    #[derive(Deserialize)] struct JiraFields {
+        summary: String,
+        status: JiraStatus,
+        creator: Option<JiraUser>,
+        created: String,
+        #[serde(default)] labels: Vec<String>,
+    }
+    #[derive(Deserialize)] struct JiraStatus {
+        #[serde(rename = "statusCategory")] status_category: JiraStatusCategory,
+    }
+    #[derive(Deserialize)] struct JiraStatusCategory { key: String }
+    #[derive(Deserialize)] struct JiraUser { #[serde(rename = "displayName")] display_name: String }
+
+    let raw = json["issues"]
+        .as_array()
+        .ok_or_else(|| "Jira response missing 'issues' array".to_string())?
+        .clone();
+
+    let issues = raw
+        .into_iter()
+        .filter_map(|v| serde_json::from_value::<JiraIssue>(v).ok())
+        .map(|i| {
+            let state_str = match i.fields.status.status_category.key.as_str() {
+                "done" => "closed",
+                _      => "open",
+            };
+            Issue {
+                number: 0,
+                identifier: Some(i.key.clone()),
+                title: i.fields.summary,
+                state: state_str.to_string(),
+                author: i.fields.creator.map(|u| u.display_name).unwrap_or_default(),
+                url: format!("{}/browse/{}", base_url.trim_end_matches('/'), i.key),
+                created_at: i.fields.created,
+                body: None,
+                labels: i.fields.labels,
+                source: "jira".to_string(),
             }
         })
         .collect();
