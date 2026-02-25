@@ -93,6 +93,25 @@ export function TerminalView({ sessionId, resumeSessionId, cwd, isActive }: Term
     termRef.current = term;
     fitAddonRef.current = fitAddon;
 
+    // Clipboard handling: Ctrl+V pastes, Ctrl+Shift+C copies selection
+    term.attachCustomKeyEventHandler((ev: KeyboardEvent) => {
+      if (ev.type === "keydown" && ev.ctrlKey && (ev.key === "v" || ev.key === "V")) {
+        navigator.clipboard
+          .readText()
+          .then((text) => {
+            if (text) invoke("pty_write", { sessionId, data: text }).catch(console.error);
+          })
+          .catch(console.error);
+        return false; // prevent xterm from sending \x16
+      }
+      if (ev.type === "keydown" && ev.ctrlKey && ev.shiftKey && ev.key === "C") {
+        const sel = term.getSelection();
+        if (sel) navigator.clipboard.writeText(sel).catch(console.error);
+        return false;
+      }
+      return true;
+    });
+
     // Get actual terminal dimensions after fit
     const dims = fitAddon.proposeDimensions() ?? { rows: 24, cols: 80 };
 
