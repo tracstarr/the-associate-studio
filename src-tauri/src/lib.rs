@@ -119,6 +119,7 @@ pub fn run() {
             commands::files::cmd_list_dir,
             commands::summaries::cmd_load_summaries,
             commands::summaries::cmd_read_summary,
+            commands::claude_config::cmd_load_extensions,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
