@@ -416,12 +416,14 @@ function BranchDropdown({
 function ProjectDropdown({
   projects,
   activeProjectId,
+  recentProjectIds,
   onSelect,
   onClose,
   toggleRef,
 }: {
   projects: Project[];
   activeProjectId: string | null;
+  recentProjectIds: string[];
   onSelect: (id: string) => void;
   onClose: () => void;
   toggleRef: React.RefObject<HTMLButtonElement | null>;
@@ -441,8 +443,15 @@ function ProjectDropdown({
     return () => document.removeEventListener("mousedown", handler);
   }, [onClose, toggleRef]);
 
-  const open = projects.filter((p) => !p.isWorktree);
-  const recent = projects.filter((p) => p.isWorktree);
+  const openProjects = projects.filter((p) => !p.isWorktree);
+  const worktrees = projects.filter((p) => p.isWorktree);
+
+  const recentProjects = recentProjectIds
+    .map((id) => projects.find((p) => p.id === id))
+    .filter((p): p is Project => p !== undefined && !p.isWorktree);
+
+  const recentIdSet = new Set(recentProjects.map((p) => p.id));
+  const openProjectsFiltered = openProjects.filter((p) => !recentIdSet.has(p.id));
 
   return (
     <div
@@ -479,13 +488,13 @@ function ProjectDropdown({
         New Project…
       </button>
 
-      {/* Open projects */}
-      {open.length > 0 && (
+      {/* Recent projects */}
+      {recentProjects.length > 0 && (
         <>
           <div className="px-3 py-1.5 mt-1 text-[9px] font-semibold tracking-wider text-text-muted uppercase border-t border-border-muted mx-2">
-            Open Projects
+            Recent
           </div>
-          {open.map((p) => (
+          {recentProjects.map((p) => (
             <button
               key={p.id}
               onClick={() => { onSelect(p.id); onClose(); }}
@@ -506,13 +515,40 @@ function ProjectDropdown({
         </>
       )}
 
-      {/* Recent (worktrees shown as "recent" in this context) */}
-      {recent.length > 0 && (
+      {/* Open projects (excluding recent) */}
+      {openProjectsFiltered.length > 0 && (
+        <>
+          <div className="px-3 py-1.5 mt-1 text-[9px] font-semibold tracking-wider text-text-muted uppercase border-t border-border-muted mx-2">
+            Open Projects
+          </div>
+          {openProjectsFiltered.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => { onSelect(p.id); onClose(); }}
+              className={cn(
+                "flex items-center gap-2 w-[calc(100%-8px)] mx-1 px-3 py-2 rounded-lg transition-all duration-200 text-left",
+                p.id === activeProjectId
+                  ? "text-accent-primary bg-accent-primary/10"
+                  : "text-text-secondary hover:bg-bg-raised hover:text-text-primary"
+              )}
+            >
+              <ProjectAvatar name={p.name} size={14} />
+              <div className="flex flex-col min-w-0">
+                <span className="font-medium truncate">{p.name}</span>
+                <span className="text-[9px] text-text-muted truncate">{p.path}</span>
+              </div>
+            </button>
+          ))}
+        </>
+      )}
+
+      {/* Worktrees */}
+      {worktrees.length > 0 && (
         <>
           <div className="px-3 py-1.5 mt-1 text-[9px] font-semibold tracking-wider text-text-muted uppercase border-t border-border-muted mx-2">
             Worktrees
           </div>
-          {recent.map((p) => (
+          {worktrees.map((p) => (
             <button
               key={p.id}
               onClick={() => { onSelect(p.id); onClose(); }}
@@ -544,6 +580,7 @@ function TitleBarComponent() {
   const projects = useProjectsStore((s) => s.projects);
   const activeProjectId = useProjectsStore((s) => s.activeProjectId);
   const setActiveProject = useProjectsStore((s) => s.setActiveProject);
+  const recentProjectIds = useProjectsStore((s) => s.recentProjectIds);
   const activeProject = projects.find((p) => p.id === activeProjectId);
   const activeTab = openTabs.find((t) => t.id === activeTabId);
 
@@ -637,6 +674,7 @@ function TitleBarComponent() {
             <ProjectDropdown
               projects={projects}
               activeProjectId={activeProjectId}
+              recentProjectIds={recentProjectIds}
               onSelect={setActiveProject}
               onClose={handleProjectClose}
               toggleRef={projectBtnRef}

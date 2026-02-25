@@ -220,6 +220,7 @@ export function useClaudeWatcher() {
   const tabsByProjectRef = useRef(useSessionStore.getState().tabsByProject);
   const activeSubagentsRef = useRef(useSessionStore.getState().activeSubagents);
   const activeProjectIdRef = useRef(useProjectsStore.getState().activeProjectId);
+  const pendingCloseRef = useRef<Map<string, { tabId: string; projectId: string; projectDir: string; timer: ReturnType<typeof setTimeout> }>>(new Map());
 
   // Keep refs in sync via subscriptions (no effect deps needed)
   useEffect(() => {
@@ -276,6 +277,48 @@ export function useClaudeWatcher() {
           case "SessionStart": {
             debugLog("Hooks", "SessionStart", { session_id: event.session_id, cwd: event.cwd }, "info");
             store.markSessionStatus(event.session_id, "active");
+            // If this is a context-clear restart, cancel any pending tab closure
+            // and re-link the existing tab to the new session ID
+            if (event.source === "clear") {
+              const projectId = pathToProjectId(event.cwd ?? "");
+              for (const [oldSessionId, pending] of pendingCloseRef.current.entries()) {
+                if (pending.projectId === projectId) {
+                  clearTimeout(pending.timer);
+                  pendingCloseRef.current.delete(oldSessionId);
+                  store.resolveTabSession(pending.tabId, event.session_id);
+                  store.renameTab(pending.tabId, event.session_id.slice(0, 8));
+                  break;
+                }
+              }
+            } else if (event.source !== "resume") {
+              // New session started in same project while old tab is pending close.
+              // Keep the terminal tab alive: relink it to the new session,
+              // and open a background history tab for the old session's transcript.
+              const projectId = pathToProjectId(event.cwd ?? "");
+              for (const [oldSessionId, pending] of pendingCloseRef.current.entries()) {
+                if (pending.projectId === projectId) {
+                  clearTimeout(pending.timer);
+                  pendingCloseRef.current.delete(oldSessionId);
+                  const historyTabId = `session-view:${oldSessionId}`;
+                  const currentTabs = tabsByProjectRef.current[projectId] ?? [];
+                  if (!currentTabs.some((t) => t.id === historyTabId)) {
+                    store.insertTabBackground(
+                      {
+                        id: historyTabId,
+                        type: "session-view",
+                        title: oldSessionId.slice(0, 8),
+                        projectDir: pending.projectDir,
+                        sessionId: oldSessionId,
+                      },
+                      projectId
+                    );
+                  }
+                  store.resolveTabSession(pending.tabId, event.session_id);
+                  store.renameTab(pending.tabId, event.session_id.slice(0, 8));
+                  break;
+                }
+              }
+            }
             // Hanging session cleanup: if not a resume, mark other sessions in same project as completed
             if (event.source !== "resume") {
               const projectId = pathToProjectId(event.cwd ?? "");
@@ -328,10 +371,11 @@ export function useClaudeWatcher() {
             queryClient.invalidateQueries({ queryKey: ["sessions"] });
             break;
           }
-          case "SessionEnd":
+          case "SessionEnd": {
             debugLog("Hooks", "SessionEnd", { session_id: event.session_id }, "info");
             store.markSessionStatus(event.session_id, "completed");
-            // Close the terminal tab for this session (/exit was called)
+            // Defer tab closure — if a SessionStart(source:"clear") arrives within 3s,
+            // this is a context-clear restart and we should keep the tab alive.
             for (const [pid, tabs] of Object.entries(allTabsByProject)) {
               const termTab = tabs.find(
                 (t) =>
@@ -339,10 +383,15 @@ export function useClaudeWatcher() {
                   t.resolvedSessionId === event.session_id
               );
               if (termTab) {
-                store.closeTab(termTab.id, pid);
+                const timer = setTimeout(() => {
+                  pendingCloseRef.current.delete(event.session_id);
+                  store.closeTab(termTab.id, pid);
+                }, 3000);
+                pendingCloseRef.current.set(event.session_id, { tabId: termTab.id, projectId: pid, projectDir: termTab.projectDir, timer });
               }
             }
             break;
+          }
           case "Stop":
             debugLog("Hooks", "Stop", { session_id: event.session_id }, "warn");
             store.markSessionStatus(event.session_id, "idle");
@@ -473,6 +522,11 @@ export function useClaudeWatcher() {
     );
 
     return () => {
+      // Clear any pending close timers
+      for (const { timer } of pendingCloseRef.current.values()) {
+        clearTimeout(timer);
+      }
+      pendingCloseRef.current.clear();
       unlisteners.forEach((unlisten) => {
         unlisten.then((f) => f());
       });
