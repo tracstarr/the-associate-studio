@@ -106,6 +106,14 @@ The GitHub Device Flow (`cmd_github_device_flow_start` / `cmd_github_device_flow
 
 The `client_id` for the OAuth App is user-supplied (configurable in Settings → Integrations). It is not sensitive (it's a public OAuth App identifier) and is stored in `settings.json`.
 
+## Team/task deletion — symlink safety
+
+`cmd_delete_team` in `commands/teams.rs` deletes `~/.claude/teams/<name>` and `~/.claude/tasks/<name>`. Before deletion, `clear_readonly_recursive` walks the tree to clear read-only flags (needed on Windows where `remove_dir_all` fails on read-only files).
+
+**Decision (2026-02-25):** `clear_readonly_recursive` uses `symlink_metadata` and explicitly skips symlinks. This ensures the function never follows a symlink into files outside the validated `.claude/teams/` or `.claude/tasks/` boundary. `std::fs::remove_dir_all` already removes symlink entries without following them, so skipping symlinks in the permission-clearing pass is both safe and correct.
+
+Previously this function used `std::fs::metadata` and `set_permissions`, both of which follow symlinks, allowing a crafted symlink inside a team directory to mutate permissions on arbitrary external files.
+
 ## Threat model
 
 This is a single-user desktop tool. The primary threats are:

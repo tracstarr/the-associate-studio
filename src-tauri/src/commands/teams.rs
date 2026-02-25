@@ -14,16 +14,30 @@ fn get_claude_home() -> Result<PathBuf, String> {
 
 /// Clear read-only attributes on all files in a directory tree so
 /// `remove_dir_all` doesn't fail on Windows due to read-only files.
+///
+/// Symlinks are skipped entirely — `remove_dir_all` already removes the
+/// link entry itself without following the target, so there is no need to
+/// touch permissions through a symlink (which would escape the validated
+/// path boundary).
 fn clear_readonly_recursive(path: &Path) -> Result<(), String> {
-    if path.is_file() || path.is_symlink() {
-        if let Ok(meta) = std::fs::metadata(path) {
-            let mut perms = meta.permissions();
-            if perms.readonly() {
-                perms.set_readonly(false);
-                let _ = std::fs::set_permissions(path, perms);
-            }
+    // Use symlink_metadata so we inspect the link itself, not the target.
+    let meta = match std::fs::symlink_metadata(path) {
+        Ok(m) => m,
+        Err(_) => return Ok(()),
+    };
+
+    // Never follow symlinks — skip them.
+    if meta.file_type().is_symlink() {
+        return Ok(());
+    }
+
+    if meta.is_file() {
+        let mut perms = meta.permissions();
+        if perms.readonly() {
+            perms.set_readonly(false);
+            let _ = std::fs::set_permissions(path, perms);
         }
-    } else if path.is_dir() {
+    } else if meta.is_dir() {
         if let Ok(entries) = std::fs::read_dir(path) {
             for entry in entries.flatten() {
                 clear_readonly_recursive(&entry.path())?;
