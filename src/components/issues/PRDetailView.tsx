@@ -8,7 +8,6 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { usePRDetail } from "@/hooks/useClaudeData";
-import { useProjectsStore } from "@/stores/projectsStore";
 import type { SessionTab } from "@/stores/sessionStore";
 import type { PRDetail, PRComment, PRReviewComment } from "@/lib/tauri";
 import { cn } from "@/lib/utils";
@@ -18,11 +17,9 @@ interface PRDetailViewProps {
 }
 
 export function PRDetailView({ tab }: PRDetailViewProps) {
-  const activeProjectDir = useProjectsStore((s) =>
-    s.projects.find((p) => p.id === s.activeProjectId)?.path ?? null
-  );
+  const cwd = tab.projectDir || null;
   const prNumber = tab.prNumber ?? 0;
-  const { data: pr, isLoading, error, refetch } = usePRDetail(activeProjectDir, prNumber);
+  const { data: pr, isLoading, error, refetch } = usePRDetail(cwd, prNumber);
 
   if (isLoading) {
     return (
