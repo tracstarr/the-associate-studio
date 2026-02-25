@@ -19,6 +19,7 @@ pub async fn pty_spawn(
     cwd: String,
     rows: u16,
     cols: u16,
+    skip_permissions: bool,
     app_handle: AppHandle,
     state: State<'_, PtyState>,
 ) -> Result<(), String> {
@@ -46,6 +47,10 @@ pub async fn pty_spawn(
 
     if let Some(ref id) = resume_session_id {
         cmd.args(["--resume", id]);
+    }
+
+    if skip_permissions {
+        cmd.arg("--dangerously-skip-permissions");
     }
 
     cmd.env("TERM", "xterm-256color");
@@ -202,6 +207,15 @@ pub async fn pty_kill(
 ) -> Result<(), String> {
     let mut sessions = state.0.lock().map_err(|e| e.to_string())?;
     if let Some(mut session) = sessions.remove(&session_id) {
+        let _ = session.child.kill();
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn pty_kill_all(state: State<'_, PtyState>) -> Result<(), String> {
+    let mut sessions = state.0.lock().map_err(|e| e.to_string())?;
+    for (_, mut session) in sessions.drain() {
         let _ = session.child.kill();
     }
     Ok(())

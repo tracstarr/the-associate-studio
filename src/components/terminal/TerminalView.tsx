@@ -23,6 +23,7 @@ export function TerminalView({ sessionId, resumeSessionId, cwd, isActive }: Term
   const lastDimsRef = useRef({ rows: 24, cols: 80 });
   const fontSize = useSettingsStore((s) => s.fontSize);
   const fontFamily = useSettingsStore((s) => s.fontFamily);
+  const dangerouslySkipPermissions = useSettingsStore((s) => s.dangerouslySkipPermissions);
   const fontSizeRef = useRef(fontSize);
   const fontFamilyRef = useRef(fontFamily);
 
@@ -107,6 +108,7 @@ export function TerminalView({ sessionId, resumeSessionId, cwd, isActive }: Term
       cwd,
       rows: dims.rows,
       cols: dims.cols,
+      skipPermissions: dangerouslySkipPermissions,
     }).catch((e: unknown) => {
       term.writeln(`\x1b[31mFailed to start Claude: ${e}\x1b[0m`);
     });

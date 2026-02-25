@@ -603,6 +603,34 @@ function SessionTrackingSection() {
   );
 }
 
+// ── Live dangerously section ──────────────────────────────────────────────────
+
+function LiveDangerouslySection() {
+  const { dangerouslySkipPermissions, setDangerouslySkipPermissions } = useSettingsStore();
+
+  return (
+    <div className="space-y-3">
+      <SectionLabel>Permissions</SectionLabel>
+      <div>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={dangerouslySkipPermissions}
+            onChange={(e) => setDangerouslySkipPermissions(e.target.checked)}
+            className="rounded-md"
+          />
+          <span className="text-xs font-medium text-text-secondary">
+            Live dangerously (skip permissions)
+          </span>
+        </label>
+        <p className="text-[11px] text-text-muted mt-1 ml-5">
+          Passes <code className="text-[10px] bg-bg-raised px-1 rounded-md">--dangerously-skip-permissions</code> to every new Claude session. Skips all tool-use approval prompts.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ── Sticky section header ─────────────────────────────────────────────────────
 
 function SectionHeader({ children }: { children: React.ReactNode }) {
@@ -757,7 +785,10 @@ export function SettingsTab() {
         {/* ── Session ────────────────────────────────────────────── */}
         <section>
           <SectionHeader>Session</SectionHeader>
-          <SessionTrackingSection />
+          <div className="space-y-6">
+            <SessionTrackingSection />
+            <LiveDangerouslySection />
+          </div>
         </section>
       </div>
     </div>
