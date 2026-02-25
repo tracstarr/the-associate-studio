@@ -21,7 +21,6 @@ import {
 } from "../../lib/tauri";
 import { useSessionStore } from "../../stores/sessionStore";
 import { FileTreeNode } from "../files/FileTreeNode";
-import { cn } from "@/lib/utils";
 
 interface DocsSectionProps {
   activeProjectDir: string;
