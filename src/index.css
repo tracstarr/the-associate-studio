@@ -6,23 +6,23 @@
      Inspired by Warp Terminal, Arc Browser, Zed Editor, Linear, Raycast
      ═══════════════════════════════════════════════════════════════════════ */
 
-  /* Background layers (warm charcoal, not cold blue) */
-  --color-bg-base: #141419;
-  --color-bg-surface: #1C1C24;
-  --color-bg-raised: #26262F;
-  --color-bg-overlay: #2E2E3A;
-  --color-bg-input: #18181F;
-  --color-bg-terminal: #111116;
+  /* Background layers (lighter warm gray, not near-black) */
+  --color-bg-base: #1E1E26;
+  --color-bg-surface: #282832;
+  --color-bg-raised: #32323D;
+  --color-bg-overlay: #3A3A48;
+  --color-bg-input: #222229;
+  --color-bg-terminal: #1A1A22;
 
   /* Border colors (softer, warmer) */
-  --color-border-default: #2E2E3E;
-  --color-border-muted: #242430;
+  --color-border-default: #3A3A4C;
+  --color-border-muted: #30303E;
   --color-border-focus: #D4A853;
 
-  /* Text colors (warm whites, better contrast) */
-  --color-text-primary: #EEEEF2;
-  --color-text-secondary: #9D9DAD;
-  --color-text-muted: #62627A;
+  /* Text colors (brighter, higher contrast) */
+  --color-text-primary: #F5F5F8;
+  --color-text-secondary: #B0B0C0;
+  --color-text-muted: #7A7A92;
   --color-text-link: #D4A853;
 
   /* Accent colors (gold + purple) */
@@ -39,32 +39,32 @@
   /* Agent status colors */
   --color-agent-running: #4ACA62;
   --color-agent-idle: #E0A82E;
-  --color-agent-completed: #9D9DAD;
+  --color-agent-completed: #B0B0C0;
   --color-agent-error: #F85149;
-  --color-agent-pending: #62627A;
+  --color-agent-pending: #7A7A92;
 
   /* Session status colors */
   --color-session-running: #4ACA62;
   --color-session-idle: #E0A82E;
-  --color-session-completed: #9D9DAD;
+  --color-session-completed: #B0B0C0;
   --color-session-error: #F85149;
 
-  /* Git diff colors (warmer backgrounds) */
-  --color-diff-add-bg: #152A1F;
+  /* Git diff colors (warmer backgrounds, lightened) */
+  --color-diff-add-bg: #1C3428;
   --color-diff-add-text: #4ACA62;
-  --color-diff-add-highlight: #1E4835;
-  --color-diff-remove-bg: #301518;
+  --color-diff-add-highlight: #265840;
+  --color-diff-remove-bg: #3A1C20;
   --color-diff-remove-text: #F85149;
-  --color-diff-remove-highlight: #5E2027;
-  --color-diff-modified-bg: #2D220E;
+  --color-diff-remove-highlight: #6A2830;
+  --color-diff-modified-bg: #382C14;
   --color-diff-modified-text: #E0A82E;
-  --color-diff-hunk-header: #26262F;
+  --color-diff-hunk-header: #32323D;
   --color-diff-hunk-text: #BC8CFF;
 
   /* Activity bar colors */
-  --color-actbar-bg: #141419;
-  --color-actbar-icon-default: #62627A;
-  --color-actbar-icon-active: #EEEEF2;
+  --color-actbar-bg: #1E1E26;
+  --color-actbar-icon-default: #7A7A92;
+  --color-actbar-icon-active: #F5F5F8;
   --color-actbar-indicator: #D4A853;
   --color-actbar-badge: #F85149;
 
