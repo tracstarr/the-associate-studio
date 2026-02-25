@@ -52,7 +52,7 @@ jobs:
         run: npm ci
 
       - name: Build Tauri app
-        run: npm run tauri build
+        run: npx tauri build --no-bundle
         env:
           # Static CRT -> no VCRT DLL dependency; exe is fully self-contained
           RUSTFLAGS: '-C target-feature=+crt-static'
