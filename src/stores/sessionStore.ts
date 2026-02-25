@@ -40,6 +40,7 @@ interface SessionStore {
   closeOtherTabs: (tabId: string, projectId: string) => void;
   closeTabsToLeft: (tabId: string, projectId: string) => void;
   closeTabsToRight: (tabId: string, projectId: string) => void;
+  insertTabBackground: (tab: SessionTab, projectId: string) => void;
 
   // Scan-all variants (watcher doesn't know projectId easily)
   resolveTabSession: (tabId: string, realSessionId: string) => void;
@@ -67,6 +68,19 @@ export const useSessionStore = create<SessionStore>((set) => ({
   knownSessions: {},
   planLinks: loadStoredPlanLinks(),
   dirtyTabs: {},
+
+  insertTabBackground: (tab, projectId) =>
+    set((s) => {
+      const tabs = s.tabsByProject[projectId] ?? [];
+      if (tabs.find((t) => t.id === tab.id)) return {}; // already open
+      return {
+        tabsByProject: {
+          ...s.tabsByProject,
+          [projectId]: [...tabs, { ...tab, spawnedAt: tab.spawnedAt ?? Date.now() }],
+        },
+        // intentionally omit activeTabByProject — no focus steal
+      };
+    }),
 
   openTab: (tab, projectId) =>
     set((s) => {

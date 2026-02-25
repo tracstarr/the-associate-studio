@@ -61,7 +61,7 @@ export function ContextPanel() {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Team tasks section */}
-      {activeTeam && teamTasks && (
+      {activeTeam && displayTasks.length > 0 && (
         <div className="border-b border-[var(--color-border-muted)]">
           <div className="flex items-center gap-2 px-3 py-2">
             <CheckSquare
@@ -101,11 +101,6 @@ export function ContextPanel() {
                 )}
               </div>
             ))}
-            {displayTasks.length === 0 && (
-              <div className="px-4 py-0.5 text-xs text-[var(--color-text-muted)]">
-                No tasks
-              </div>
-            )}
           </div>
         </div>
       )}

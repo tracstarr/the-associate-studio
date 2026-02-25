@@ -47,10 +47,12 @@ function IDEShell() {
   useClaudeWatcher();
   const loadFromDisk = useSettingsStore((s) => s.loadFromDisk);
   const loadProjects = useProjectsStore((s) => s.loadProjects);
+  const loadRecentFromDisk = useProjectsStore((s) => s.loadRecentFromDisk);
   useEffect(() => {
     loadFromDisk();
     loadProjects();
-  }, [loadFromDisk, loadProjects]);
+    loadRecentFromDisk();
+  }, [loadFromDisk, loadProjects, loadRecentFromDisk]);
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-bg-base text-text-primary">
       <TitleBar />
