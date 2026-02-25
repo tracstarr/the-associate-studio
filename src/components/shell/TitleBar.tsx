@@ -226,7 +226,7 @@ function BranchDropdown({
   );
 
   const remoteTree = useMemo(
-    () => buildBranchTree(remoteOnlyBranches.map((rb) => rb.branch)),
+    () => buildBranchTree(remoteOnlyBranches.map((rb) => rb.fullRef)),
     [remoteOnlyBranches]
   );
 
