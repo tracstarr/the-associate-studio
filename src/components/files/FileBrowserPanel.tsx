@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Search, RefreshCw } from "lucide-react";
+import { Search, RefreshCw, Eye, EyeOff } from "lucide-react";
 import { useProjectsStore } from "@/stores/projectsStore";
 import { useSessionStore } from "@/stores/sessionStore";
 import { listDir, getWorktreeCopy, setWorktreeCopy, type FileEntry } from "@/lib/tauri";
@@ -19,19 +19,20 @@ export function FileBrowserPanel() {
   const [dirContents, setDirContents] = useState<Record<string, FileEntry[]>>({});
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState("");
+  const [showHidden, setShowHidden] = useState(false);
 
   const loadRoot = useCallback(async () => {
     if (!activeProject?.path) return;
     setLoading(true);
     try {
-      const entries = await listDir(activeProject.path);
+      const entries = await listDir(activeProject.path, showHidden);
       setRootEntries(entries);
     } catch (e) {
       console.error("[files] load root failed:", e);
     } finally {
       setLoading(false);
     }
-  }, [activeProject?.path]);
+  }, [activeProject?.path, showHidden]);
 
   useEffect(() => {
     setExpandedDirs(new Set());
@@ -39,6 +40,11 @@ export function FileBrowserPanel() {
     setFilter("");
     loadRoot();
   }, [activeProject?.path]);
+
+  useEffect(() => {
+    setDirContents({});
+    loadRoot();
+  }, [showHidden]);
 
   const handleToggle = async (path: string) => {
     setExpandedDirs((prev) => {
@@ -53,7 +59,7 @@ export function FileBrowserPanel() {
 
     if (!dirContents[path]) {
       try {
-        const entries = await listDir(path);
+        const entries = await listDir(path, showHidden);
         setDirContents((prev) => ({ ...prev, [path]: entries }));
       } catch (e) {
         console.error("[files] load dir failed:", e);
@@ -141,6 +147,13 @@ export function FileBrowserPanel() {
           onChange={(e) => setFilter(e.target.value)}
           className="flex-1 bg-transparent text-xs text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] outline-none"
         />
+        <button
+          onClick={() => setShowHidden((v) => !v)}
+          title={showHidden ? "Hide hidden files" : "Show hidden files"}
+          className={`transition-all duration-200 rounded-md p-0.5 hover:bg-[var(--color-bg-raised)] ${showHidden ? "text-[var(--color-accent)]" : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"}`}
+        >
+          {showHidden ? <EyeOff size={11} /> : <Eye size={11} />}
+        </button>
         <button
           onClick={loadRoot}
           title="Refresh"

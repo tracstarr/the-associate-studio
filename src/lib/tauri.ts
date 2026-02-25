@@ -514,8 +514,8 @@ export function writeFile(path: string, content: string): Promise<void> {
 
 // ---- File Browser Wrappers ----
 
-export function listDir(path: string): Promise<FileEntry[]> {
-  return invoke("cmd_list_dir", { path });
+export function listDir(path: string, showHidden = false): Promise<FileEntry[]> {
+  return invoke("cmd_list_dir", { path, showHidden });
 }
 
 export function getHomeDir(): Promise<string> {

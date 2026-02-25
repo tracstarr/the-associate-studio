@@ -9,6 +9,8 @@ import {
   X,
   Loader2,
   AlertTriangle,
+  FileText,
+  Folder,
 } from "lucide-react";
 import {
   listDir,
@@ -21,11 +23,25 @@ import {
   type FileEntry,
 } from "../../lib/tauri";
 import { useSessionStore } from "../../stores/sessionStore";
-import { FileTreeNode } from "../files/FileTreeNode";
 
 interface DocsSectionProps {
   activeProjectDir: string;
   activeProjectId: string;
+}
+
+function humanizeName(raw: string): string {
+  // Strip file extension
+  const base = raw.replace(/\.[^.]+$/, "");
+  return base
+    // Insert space before uppercase letter following lowercase (camelCase)
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    // Insert space before uppercase run followed by lowercase (e.g. "HTMLParser")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")
+    // Split on hyphens, underscores, dots, existing spaces
+    .split(/[-_.\s]+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
 }
 
 export function DocsSection({ activeProjectDir, activeProjectId }: DocsSectionProps) {
@@ -126,27 +142,59 @@ export function DocsSection({ activeProjectDir, activeProjectId }: DocsSectionPr
   }, [dirContents]);
 
   const handleFileClick = useCallback((entry: FileEntry) => {
+    const isMarkdown = entry.name.toLowerCase().endsWith(".md");
     openTab(
-      { id: `file:${entry.path}`, type: "file", title: entry.name, filePath: entry.path, projectDir: activeProjectDir },
+      {
+        id: `${isMarkdown ? "readme" : "file"}:${entry.path}`,
+        type: isMarkdown ? "readme" : "file",
+        title: humanizeName(entry.name),
+        filePath: entry.path,
+        projectDir: activeProjectDir,
+      },
       activeProjectId
     );
   }, [openTab, activeProjectDir, activeProjectId]);
 
   const renderEntries = (entries: FileEntry[], depth: number): React.ReactNode =>
-    entries.map((entry) => (
-      <div key={entry.path}>
-        <FileTreeNode
-          entry={entry}
-          depth={depth}
-          expanded={expandedDirs.has(entry.path)}
-          onFileClick={handleFileClick}
-          onToggle={handleToggle}
-        />
-        {entry.is_dir && expandedDirs.has(entry.path) && dirContents[entry.path] && (
-          <div>{renderEntries(dirContents[entry.path], depth + 1)}</div>
-        )}
-      </div>
-    ));
+    entries.map((entry) => {
+      const indent = depth * 12;
+      if (entry.is_dir) {
+        const isOpen = expandedDirs.has(entry.path);
+        return (
+          <div key={entry.path}>
+            <button
+              onClick={() => handleToggle(entry.path)}
+              className="flex items-center gap-1.5 w-full text-left px-3 py-1 rounded-md mx-1 hover:bg-[var(--color-bg-raised)] transition-colors"
+              style={{ paddingLeft: `${12 + indent}px` }}
+            >
+              {isOpen
+                ? <ChevronDown size={10} className="text-[var(--color-text-muted)] shrink-0" />
+                : <ChevronRight size={10} className="text-[var(--color-text-muted)] shrink-0" />}
+              <Folder size={11} className="text-[var(--color-accent-primary)] shrink-0" />
+              <span className="text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">
+                {humanizeName(entry.name)}
+              </span>
+            </button>
+            {isOpen && dirContents[entry.path] && (
+              <div>{renderEntries(dirContents[entry.path], depth + 1)}</div>
+            )}
+          </div>
+        );
+      }
+      return (
+        <div
+          key={entry.path}
+          onClick={() => handleFileClick(entry)}
+          className="flex items-center gap-2 px-3 py-1 mx-1 rounded-md cursor-pointer hover:bg-[var(--color-bg-raised)] group transition-colors"
+          style={{ paddingLeft: `${12 + indent}px` }}
+        >
+          <FileText size={11} className="text-[var(--color-text-muted)] shrink-0 group-hover:text-[var(--color-accent-primary)]" />
+          <span className="text-xs text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-primary)] truncate">
+            {humanizeName(entry.name)}
+          </span>
+        </div>
+      );
+    });
 
   // ---- Generate index ----
   const generateIndex = async () => {
@@ -181,9 +229,9 @@ export function DocsSection({ activeProjectDir, activeProjectId }: DocsSectionPr
   if (settingsLoading) return null;
 
   return (
-    <div className="border-b border-[var(--color-border-muted)]">
+    <div className="flex flex-col h-full overflow-hidden">
       {/* Section header */}
-      <div className="flex items-center gap-2 px-3 py-2">
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--color-border-muted)] shrink-0">
         <button
           className="flex items-center gap-2 flex-1 text-left hover:bg-[var(--color-bg-surface)] -mx-1 px-1 rounded-lg"
           onClick={() => setCollapsed((c) => !c)}
@@ -246,7 +294,7 @@ export function DocsSection({ activeProjectDir, activeProjectId }: DocsSectionPr
       </div>
 
       {!collapsed && (
-        <div className="pb-2">
+        <div className="flex-1 overflow-y-auto py-1">
           {!docsFolder ? (
             <div className="px-4 py-1 text-[10px] text-[var(--color-text-muted)] italic">
               No docs folder found
