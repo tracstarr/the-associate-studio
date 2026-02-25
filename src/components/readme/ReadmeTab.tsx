@@ -69,6 +69,22 @@ export function ReadmeTab({ filePath, projectDir, isActive, tabId }: ReadmeTabPr
     load();
   }, [load, reloadKey]);
 
+  const contentRef = useRef<string | null>(null);
+  useEffect(() => { contentRef.current = content; }, [content]);
+
+  useEffect(() => {
+    if (!isActive || editing) return;
+    const id = setInterval(async () => {
+      try {
+        const fresh = await readFile(resolvedPath);
+        if (fresh !== contentRef.current) {
+          setContent(fresh);
+        }
+      } catch (_) {}
+    }, 2000);
+    return () => clearInterval(id);
+  }, [isActive, editing, resolvedPath]);
+
   if (!isActive) return null;
 
   if (loading) {

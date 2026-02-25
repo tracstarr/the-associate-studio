@@ -209,6 +209,13 @@ function MainAreaComponent({ projectId: projectIdProp }: { projectId?: string })
                   filename={tab.planFilename!}
                   isActive={activeTabId === tab.id}
                 />
+              ) : tab.type === "file" && (tab.filePath?.endsWith(".md") || tab.filePath?.endsWith(".mdx")) ? (
+                <ReadmeTab
+                  filePath={tab.filePath!}
+                  projectDir={tab.projectDir}
+                  isActive={activeTabId === tab.id}
+                  tabId={tab.id}
+                />
               ) : tab.type === "file" ? (
                 <FileEditorTab tabId={tab.id} filePath={tab.filePath!} isActive={activeTabId === tab.id} />
               ) : tab.type === "readme" ? (
