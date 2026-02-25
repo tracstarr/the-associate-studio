@@ -6,6 +6,7 @@ mod utils;
 mod watcher;
 
 use commands::pty::PtyState;
+use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -31,6 +32,21 @@ pub fn run() {
                 eprintln!("[ide] hook setup failed: {}", e);
             }
             watcher::claude_watcher::start_claude_watcher(app.handle().clone());
+
+            // Kill all PTY sessions when the main window is destroyed
+            let pty_state = app.state::<PtyState>().inner().0.clone();
+            if let Some(window) = app.get_webview_window("main") {
+                window.on_window_event(move |event| {
+                    if let tauri::WindowEvent::Destroyed = event {
+                        if let Ok(mut sessions) = pty_state.lock() {
+                            for (_, mut session) in sessions.drain() {
+                                let _ = session.child.kill();
+                            }
+                        }
+                    }
+                });
+            }
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -66,6 +82,7 @@ pub fn run() {
             commands::pty::pty_resize,
             commands::pty::pty_write,
             commands::pty::pty_kill,
+            commands::pty::pty_kill_all,
             commands::issues::cmd_list_prs,
             commands::issues::cmd_list_issues,
             commands::issues::cmd_list_linear_issues,
