@@ -10,7 +10,7 @@ function persistRecentIds(ids: string[]) {
   if (recentPersistTimer) clearTimeout(recentPersistTimer);
   recentPersistTimer = setTimeout(async () => {
     try {
-      const store = await load("settings.json", { autoSave: false });
+      const store = await load("settings.json", { autoSave: false, defaults: {} });
       await store.set("recentProjectIds", ids);
       await store.save();
     } catch { /* not in Tauri context */ }
@@ -58,7 +58,7 @@ export const useProjectsStore = create<ProjectsStore>((set, get) => ({
 
   loadRecentFromDisk: async () => {
     try {
-      const store = await load("settings.json", { autoSave: false });
+      const store = await load("settings.json", { autoSave: false, defaults: {} });
       const ids = await store.get<string[]>("recentProjectIds");
       if (Array.isArray(ids)) set({ recentProjectIds: ids });
     } catch { /* not in Tauri context */ }
@@ -93,7 +93,7 @@ export const useProjectsStore = create<ProjectsStore>((set, get) => ({
   },
 
   cycleProject: (direction) => {
-    const { projects, activeProjectId, recentProjectIds, setActiveProject } = get();
+    const { projects, activeProjectId, recentProjectIds } = get();
     if (projects.length === 0) return;
     const existingIds = new Set(projects.map((p) => p.id));
     const validRecent = recentProjectIds.filter((id) => existingIds.has(id));
