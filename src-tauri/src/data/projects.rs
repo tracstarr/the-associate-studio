@@ -37,29 +37,23 @@ pub fn discover_projects(claude_home: &PathBuf) -> Result<Vec<ProjectInfo>> {
             _ => continue,
         };
 
-        // Load session index to find the canonical project_path.
-        // Priority: session project_path > index originalPath > decoded dir name
-        let index = load_session_index(&path).ok().flatten();
-        let sessions = match &index {
-            Some(idx) => idx
-                .entries
-                .iter()
-                .filter(|e| e.is_sidechain != Some(true))
-                .cloned()
-                .collect::<Vec<_>>(),
-            None => load_sessions(&path).unwrap_or_default(),
-        };
+        // load_sessions returns entries sorted by modified desc, sidechain filtered out
+        let sessions = load_sessions(&path).unwrap_or_default();
 
+        // Resolve canonical project_path with 3-tier fallback:
+        // 1. session project_path (from most recent session, since list is sorted)
+        // 2. originalPath from sessions-index.json (works for newly created projects)
+        // 3. decoded dir name (lossy best-effort)
         let project_path = sessions
             .iter()
-            .filter(|s| s.is_sidechain != Some(true))
             .filter_map(|s| s.project_path.as_deref())
             .find(|p| !p.is_empty())
             .map(|p| p.replace('\\', "/"))
             .or_else(|| {
-                index
-                    .as_ref()
-                    .and_then(|idx| idx.original_path.as_deref())
+                load_session_index(&path)
+                    .ok()
+                    .flatten()
+                    .and_then(|idx| idx.original_path)
                     .filter(|p| !p.is_empty())
                     .map(|p| p.replace('\\', "/"))
             })
@@ -76,10 +70,7 @@ pub fn discover_projects(claude_home: &PathBuf) -> Result<Vec<ProjectInfo>> {
             .unwrap_or(&dir_name)
             .to_string();
 
-        let session_count = sessions
-            .iter()
-            .filter(|s| s.is_sidechain != Some(true))
-            .count();
+        let session_count = sessions.len();
 
         // A git worktree has .git as a file (not a directory)
         let is_worktree = PathBuf::from(&project_path).join(".git").is_file();
@@ -133,27 +124,18 @@ pub fn discover_orphaned_projects(claude_home: &PathBuf) -> Result<Vec<ProjectIn
             _ => continue,
         };
 
-        let index = load_session_index(&path).ok().flatten();
-        let sessions = match &index {
-            Some(idx) => idx
-                .entries
-                .iter()
-                .filter(|e| e.is_sidechain != Some(true))
-                .cloned()
-                .collect::<Vec<_>>(),
-            None => load_sessions(&path).unwrap_or_default(),
-        };
+        let sessions = load_sessions(&path).unwrap_or_default();
 
         let project_path = sessions
             .iter()
-            .filter(|s| s.is_sidechain != Some(true))
             .filter_map(|s| s.project_path.as_deref())
             .find(|p| !p.is_empty())
             .map(|p| p.replace('\\', "/"))
             .or_else(|| {
-                index
-                    .as_ref()
-                    .and_then(|idx| idx.original_path.as_deref())
+                load_session_index(&path)
+                    .ok()
+                    .flatten()
+                    .and_then(|idx| idx.original_path)
                     .filter(|p| !p.is_empty())
                     .map(|p| p.replace('\\', "/"))
             })
@@ -170,10 +152,7 @@ pub fn discover_orphaned_projects(claude_home: &PathBuf) -> Result<Vec<ProjectIn
             .unwrap_or(&dir_name)
             .to_string();
 
-        let session_count = sessions
-            .iter()
-            .filter(|s| s.is_sidechain != Some(true))
-            .count();
+        let session_count = sessions.len();
 
         let last_modified = entry
             .metadata()
