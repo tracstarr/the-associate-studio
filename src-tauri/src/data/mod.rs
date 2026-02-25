@@ -1,3 +1,4 @@
+pub mod claude_config;
 pub mod git;
 pub mod hook_state;
 pub mod inboxes;

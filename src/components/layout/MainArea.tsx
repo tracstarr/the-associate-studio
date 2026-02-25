@@ -1,5 +1,5 @@
 import { memo, useState, useCallback } from "react";
-import { X, FileText, BookOpen, Settings, GitBranch, History, Terminal, Code2, CheckCircle2, GitPullRequest } from "lucide-react";
+import { X, FileText, BookOpen, Settings, GitBranch, History, Terminal, Code2, CheckCircle2, GitPullRequest, Puzzle } from "lucide-react";
 import { useSessionStore } from "@/stores/sessionStore";
 import type { SessionTab } from "@/stores/sessionStore";
 import { useActiveProjectTabs } from "@/hooks/useActiveProjectTabs";
@@ -12,6 +12,7 @@ import { FileEditorTab } from "../files/FileEditorTab";
 import { SettingsTab } from "../settings/SettingsTab";
 import { DiffViewer } from "../git/DiffViewer";
 import { PRDetailView } from "../issues/PRDetailView";
+import { ExtensionView } from "../context/ExtensionView";
 import { TabContextMenu } from "./TabContextMenu";
 import type { TabCloseAction } from "./TabContextMenu";
 import { CloseTabsWarningDialog } from "./CloseTabsWarningDialog";
@@ -152,6 +153,9 @@ function MainAreaComponent({ projectId: projectIdProp }: { projectId?: string })
               {tab.type === "pr-detail" && (
                 <GitPullRequest size={10} className={cn("shrink-0", isActive ? accent.icon : "text-text-muted")} />
               )}
+              {tab.type === "extension" && (
+                <Puzzle size={10} className={cn("shrink-0", isActive ? accent.icon : "text-text-muted")} />
+              )}
               {tab.type === "file" && (
                 <Code2 size={10} className={cn("shrink-0", isActive ? "text-[var(--color-accent-secondary)]" : "text-text-muted")} />
               )}
@@ -237,6 +241,8 @@ function MainAreaComponent({ projectId: projectIdProp }: { projectId?: string })
                 <SummaryView tab={tab} projectId={projectId} />
               ) : tab.type === "pr-detail" ? (
                 <PRDetailView tab={tab} />
+              ) : tab.type === "extension" ? (
+                <ExtensionView tab={tab} />
               ) : (
                 <TerminalView
                   sessionId={tab.id}

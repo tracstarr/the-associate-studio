@@ -220,6 +220,17 @@ export function useJiraIssues(hasCredentials: boolean, baseUrl: string, email: s
   });
 }
 
+// ---- Extension Hooks ----
+
+export function useExtensions(projectDir: string | null) {
+  return useQuery({
+    queryKey: ["extensions", projectDir],
+    queryFn: () => tauri.loadExtensions(projectDir!),
+    enabled: !!projectDir,
+    staleTime: 30_000,
+  });
+}
+
 // ---- File Watcher Hook ----
 
 

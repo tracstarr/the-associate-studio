@@ -4,7 +4,7 @@ import { useNotificationStore } from "./notificationStore";
 
 export interface SessionTab {
   id: string;
-  type?: "terminal" | "plan" | "readme" | "settings" | "diff" | "session-view" | "file" | "summary" | "pr-detail";
+  type?: "terminal" | "plan" | "readme" | "settings" | "diff" | "session-view" | "file" | "summary" | "pr-detail" | "extension";
   projectDir: string;
   sessionId?: string;
   title: string;
@@ -17,6 +17,7 @@ export interface SessionTab {
   summaryFilename?: string; // only for type === "summary"
   summaryProjectDir?: string; // encoded project dir for type === "summary"
   prNumber?: number; // only for type === "pr-detail"
+  markdownContent?: string; // inline markdown for type === "extension"
 }
 
 interface SessionStore {

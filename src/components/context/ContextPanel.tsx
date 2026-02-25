@@ -8,6 +8,7 @@ import { useSessionStore } from "../../stores/sessionStore";
 import type { TranscriptItem, FileEntry } from "../../lib/tauri";
 import { getHomeDir, listDir } from "../../lib/tauri";
 import { cn, pathToProjectId } from "@/lib/utils";
+import { ExtensionsSection } from "./ExtensionsSection";
 
 export function ContextPanel() {
   const { openTabs, activeTabId } = useActiveProjectTabs();
@@ -154,6 +155,9 @@ export function ContextPanel() {
           activeProjectId={activeProjectId}
         />
       )}
+
+      {/* Extensions section (plugins, skills, agents) */}
+      <ExtensionsSection />
 
       {/* Recent transcript items */}
       <div className="flex-1 overflow-y-auto">

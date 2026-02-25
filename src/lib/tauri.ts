@@ -557,3 +557,23 @@ export function loadSummaries(projectDir: string, sessionId: string): Promise<Su
 export function readSummary(projectDir: string, filename: string): Promise<string> {
   return invoke("cmd_read_summary", { projectDir, filename });
 }
+
+// ---- Claude Extension Types ----
+
+export type ConfigLevel = "user" | "project";
+export type ExtensionKind = "mcp_server" | "skill" | "agent" | "allowed_tool";
+
+export interface ClaudeExtension {
+  name: string;
+  kind: ExtensionKind;
+  level: ConfigLevel;
+  sourceFile: string;
+  description?: string;
+  content: string;
+  frontMatter?: Record<string, unknown>;
+  filePath?: string;
+}
+
+export function loadExtensions(projectDir: string): Promise<ClaudeExtension[]> {
+  return invoke("cmd_load_extensions", { projectDir });
+}

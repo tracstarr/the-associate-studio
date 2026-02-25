@@ -1,3 +1,4 @@
+pub mod claude_config;
 pub mod files;
 pub mod git;
 pub mod hooks;
