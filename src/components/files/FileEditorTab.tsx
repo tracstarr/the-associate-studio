@@ -67,7 +67,7 @@ interface FileEditorTabProps {
   tabId: string;
 }
 
-export function FileEditorTab({ filePath, tabId }: FileEditorTabProps) {
+export function FileEditorTab({ filePath, tabId, isActive }: FileEditorTabProps) {
   const setTabDirty = useSessionStore((s) => s.setTabDirty);
   const [content, setContent] = useState<string | null>(null);
   const [editContent, setEditContent] = useState<string>("");
@@ -76,6 +76,7 @@ export function FileEditorTab({ filePath, tabId }: FileEditorTabProps) {
   const [savedFlash, setSavedFlash] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const editorRef = useRef<unknown>(null);
+  const contentRef = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -96,6 +97,22 @@ export function FileEditorTab({ filePath, tabId }: FileEditorTabProps) {
       cancelled = true;
     };
   }, [filePath]);
+
+  useEffect(() => { contentRef.current = content; }, [content]);
+
+  useEffect(() => {
+    if (!isActive || dirty) return;
+    const id = setInterval(async () => {
+      try {
+        const fresh = await readFile(filePath);
+        if (fresh !== contentRef.current) {
+          setContent(fresh);
+          setEditContent(fresh);
+        }
+      } catch (_) {}
+    }, 2000);
+    return () => clearInterval(id);
+  }, [isActive, dirty, filePath]);
 
   useEffect(() => {
     setTabDirty(tabId, dirty);
