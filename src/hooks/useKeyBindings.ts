@@ -16,12 +16,13 @@ export function useKeyBindings() {
       const ctrl = e.ctrlKey || e.metaKey;
       const shift = e.shiftKey;
 
-      // Don't intercept when typing in inputs/textareas
       const target = e.target as HTMLElement;
-      const inInput =
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable;
+      const isXtermFocused = !!target.closest?.(".xterm");
+      const inRegularInput =
+        !isXtermFocused &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable);
 
       // Command palette -- always intercept
       if (ctrl && e.key === "p" && !shift) {
@@ -52,7 +53,19 @@ export function useKeyBindings() {
         }
       }
 
-      if (inInput) return;
+      // Block everything in regular inputs
+      if (inRegularInput) return;
+
+      // In xterm: only terminal-safe keybindings pass through
+      if (isXtermFocused) {
+        const isTerminalSafe =
+          (ctrl && e.key === "Tab") ||
+          (ctrl && shift && e.key === "ArrowRight") ||
+          (ctrl && shift && e.key === "ArrowLeft") ||
+          (ctrl && shift && e.key === "b") ||
+          (ctrl && (e.key === "=" || e.key === "+" || e.key === "-" || e.key === "0"));
+        if (!isTerminalSafe) return;
+      }
 
       if (!ctrl) return;
 
