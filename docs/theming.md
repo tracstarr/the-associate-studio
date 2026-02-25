@@ -4,7 +4,7 @@
 
 The UI uses a **warm "Black & Gold" dark theme** inspired by Warp Terminal, Arc Browser, Zed Editor, Linear, and Raycast. Key principles:
 
-1. **Warmer, not lighter** — backgrounds shifted from cold blue-blacks to warm charcoal-blacks
+1. **Lighter warm grays** — backgrounds shifted from near-black to lighter warm grays for better readability
 2. **Gold as primary accent** — replacing cold blue with rich gold (`#D4A853`) for a distinctive premium identity
 3. **Rounded & breathing** — panels get generous border-radius (12px), gaps between areas, and more padding
 4. **Better text contrast** — secondary/muted text colors bumped significantly for readability
@@ -15,24 +15,24 @@ The UI uses a **warm "Black & Gold" dark theme** inspired by Warp Terminal, Arc 
 
 All colors are defined as CSS custom properties in `src/index.css` under `@theme`. Tailwind v4 picks these up automatically and generates utility classes.
 
-### Background layers (warm charcoal, dark to light)
+### Background layers (lighter warm gray)
 
 | Variable | Hex | Used for |
 |----------|-----|---------|
-| `--color-bg-base` | `#141419` | App root background |
-| `--color-bg-surface` | `#1C1C24` | Panels, sidebar, titlebar |
-| `--color-bg-raised` | `#26262F` | Cards, hovers, dropdowns |
-| `--color-bg-overlay` | `#2E2E3A` | Command palette, settings modal |
-| `--color-bg-input` | `#18181F` | Input field backgrounds |
-| `--color-bg-terminal` | `#111116` | xterm.js terminal background |
+| `--color-bg-base` | `#1E1E26` | App root background |
+| `--color-bg-surface` | `#282832` | Panels, sidebar, titlebar |
+| `--color-bg-raised` | `#32323D` | Cards, hovers, dropdowns |
+| `--color-bg-overlay` | `#3A3A48` | Command palette, settings modal |
+| `--color-bg-input` | `#222229` | Input field backgrounds |
+| `--color-bg-terminal` | `#1A1A22` | xterm.js terminal background |
 
-### Text (warm whites, better contrast)
+### Text (brighter, higher contrast)
 
 | Variable | Hex | Used for |
 |----------|-----|---------|
-| `--color-text-primary` | `#EEEEF2` | Main content, headings |
-| `--color-text-secondary` | `#9D9DAD` | Labels, secondary info |
-| `--color-text-muted` | `#62627A` | Placeholders, disabled, timestamps |
+| `--color-text-primary` | `#F5F5F8` | Main content, headings |
+| `--color-text-secondary` | `#B0B0C0` | Labels, secondary info |
+| `--color-text-muted` | `#7A7A92` | Placeholders, disabled, timestamps |
 | `--color-text-link` | `#D4A853` | Hyperlinks (gold) |
 
 ### Accent (gold + purple)
@@ -58,9 +58,9 @@ All colors are defined as CSS custom properties in `src/index.css` under `@theme
 |----------|-----|---------|
 | `--color-agent-running` | `#4ACA62` | Agent actively running |
 | `--color-agent-idle` | `#E0A82E` | Agent idle |
-| `--color-agent-completed` | `#9D9DAD` | Agent finished |
+| `--color-agent-completed` | `#B0B0C0` | Agent finished |
 | `--color-agent-error` | `#F85149` | Agent error state |
-| `--color-agent-pending` | `#62627A` | Agent waiting to start |
+| `--color-agent-pending` | `#7A7A92` | Agent waiting to start |
 
 ### Session status
 
@@ -68,31 +68,31 @@ All colors are defined as CSS custom properties in `src/index.css` under `@theme
 |----------|-----|---------|
 | `--color-session-running` | `#4ACA62` | Session actively running |
 | `--color-session-idle` | `#E0A82E` | Session idle |
-| `--color-session-completed` | `#9D9DAD` | Session finished |
+| `--color-session-completed` | `#B0B0C0` | Session finished |
 | `--color-session-error` | `#F85149` | Session error state |
 
 ### Git diff (warmer backgrounds)
 
 | Variable | Hex | Used for |
 |----------|-----|---------|
-| `--color-diff-add-bg` | `#152A1F` | Added line background |
+| `--color-diff-add-bg` | `#1C3428` | Added line background |
 | `--color-diff-add-text` | `#4ACA62` | Added line text |
-| `--color-diff-add-highlight` | `#1E4835` | Added word highlight |
-| `--color-diff-remove-bg` | `#301518` | Removed line background |
+| `--color-diff-add-highlight` | `#265840` | Added word highlight |
+| `--color-diff-remove-bg` | `#3A1C20` | Removed line background |
 | `--color-diff-remove-text` | `#F85149` | Removed line text |
-| `--color-diff-remove-highlight` | `#5E2027` | Removed word highlight |
-| `--color-diff-modified-bg` | `#2D220E` | Modified line background |
+| `--color-diff-remove-highlight` | `#6A2830` | Removed word highlight |
+| `--color-diff-modified-bg` | `#382C14` | Modified line background |
 | `--color-diff-modified-text` | `#E0A82E` | Modified line text |
-| `--color-diff-hunk-header` | `#26262F` | Hunk header background |
+| `--color-diff-hunk-header` | `#32323D` | Hunk header background |
 | `--color-diff-hunk-text` | `#BC8CFF` | Hunk header text |
 
 ### Activity bar
 
 | Variable | Hex | Used for |
 |----------|-----|---------|
-| `--color-actbar-bg` | `#141419` | Activity bar background |
-| `--color-actbar-icon-default` | `#62627A` | Inactive icon color |
-| `--color-actbar-icon-active` | `#EEEEF2` | Active icon color |
+| `--color-actbar-bg` | `#1E1E26` | Activity bar background |
+| `--color-actbar-icon-default` | `#7A7A92` | Inactive icon color |
+| `--color-actbar-icon-active` | `#F5F5F8` | Active icon color |
 | `--color-actbar-indicator` | `#D4A853` | Active view indicator (gold) |
 | `--color-actbar-badge` | `#F85149` | Notification badge |
 
@@ -100,8 +100,8 @@ All colors are defined as CSS custom properties in `src/index.css` under `@theme
 
 | Variable | Hex | Used for |
 |----------|-----|---------|
-| `--color-border-default` | `#2E2E3E` | Panel borders, dividers |
-| `--color-border-muted` | `#242430` | Subtle borders (preferred for most use) |
+| `--color-border-default` | `#3A3A4C` | Panel borders, dividers |
+| `--color-border-muted` | `#30303E` | Subtle borders (preferred for most use) |
 | `--color-border-focus` | `#D4A853` | Focused inputs (gold) |
 
 ### Font families
@@ -117,8 +117,8 @@ The terminal uses the gold cursor and warm foreground:
 
 ```ts
 theme: {
-  background:  "#111116",   // bg-terminal
-  foreground:  "#EEEEF2",   // text-primary
+  background:  "#1A1A22",   // bg-terminal
+  foreground:  "#F5F5F8",   // text-primary
   cursor:      "#D4A853",   // accent-primary (gold)
   red:         "#F85149",   // status-error
   green:       "#4ACA62",   // status-success
@@ -170,7 +170,7 @@ Tailwind v4 uses `@theme` in CSS instead of a JS config file. Colors become CSS 
 @import "tailwindcss";
 
 @theme {
-  --color-bg-base: #141419;
+  --color-bg-base: #1E1E26;
   --color-accent-primary: #D4A853;
   /* ... */
 }
@@ -189,3 +189,4 @@ Inline style access: `style={{ color: "var(--color-accent-primary)" }}`
 |------|----------|-----------|
 | 2026-02-21 | GitHub dark theme base | Initial choice for familiarity |
 | 2026-02-24 | **Replaced with "Black & Gold" warm theme** | Previous palette too dark and cold. User wanted warmer, more premium feel with gold accents. Inspired by Warp Terminal, Arc Browser, Zed Editor, Linear, Raycast. Key changes: warm charcoal backgrounds (#141419 base), gold primary accent (#D4A853), rounded panel design (12px), better text contrast, breathing room between panels. |
+| 2026-02-25 | **Lightened backgrounds, boosted text contrast** | Backgrounds shifted from near-black (#141419) to lighter warm grays (#1E1E26 base). Text colors brightened (#EEEEF2 → #F5F5F8 primary, #9D9DAD → #B0B0C0 secondary, #62627A → #7A7A92 muted) for better readability and pop. Borders, diffs, terminal theme, and activity bar updated to match. |
