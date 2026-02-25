@@ -172,6 +172,7 @@ export function TerminalView({ sessionId, resumeSessionId, cwd, isActive }: Term
   useEffect(() => {
     if (isActive && termRef.current) {
       termRef.current.focus();
+      termRef.current.scrollToBottom();
       const fitAddon = fitAddonRef.current;
       if (fitAddon) {
         fitAddon.fit();
