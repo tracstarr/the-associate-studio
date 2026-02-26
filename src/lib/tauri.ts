@@ -376,6 +376,10 @@ export async function gitIgnore(cwd: string, filePath: string): Promise<string> 
   return invoke("cmd_git_ignore", { cwd, filePath });
 }
 
+export async function gitExclude(cwd: string, filePath: string): Promise<string> {
+  return invoke("cmd_git_exclude", { cwd, filePath });
+}
+
 // ─── PR / Issues Types ────────────────────────────────────────────────────────
 
 export interface PullRequest {

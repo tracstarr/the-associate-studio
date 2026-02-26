@@ -40,11 +40,12 @@ export function GitStatusPanel() {
   const [untrackedOpen, setUntrackedOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
 
-  // Untracked context menu state
+  // File context menu state (all sections)
   const [fileContextMenu, setFileContextMenu] = useState<{
     x: number;
     y: number;
     file: GitFileEntry | null;
+    section: string;
   } | null>(null);
 
   // Worktree creation form state
@@ -60,7 +61,8 @@ export function GitStatusPanel() {
   const [newBranchError, setNewBranchError] = useState<string | null>(null);
 
   // Collapsible sections
-  const [worktreesOpen, setWorktreesOpen] = useState(true);
+  const [worktreesOpen, setWorktreesOpen] = useState(false);
+  const [showAllWorktrees, setShowAllWorktrees] = useState(false);
   const [copyOpen, setCopyOpen] = useState(true);
 
   // Quick git action state
@@ -74,12 +76,13 @@ export function GitStatusPanel() {
   const [pickerDirContents, setPickerDirContents] = useState<Record<string, FileEntry[]>>({});
   const [pickerLoading, setPickerLoading] = useState(false);
 
-  // Reset picker when project changes
+  // Reset picker and worktree display when project changes
   useEffect(() => {
     setShowFilePicker(false);
     setPickerRootEntries([]);
     setPickerExpandedDirs(new Set());
     setPickerDirContents({});
+    setShowAllWorktrees(false);
   }, [activeProjectDir]);
 
   const { data: gitStatus, isLoading, refetch } = useGitStatus(activeProjectDir ?? "");
@@ -227,6 +230,24 @@ export function GitStatusPanel() {
     }
   };
 
+  const handleFileDoubleClick = (file: GitFileEntry) => {
+    if (!activeProjectDir || !activeProjectId) return;
+    const cleanPath = file.path.replace(/[/\\]+$/, ""); // strip trailing slash for dirs
+    const sep = activeProjectDir.includes("\\") ? "\\" : "/";
+    const absPath = activeProjectDir + sep + cleanPath.replace(/[/\\]/g, sep);
+    const filename = cleanPath.split(/[/\\]/).pop() ?? cleanPath;
+    openTab(
+      {
+        id: `file:${absPath}`,
+        type: "file",
+        title: filename,
+        filePath: absPath,
+        projectDir: activeProjectDir,
+      },
+      activeProjectId
+    );
+  };
+
   const handleAddCopyEntry = async (relativePath: string) => {
     if (!relativePath || !activeProjectDir) return;
     const current = copyEntries ?? [];
@@ -262,7 +283,7 @@ export function GitStatusPanel() {
     });
     if (!pickerDirContents[path]) {
       try {
-        const entries = await listDir(path);
+        const entries = await listDir(path, true);
         setPickerDirContents((prev) => ({ ...prev, [path]: entries }));
       } catch (e) {
         console.error("[picker] load dir failed:", e);
@@ -275,7 +296,7 @@ export function GitStatusPanel() {
     if (pickerRootEntries.length === 0 && activeProjectDir) {
       setPickerLoading(true);
       try {
-        const entries = await listDir(activeProjectDir);
+        const entries = await listDir(activeProjectDir, true);
         setPickerRootEntries(entries);
       } catch (e) {
         console.error("[picker] load root failed:", e);
@@ -498,41 +519,61 @@ export function GitStatusPanel() {
             </button>
             {worktreesOpen && (
               <div className="pb-1">
-                {worktrees.map((wt) => {
-                  const isActive = wt.path === activeWorktreePath ||
-                    wt.path.replace(/\\/g, "/") === activeWorktreePath.replace(/\\/g, "/");
+                {(() => {
+                  const normalize = (p: string) => p.replace(/\\/g, "/");
+                  const activeNorm = normalize(activeWorktreePath);
+                  const isActiveWt = (wt: { path: string }) =>
+                    normalize(wt.path) === activeNorm;
+                  const primary = worktrees.filter(wt => isActiveWt(wt) || wt.isMain);
+                  const extra = worktrees.filter(wt => !isActiveWt(wt) && !wt.isMain);
+                  const visible = showAllWorktrees ? worktrees : primary;
                   return (
-                    <div
-                      key={wt.path}
-                      className={cn(
-                        "flex items-center gap-2 px-4 py-1 text-xs",
-                        isActive ? "text-accent-primary" : "text-text-secondary"
-                      )}
-                    >
-                      <GitFork size={10} className="shrink-0 text-text-muted" />
-                      <span className={cn("truncate flex-1 font-medium", isActive && "text-accent-primary")}>
-                        {wt.branch || wt.head}
-                        {wt.isMain && (
-                          <span className="ml-1 text-[9px] text-text-muted font-normal">(main)</span>
-                        )}
-                      </span>
-                      {wt.isPrunable && (
-                        <span title="Prunable — worktree directory may be missing" className="shrink-0">
-                          <AlertTriangle size={10} className="text-status-warning" />
-                        </span>
-                      )}
-                      {!isActive && (
+                    <>
+                      {visible.map((wt) => {
+                        const isActive = isActiveWt(wt);
+                        return (
+                          <div
+                            key={wt.path}
+                            className={cn(
+                              "flex items-center gap-2 px-4 py-1 text-xs",
+                              isActive ? "text-accent-primary" : "text-text-secondary"
+                            )}
+                          >
+                            <GitFork size={10} className="shrink-0 text-text-muted" />
+                            <span className={cn("truncate flex-1 font-medium", isActive && "text-accent-primary")}>
+                              {wt.branch || wt.head}
+                              {wt.isMain && (
+                                <span className="ml-1 text-[9px] text-text-muted font-normal">(main)</span>
+                              )}
+                            </span>
+                            {wt.isPrunable && (
+                              <span title="Prunable — worktree directory may be missing" className="shrink-0">
+                                <AlertTriangle size={10} className="text-status-warning" />
+                              </span>
+                            )}
+                            {!isActive && (
+                              <button
+                                onClick={() => handleSwitchToWorktree(wt.path)}
+                                className="shrink-0 text-text-muted hover:text-accent-primary transition-colors"
+                                title={`Switch to ${wt.path}`}
+                              >
+                                <ChevronRight size={10} />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                      {!showAllWorktrees && extra.length > 0 && (
                         <button
-                          onClick={() => handleSwitchToWorktree(wt.path)}
-                          className="shrink-0 text-text-muted hover:text-accent-primary transition-colors"
-                          title={`Switch to ${wt.path}`}
+                          onClick={() => setShowAllWorktrees(true)}
+                          className="px-4 py-0.5 text-[10px] text-text-muted hover:text-text-secondary transition-colors"
                         >
-                          <ChevronRight size={10} />
+                          +{extra.length} more
                         </button>
                       )}
-                    </div>
+                    </>
                   );
-                })}
+                })()}
               </div>
             )}
           </div>
@@ -618,7 +659,12 @@ export function GitStatusPanel() {
                 onToggle={() => setStaggedOpen(!stagedOpen)}
                 files={staged}
                 onFileClick={handleFileClick}
+                onFileDoubleClick={handleFileDoubleClick}
                 selectedFile={selectedFile}
+                onFileContextMenu={(e, file) => {
+                  e.preventDefault();
+                  setFileContextMenu({ x: e.clientX, y: e.clientY, file, section: "Staged" });
+                }}
               />
             )}
             {unstaged.length > 0 && (
@@ -629,7 +675,12 @@ export function GitStatusPanel() {
                 onToggle={() => setUnstagedOpen(!unstagedOpen)}
                 files={unstaged}
                 onFileClick={handleFileClick}
+                onFileDoubleClick={handleFileDoubleClick}
                 selectedFile={selectedFile}
+                onFileContextMenu={(e, file) => {
+                  e.preventDefault();
+                  setFileContextMenu({ x: e.clientX, y: e.clientY, file, section: "Unstaged" });
+                }}
               />
             )}
             {untracked.length > 0 && (
@@ -640,14 +691,15 @@ export function GitStatusPanel() {
                 onToggle={() => setUntrackedOpen(!untrackedOpen)}
                 files={untracked}
                 onFileClick={handleFileClick}
+                onFileDoubleClick={handleFileDoubleClick}
                 selectedFile={selectedFile}
                 onHeaderContextMenu={(e) => {
                   e.preventDefault();
-                  setFileContextMenu({ x: e.clientX, y: e.clientY, file: null });
+                  setFileContextMenu({ x: e.clientX, y: e.clientY, file: null, section: "Untracked" });
                 }}
                 onFileContextMenu={(e, file) => {
                   e.preventDefault();
-                  setFileContextMenu({ x: e.clientX, y: e.clientY, file });
+                  setFileContextMenu({ x: e.clientX, y: e.clientY, file, section: "Untracked" });
                 }}
               />
             )}
@@ -660,6 +712,7 @@ export function GitStatusPanel() {
           y={fileContextMenu.y}
           cwd={activeProjectDir}
           file={fileContextMenu.file}
+          section={fileContextMenu.section}
           onClose={() => setFileContextMenu(null)}
         />
       )}
@@ -674,12 +727,13 @@ interface FileSectionProps {
   onToggle: () => void;
   files: GitFileEntry[];
   onFileClick: (file: GitFileEntry) => void;
+  onFileDoubleClick?: (file: GitFileEntry) => void;
   selectedFile: string | null;
   onHeaderContextMenu?: (e: React.MouseEvent) => void;
   onFileContextMenu?: (e: React.MouseEvent, file: GitFileEntry) => void;
 }
 
-function FileSection({ title, count, open, onToggle, files, onFileClick, selectedFile, onHeaderContextMenu, onFileContextMenu }: FileSectionProps) {
+function FileSection({ title, count, open, onToggle, files, onFileClick, onFileDoubleClick, selectedFile, onHeaderContextMenu, onFileContextMenu }: FileSectionProps) {
   return (
     <div>
       <button
@@ -698,6 +752,7 @@ function FileSection({ title, count, open, onToggle, files, onFileClick, selecte
               key={file.path}
               file={file}
               onClick={() => onFileClick(file)}
+              onDoubleClick={onFileDoubleClick ? () => onFileDoubleClick(file) : undefined}
               isSelected={selectedFile === file.path}
               onContextMenu={onFileContextMenu ? (e) => onFileContextMenu(e, file) : undefined}
             />
@@ -708,16 +763,19 @@ function FileSection({ title, count, open, onToggle, files, onFileClick, selecte
   );
 }
 
-function FileEntry({ file, onClick, isSelected, onContextMenu }: { file: GitFileEntry; onClick: () => void; isSelected: boolean; onContextMenu?: (e: React.MouseEvent) => void }) {
+function FileEntry({ file, onClick, onDoubleClick, isSelected, onContextMenu }: { file: GitFileEntry; onClick: () => void; onDoubleClick?: () => void; isSelected: boolean; onContextMenu?: (e: React.MouseEvent) => void }) {
   const statusColor = getStatusColor(file.statusChar);
-  const filename = file.path.split(/[/\\]/).pop() ?? file.path;
-  const dir = file.path.includes("/") || file.path.includes("\\")
-    ? file.path.substring(0, file.path.lastIndexOf(file.path.includes("/") ? "/" : "\\"))
+  // Strip trailing slash (git reports untracked directories as "dir/")
+  const cleanPath = file.path.replace(/[/\\]+$/, "");
+  const filename = cleanPath.split(/[/\\]/).pop() ?? cleanPath;
+  const dir = cleanPath.includes("/") || cleanPath.includes("\\")
+    ? cleanPath.substring(0, cleanPath.lastIndexOf(cleanPath.includes("/") ? "/" : "\\"))
     : "";
 
   return (
     <button
       onClick={onClick}
+      onDoubleClick={onDoubleClick}
       onContextMenu={onContextMenu}
       className={cn(
         "flex items-center gap-2 w-full px-4 py-1 text-xs text-left transition-all duration-200 rounded-md mx-1",

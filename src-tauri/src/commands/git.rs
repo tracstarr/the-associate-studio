@@ -423,6 +423,32 @@ pub async fn cmd_git_ignore(cwd: String, file_path: String) -> Result<String, St
 }
 
 #[tauri::command]
+pub async fn cmd_git_exclude(cwd: String, file_path: String) -> Result<String, String> {
+    use std::io::Write;
+    // Reject paths containing newline/carriage-return to prevent injection of extra entries
+    if file_path.contains('\n') || file_path.contains('\r') {
+        return Err("Invalid file path: must not contain newline characters".to_string());
+    }
+    let exclude_path = std::path::PathBuf::from(&cwd)
+        .join(".git")
+        .join("info")
+        .join("exclude");
+    // Ensure .git/info/ directory exists
+    if let Some(parent) = exclude_path.parent() {
+        std::fs::create_dir_all(parent)
+            .map_err(|e| format!("Failed to create .git/info/: {}", e))?;
+    }
+    let mut file = std::fs::OpenOptions::new()
+        .append(true)
+        .create(true)
+        .open(&exclude_path)
+        .map_err(|e| format!("Failed to open .git/info/exclude: {}", e))?;
+    writeln!(file, "{}", file_path)
+        .map_err(|e| format!("Failed to write to exclude: {}", e))?;
+    Ok("Added to .git/info/exclude".to_string())
+}
+
+#[tauri::command]
 pub async fn cmd_git_rebase(cwd: String, onto_branch: String) -> Result<String, String> {
     let dir = std::path::PathBuf::from(&cwd);
     if !dir.exists() {

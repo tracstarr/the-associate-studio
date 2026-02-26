@@ -1,15 +1,16 @@
 import { useRef, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGitAction } from "@/hooks/useGitAction";
-import { gitAdd, gitIgnore } from "@/lib/tauri";
+import { gitAdd, gitIgnore, gitExclude } from "@/lib/tauri";
 import type { GitFileEntry } from "@/lib/tauri";
 import { cn } from "@/lib/utils";
 
-interface UntrackedContextMenuProps {
+interface FileContextMenuProps {
   x: number;
   y: number;
   cwd: string;
   file: GitFileEntry | null;
+  section?: string;
   onClose: () => void;
 }
 
@@ -18,14 +19,18 @@ export function UntrackedContextMenu({
   y,
   cwd,
   file,
+  section,
   onClose,
-}: UntrackedContextMenuProps) {
+}: FileContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const runGitAction = useGitAction();
   const queryClient = useQueryClient();
 
+  const isUntracked = section === "Untracked" || file?.section === "Untracked";
+  const isHeader = file === null;
+
   const menuWidth = 200;
-  const menuHeight = file === null ? 60 : 100;
+  const menuHeight = isHeader ? 60 : isUntracked ? 140 : 100;
   const left = Math.min(x, window.innerWidth - menuWidth - 8);
   const top = Math.min(y, window.innerHeight - menuHeight - 8);
 
@@ -66,19 +71,31 @@ export function UntrackedContextMenu({
     queryClient.invalidateQueries({ queryKey: ["git-status", cwd] });
   };
 
+  const handleExcludeFile = async () => {
+    if (!file) return;
+    onClose();
+    await runGitAction(`add ${file.path} to .git/info/exclude`, () => gitExclude(cwd, file.path));
+    queryClient.invalidateQueries({ queryKey: ["git-status", cwd] });
+  };
+
   return (
     <div
       ref={menuRef}
       style={{ left, top, zIndex: 9999 }}
       className="fixed min-w-[200px] py-1 panel-card-overlay"
     >
-      {file === null ? (
+      {isHeader ? (
         <MenuItem onClick={handleAddAll}>Add all to git</MenuItem>
       ) : (
         <>
-          <MenuItem onClick={handleAddFile}>Add to git</MenuItem>
-          <div className="my-1 border-t border-[var(--color-border-muted)]" />
+          {isUntracked && (
+            <>
+              <MenuItem onClick={handleAddFile}>Add to git</MenuItem>
+              <div className="my-1 border-t border-[var(--color-border-muted)]" />
+            </>
+          )}
           <MenuItem onClick={handleIgnoreFile}>Add to .gitignore</MenuItem>
+          <MenuItem onClick={handleExcludeFile}>Add to .git/info/exclude</MenuItem>
         </>
       )}
     </div>

@@ -84,6 +84,7 @@ pub fn run() {
             commands::git::cmd_git_create_branch,
             commands::git::cmd_git_add,
             commands::git::cmd_git_ignore,
+            commands::git::cmd_git_exclude,
             commands::git::cmd_git_rebase,
             commands::pty::pty_spawn,
             commands::pty::pty_resize,
