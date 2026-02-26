@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { FolderOpen, GitBranch, GitPullRequest, FolderTree, Settings, PanelBottomOpen, PanelBottomClose } from "lucide-react";
+import { FolderOpen, GitBranch, GitPullRequest, CircleDot, FolderTree, Settings, PanelBottomOpen, PanelBottomClose } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUIStore, type SidebarView } from "@/stores/uiStore";
 import { useSessionStore } from "@/stores/sessionStore";
@@ -16,6 +16,7 @@ const topItems: ActivityItem[] = [
   { id: "git", icon: GitBranch, label: "Git" },
   { id: "files", icon: FolderTree, label: "Files" },
   { id: "prs", icon: GitPullRequest, label: "Pull Requests" },
+  { id: "issues", icon: CircleDot, label: "Issues" },
 ];
 
 function ActivityBarComponent() {

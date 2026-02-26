@@ -70,6 +70,16 @@ export function buildCommands(): Command[] {
       },
     },
     {
+      id: "view.show-issues",
+      label: "Show Issues",
+      category: "View",
+      action: () => {
+        const u = useUIStore.getState();
+        u.setSidebarView("issues");
+        if (!u.sidebarOpen) u.toggleSidebar();
+      },
+    },
+    {
       id: "view.right.context",
       label: "Right Panel: Context",
       category: "View",
@@ -107,26 +117,6 @@ export function buildCommands(): Command[] {
       action: () => {
         const u = useUIStore.getState();
         u.setBottomTab("git");
-        if (!u.bottomPanelOpen) u.toggleBottomPanel();
-      },
-    },
-    {
-      id: "view.bottom.prs",
-      label: "Bottom Panel: PRs",
-      category: "View",
-      action: () => {
-        const u = useUIStore.getState();
-        u.setBottomTab("prs");
-        if (!u.bottomPanelOpen) u.toggleBottomPanel();
-      },
-    },
-    {
-      id: "view.bottom.issues",
-      label: "Bottom Panel: Issues",
-      category: "View",
-      action: () => {
-        const u = useUIStore.getState();
-        u.setBottomTab("issues");
         if (!u.bottomPanelOpen) u.toggleBottomPanel();
       },
     },

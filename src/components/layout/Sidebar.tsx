@@ -2,6 +2,7 @@ import { memo } from "react";
 import { useUIStore, type SidebarView } from "@/stores/uiStore";
 import { GitStatusPanel } from "@/components/git/GitStatusPanel";
 import { PRListPanel } from "@/components/issues/PRListPanel";
+import { IssueListPanel } from "@/components/issues/IssueListPanel";
 import { ProjectSwitcher } from "@/components/projects/ProjectSwitcher";
 import { FileBrowserPanel } from "@/components/files/FileBrowserPanel";
 
@@ -9,6 +10,7 @@ const viewLabels: Record<SidebarView, string> = {
   sessions: "Sessions",
   git: "Git",
   prs: "Pull Requests",
+  issues: "Issues",
   files: "Files",
 };
 
@@ -29,6 +31,7 @@ function SidebarComponent() {
         {activeView === "sessions" && <ProjectSwitcher />}
         {activeView === "git" && <GitStatusPanel />}
         {activeView === "prs" && <PRListPanel />}
+        {activeView === "issues" && <IssueListPanel />}
         {activeView === "files" && <FileBrowserPanel />}
       </div>
     </div>

@@ -233,32 +233,130 @@ export function usePRs(cwd: string | null, state = "open") {
   });
 }
 
-export function useIssues(cwd: string | null, state = "open") {
+export function useIssues(
+  cwd: string | null,
+  state = "open",
+  assignee?: string,
+  labels?: string[],
+) {
   return useQuery({
-    queryKey: ["issues", cwd, state],
-    queryFn: () => tauri.listIssues(cwd!, state),
+    queryKey: ["issues", cwd, state, assignee, labels],
+    queryFn: () => tauri.listIssues(cwd!, state, assignee, labels),
     enabled: !!cwd,
     staleTime: 60_000,
     retry: false,
   });
 }
 
-export function useLinearIssues(hasKey: boolean, state = "open") {
+export function useLinearIssues(
+  hasKey: boolean,
+  state = "open",
+  assignee?: string,
+  labels?: string[],
+) {
   return useQuery({
-    queryKey: ["linear-issues", state, hasKey],
-    queryFn: () => tauri.listLinearIssues(state),
+    queryKey: ["linear-issues", state, hasKey, assignee, labels],
+    queryFn: () => tauri.listLinearIssues(state, assignee, labels),
     enabled: hasKey,
     staleTime: 60_000,
     retry: false,
   });
 }
 
-export function useJiraIssues(hasCredentials: boolean, baseUrl: string, email: string, apiToken: string, state = "open") {
+export function useJiraIssues(
+  hasCredentials: boolean,
+  baseUrl: string,
+  email: string,
+  apiToken: string,
+  state = "open",
+  assignee?: string,
+  labels?: string[],
+) {
   return useQuery({
-    queryKey: ["jira-issues", state, baseUrl, email, hasCredentials],
-    queryFn: () => tauri.listJiraIssues(baseUrl, email, apiToken, state),
+    queryKey: ["jira-issues", state, baseUrl, email, hasCredentials, assignee, labels],
+    queryFn: () => tauri.listJiraIssues(baseUrl, email, apiToken, state, assignee, labels),
     enabled: hasCredentials,
     staleTime: 60_000,
+    retry: false,
+  });
+}
+
+export function useGithubLabels(cwd: string | null) {
+  return useQuery({
+    queryKey: ["github-labels", cwd],
+    queryFn: () => tauri.listGithubLabels(cwd!),
+    enabled: !!cwd,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+}
+
+export function useGithubAssignees(cwd: string | null) {
+  return useQuery({
+    queryKey: ["github-assignees", cwd],
+    queryFn: () => tauri.listGithubAssignees(cwd!),
+    enabled: !!cwd,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+}
+
+export function useLinearLabels(hasKey: boolean) {
+  return useQuery({
+    queryKey: ["linear-labels", hasKey],
+    queryFn: () => tauri.listLinearLabels(),
+    enabled: hasKey,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+}
+
+export function useLinearMembers(hasKey: boolean) {
+  return useQuery({
+    queryKey: ["linear-members", hasKey],
+    queryFn: () => tauri.listLinearMembers(),
+    enabled: hasKey,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+}
+
+export function useJiraLabels(hasCredentials: boolean, baseUrl: string, email: string, apiToken: string) {
+  return useQuery({
+    queryKey: ["jira-labels", baseUrl, email, hasCredentials],
+    queryFn: () => tauri.listJiraLabels(baseUrl, email, apiToken),
+    enabled: hasCredentials,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+}
+
+export function useJiraAssignees(hasCredentials: boolean, baseUrl: string, email: string, apiToken: string) {
+  return useQuery({
+    queryKey: ["jira-assignees", baseUrl, email, hasCredentials],
+    queryFn: () => tauri.listJiraAssignees(baseUrl, email, apiToken),
+    enabled: hasCredentials,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+}
+
+export function useLinearViewer(hasKey: boolean) {
+  return useQuery({
+    queryKey: ["linear-viewer", hasKey],
+    queryFn: () => tauri.getLinearViewer(),
+    enabled: hasKey,
+    staleTime: 30 * 60_000,
+    retry: false,
+  });
+}
+
+export function useJiraMyself(hasCredentials: boolean, baseUrl: string, email: string, apiToken: string) {
+  return useQuery({
+    queryKey: ["jira-myself", baseUrl, email, hasCredentials],
+    queryFn: () => tauri.getJiraMyself(baseUrl, email, apiToken),
+    enabled: hasCredentials,
+    staleTime: 30 * 60_000,
     retry: false,
   });
 }

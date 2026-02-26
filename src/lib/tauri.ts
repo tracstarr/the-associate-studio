@@ -406,6 +406,12 @@ export interface Issue {
   body?: string;
   labels: string[];
   source: "github" | "linear" | "jira";
+  assignee?: string;
+}
+
+export interface AssigneeOption {
+  value: string; // login / name / accountId
+  label: string; // display name shown in UI
 }
 
 export interface PRComment {
@@ -451,16 +457,64 @@ export function listPRs(cwd: string, state = "open"): Promise<PullRequest[]> {
   return invoke("cmd_list_prs", { cwd, state });
 }
 
-export function listIssues(cwd: string, state = "open"): Promise<Issue[]> {
-  return invoke("cmd_list_issues", { cwd, state });
+export function listIssues(
+  cwd: string,
+  state = "open",
+  assignee?: string,
+  labels?: string[],
+): Promise<Issue[]> {
+  return invoke("cmd_list_issues", { cwd, state, assignee: assignee ?? null, labels: labels ?? [] });
 }
 
-export function listLinearIssues(state = "open"): Promise<Issue[]> {
-  return invoke("cmd_list_linear_issues", { state });
+export function listLinearIssues(
+  state = "open",
+  assignee?: string,
+  labels?: string[],
+): Promise<Issue[]> {
+  return invoke("cmd_list_linear_issues", { state, assignee: assignee ?? null, labels: labels ?? [] });
 }
 
-export function listJiraIssues(baseUrl: string, email: string, apiToken: string, state = "open"): Promise<Issue[]> {
-  return invoke("cmd_list_jira_issues", { baseUrl, email, apiToken, state });
+export function listJiraIssues(
+  baseUrl: string,
+  email: string,
+  apiToken: string,
+  state = "open",
+  assignee?: string,
+  labels?: string[],
+): Promise<Issue[]> {
+  return invoke("cmd_list_jira_issues", { baseUrl, email, apiToken, state, assignee: assignee ?? null, labels: labels ?? [] });
+}
+
+export function listGithubLabels(cwd: string): Promise<string[]> {
+  return invoke("cmd_list_github_labels", { cwd });
+}
+
+export function listGithubAssignees(cwd: string): Promise<string[]> {
+  return invoke("cmd_list_github_assignees", { cwd });
+}
+
+export function listLinearLabels(): Promise<string[]> {
+  return invoke("cmd_list_linear_labels");
+}
+
+export function listLinearMembers(): Promise<string[]> {
+  return invoke("cmd_list_linear_members");
+}
+
+export function listJiraLabels(baseUrl: string, email: string, apiToken: string): Promise<string[]> {
+  return invoke("cmd_list_jira_labels", { baseUrl, email, apiToken });
+}
+
+export function listJiraAssignees(baseUrl: string, email: string, apiToken: string): Promise<AssigneeOption[]> {
+  return invoke("cmd_list_jira_assignees", { baseUrl, email, apiToken });
+}
+
+export function getLinearViewer(): Promise<string | null> {
+  return invoke("cmd_get_linear_viewer");
+}
+
+export function getJiraMyself(baseUrl: string, email: string, apiToken: string): Promise<AssigneeOption | null> {
+  return invoke("cmd_get_jira_myself", { baseUrl, email, apiToken });
 }
 
 export interface JiraIssueDetail {

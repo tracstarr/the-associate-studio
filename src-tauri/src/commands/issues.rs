@@ -38,6 +38,7 @@ pub struct Issue {
     #[serde(default)]
     pub labels: Vec<String>,
     pub source: String,
+    pub assignee: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -334,23 +335,34 @@ pub async fn cmd_list_prs(cwd: String, state: String) -> Result<Vec<PullRequest>
 }
 
 #[tauri::command]
-pub async fn cmd_list_issues(cwd: String, state: String) -> Result<Vec<Issue>, String> {
+pub async fn cmd_list_issues(
+    cwd: String,
+    state: String,
+    assignee: Option<String>,
+    labels: Option<Vec<String>>,
+) -> Result<Vec<Issue>, String> {
     let state_arg = match state.as_str() {
         "open" | "closed" | "all" => state.as_str(),
         _ => "open",
     };
 
+    let mut args: Vec<String> = vec![
+        "issue".into(), "list".into(),
+        "--json".into(), "number,title,state,author,url,createdAt,body,labels,assignees".into(),
+        "--limit".into(), "100".into(),
+        "--state".into(), state_arg.to_string(),
+    ];
+    if let Some(a) = &assignee {
+        args.push("--assignee".into());
+        args.push(a.clone());
+    }
+    for label in labels.as_deref().unwrap_or(&[]) {
+        args.push("--label".into());
+        args.push(label.clone());
+    }
+
     let output = match silent_command("gh")
-        .args([
-            "issue",
-            "list",
-            "--json",
-            "number,title,state,author,url,createdAt,body,labels",
-            "--limit",
-            "50",
-            "--state",
-            state_arg,
-        ])
+        .args(&args)
         .current_dir(&cwd)
         .output()
     {
@@ -375,6 +387,8 @@ pub async fn cmd_list_issues(cwd: String, state: String) -> Result<Vec<Issue>, S
         created_at: String,
         body: Option<String>,
         labels: Vec<GhLabel>,
+        #[serde(default)]
+        assignees: Vec<GhAssignee>,
     }
 
     #[derive(Deserialize)]
@@ -385,6 +399,11 @@ pub async fn cmd_list_issues(cwd: String, state: String) -> Result<Vec<Issue>, S
     #[derive(Deserialize)]
     struct GhLabel {
         name: String,
+    }
+
+    #[derive(Deserialize)]
+    struct GhAssignee {
+        login: String,
     }
 
     let issues: Vec<GhIssue> = match serde_json::from_str(&stdout) {
@@ -405,12 +424,17 @@ pub async fn cmd_list_issues(cwd: String, state: String) -> Result<Vec<Issue>, S
             body: i.body,
             labels: i.labels.into_iter().map(|l| l.name).collect(),
             source: "github".to_string(),
+            assignee: i.assignees.into_iter().next().map(|a| a.login),
         })
         .collect())
 }
 
 #[tauri::command]
-pub async fn cmd_list_linear_issues(state: String) -> Result<Vec<Issue>, String> {
+pub async fn cmd_list_linear_issues(
+    state: String,
+    assignee: Option<String>,
+    labels: Option<Vec<String>>,
+) -> Result<Vec<Issue>, String> {
     let api_key = match get_linear_api_key() {
         Some(k) => k,
         None => return Ok(vec![]),
@@ -418,11 +442,12 @@ pub async fn cmd_list_linear_issues(state: String) -> Result<Vec<Issue>, String>
 
     let gql_query = r#"
         query IssueList($filter: IssueFilter) {
-          issues(first: 50, filter: $filter, orderBy: updatedAt) {
+          issues(first: 100, filter: $filter, orderBy: updatedAt) {
             nodes {
               id identifier title
               state { name type }
               creator { name }
+              assignee { name }
               url createdAt
               labels { nodes { name } }
             }
@@ -430,15 +455,29 @@ pub async fn cmd_list_linear_issues(state: String) -> Result<Vec<Issue>, String>
         }
     "#;
 
-    let variables: serde_json::Value = match state.as_str() {
-        "open" => serde_json::json!({
-            "filter": { "state": { "type": { "in": ["triage", "backlog", "unstarted", "started"] } } }
-        }),
-        "closed" => serde_json::json!({
-            "filter": { "state": { "type": { "in": ["completed", "cancelled"] } } }
-        }),
-        _ => serde_json::json!({}),
-    };
+    let mut filter = serde_json::Map::new();
+    match state.as_str() {
+        "open" => {
+            filter.insert("state".into(), serde_json::json!({
+                "type": { "in": ["triage", "backlog", "unstarted", "started"] }
+            }));
+        }
+        "closed" => {
+            filter.insert("state".into(), serde_json::json!({
+                "type": { "in": ["completed", "cancelled"] }
+            }));
+        }
+        _ => {}
+    }
+    if let Some(a) = &assignee {
+        filter.insert("assignee".into(), serde_json::json!({ "name": { "eq": a } }));
+    }
+    if let Some(ls) = &labels {
+        if !ls.is_empty() {
+            filter.insert("label".into(), serde_json::json!({ "name": { "in": ls } }));
+        }
+    }
+    let variables = serde_json::json!({ "filter": filter });
 
     let body = serde_json::json!({ "query": gql_query, "variables": variables });
 
@@ -470,6 +509,7 @@ pub async fn cmd_list_linear_issues(state: String) -> Result<Vec<Issue>, String>
         title: String,
         state: LinearState,
         creator: Option<LinearUser>,
+        assignee: Option<LinearUser>,
         url: String,
         #[serde(rename = "createdAt")]
         created_at: String,
@@ -526,6 +566,7 @@ pub async fn cmd_list_linear_issues(state: String) -> Result<Vec<Issue>, String>
                 body: None,
                 labels: i.labels.nodes.into_iter().map(|l| l.name).collect(),
                 source: "linear".to_string(),
+                assignee: i.assignee.map(|u| u.name),
             }
         })
         .collect();
@@ -663,14 +704,26 @@ pub async fn cmd_list_jira_issues(
     email: String,
     api_token: String,
     state: String,
+    assignee: Option<String>,
+    labels: Option<Vec<String>>,
 ) -> Result<Vec<Issue>, String> {
     let token = api_token;
 
-    let jql = match state.as_str() {
-        "open"   => "statusCategory in (new, indeterminate) ORDER BY created DESC",
-        "closed" => "statusCategory = done ORDER BY created DESC",
-        _        => "ORDER BY created DESC",
+    let mut jql = match state.as_str() {
+        "open"   => "statusCategory in (new, indeterminate)".to_string(),
+        "closed" => "statusCategory = done".to_string(),
+        _        => "1=1".to_string(),
     };
+    if let Some(a) = &assignee {
+        jql.push_str(&format!(" AND assignee = \"{}\"", a));
+    }
+    if let Some(ls) = &labels {
+        if !ls.is_empty() {
+            let list = ls.iter().map(|l| format!("\"{}\"", l)).collect::<Vec<_>>().join(", ");
+            jql.push_str(&format!(" AND labels in ({})", list));
+        }
+    }
+    jql.push_str(" ORDER BY created DESC");
 
     let url = format!("{}/rest/api/3/search/jql", base_url.trim_end_matches('/'));
     let client = reqwest::Client::new();
@@ -678,9 +731,9 @@ pub async fn cmd_list_jira_issues(
         .get(&url)
         .basic_auth(&email, Some(&token))
         .query(&[
-            ("jql", jql),
-            ("maxResults", "50"),
-            ("fields", "summary,status,creator,created,labels"),
+            ("jql", jql.as_str()),
+            ("maxResults", "100"),
+            ("fields", "summary,status,creator,created,labels,assignee"),
         ])
         .send()
         .await
@@ -700,6 +753,7 @@ pub async fn cmd_list_jira_issues(
         summary: String,
         status: JiraStatus,
         creator: Option<JiraUser>,
+        assignee: Option<JiraUser>,
         created: String,
         #[serde(default)] labels: Vec<String>,
     }
@@ -733,9 +787,205 @@ pub async fn cmd_list_jira_issues(
                 body: None,
                 labels: i.fields.labels,
                 source: "jira".to_string(),
+                assignee: i.fields.assignee.map(|u| u.display_name),
             }
         })
         .collect();
 
     Ok(issues)
+}
+
+// ─── AssigneeOption ───────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize)]
+pub struct AssigneeOption {
+    pub value: String, // login / name / accountId
+    pub label: String, // display name shown in UI
+}
+
+// ─── GitHub option commands ───────────────────────────────────────────────────
+
+#[tauri::command]
+pub async fn cmd_list_github_labels(cwd: String) -> Result<Vec<String>, String> {
+    let output = match silent_command("gh")
+        .args(["label", "list", "--json", "name", "--limit", "200"])
+        .current_dir(&cwd)
+        .output()
+    {
+        Ok(o) => o,
+        Err(_) => return Ok(vec![]),
+    };
+    if !output.status.success() { return Ok(vec![]); }
+    #[derive(Deserialize)] struct L { name: String }
+    let items: Vec<L> = serde_json::from_str(&String::from_utf8_lossy(&output.stdout)).unwrap_or_default();
+    Ok(items.into_iter().map(|l| l.name).collect())
+}
+
+#[tauri::command]
+pub async fn cmd_list_github_assignees(cwd: String) -> Result<Vec<String>, String> {
+    let output = match silent_command("gh")
+        .args(["api", "repos/{owner}/{repo}/assignees", "--jq", ".[].login"])
+        .current_dir(&cwd)
+        .output()
+    {
+        Ok(o) => o,
+        Err(_) => return Ok(vec![]),
+    };
+    if !output.status.success() { return Ok(vec![]); }
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    Ok(stdout.lines().map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect())
+}
+
+// ─── Linear option commands ───────────────────────────────────────────────────
+
+#[tauri::command]
+pub async fn cmd_list_linear_labels() -> Result<Vec<String>, String> {
+    let api_key = match get_linear_api_key() {
+        Some(k) => k,
+        None => return Ok(vec![]),
+    };
+    let body = serde_json::json!({
+        "query": "query { issueLabels(first: 200) { nodes { name } } }"
+    });
+    let client = reqwest::Client::new();
+    let json: serde_json::Value = match client
+        .post("https://api.linear.app/graphql")
+        .header("Authorization", &api_key)
+        .header("Content-Type", "application/json")
+        .json(&body)
+        .send()
+        .await
+    {
+        Ok(r) => r.json().await.unwrap_or_default(),
+        Err(_) => return Ok(vec![]),
+    };
+    let nodes = json["data"]["issueLabels"]["nodes"].as_array().cloned().unwrap_or_default();
+    Ok(nodes.into_iter().filter_map(|n| n["name"].as_str().map(|s| s.to_string())).collect())
+}
+
+#[tauri::command]
+pub async fn cmd_list_linear_members() -> Result<Vec<String>, String> {
+    let api_key = match get_linear_api_key() {
+        Some(k) => k,
+        None => return Ok(vec![]),
+    };
+    let body = serde_json::json!({
+        "query": "query { users(first: 200, filter: { active: { eq: true } }) { nodes { name } } }"
+    });
+    let client = reqwest::Client::new();
+    let json: serde_json::Value = match client
+        .post("https://api.linear.app/graphql")
+        .header("Authorization", &api_key)
+        .header("Content-Type", "application/json")
+        .json(&body)
+        .send()
+        .await
+    {
+        Ok(r) => r.json().await.unwrap_or_default(),
+        Err(_) => return Ok(vec![]),
+    };
+    let nodes = json["data"]["users"]["nodes"].as_array().cloned().unwrap_or_default();
+    Ok(nodes.into_iter().filter_map(|n| n["name"].as_str().map(|s| s.to_string())).collect())
+}
+
+// ─── Jira option commands ─────────────────────────────────────────────────────
+
+#[tauri::command]
+pub async fn cmd_list_jira_labels(
+    base_url: String,
+    email: String,
+    api_token: String,
+) -> Result<Vec<String>, String> {
+    let url = format!("{}/rest/api/3/label?maxResults=200", base_url.trim_end_matches('/'));
+    let client = reqwest::Client::new();
+    let json: serde_json::Value = match client
+        .get(&url)
+        .basic_auth(&email, Some(&api_token))
+        .send()
+        .await
+    {
+        Ok(r) if r.status().is_success() => r.json().await.unwrap_or_default(),
+        _ => return Ok(vec![]),
+    };
+    let values = json["values"].as_array().cloned().unwrap_or_default();
+    Ok(values.into_iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect())
+}
+
+#[tauri::command]
+pub async fn cmd_list_jira_assignees(
+    base_url: String,
+    email: String,
+    api_token: String,
+) -> Result<Vec<AssigneeOption>, String> {
+    // Jira Cloud JQL requires accountId; this endpoint returns accountId + displayName
+    let url = format!(
+        "{}/rest/api/3/users/search?maxResults=200&accountType=atlassian",
+        base_url.trim_end_matches('/')
+    );
+    let client = reqwest::Client::new();
+    let json: serde_json::Value = match client
+        .get(&url)
+        .basic_auth(&email, Some(&api_token))
+        .send()
+        .await
+    {
+        Ok(r) if r.status().is_success() => r.json().await.unwrap_or_default(),
+        _ => return Ok(vec![]),
+    };
+    let users = json.as_array().cloned().unwrap_or_default();
+    Ok(users
+        .into_iter()
+        .filter_map(|u| {
+            let value = u["accountId"].as_str()?.to_string();
+            let label = u["displayName"].as_str().unwrap_or(&value).to_string();
+            Some(AssigneeOption { value, label })
+        })
+        .collect())
+}
+
+// ─── "Me" commands ────────────────────────────────────────────────────────────
+
+#[tauri::command]
+pub async fn cmd_get_linear_viewer() -> Result<Option<String>, String> {
+    let api_key = match get_linear_api_key() {
+        Some(k) => k,
+        None => return Ok(None),
+    };
+    let body = serde_json::json!({ "query": "query { viewer { name } }" });
+    let client = reqwest::Client::new();
+    let json: serde_json::Value = match client
+        .post("https://api.linear.app/graphql")
+        .header("Authorization", &api_key)
+        .header("Content-Type", "application/json")
+        .json(&body)
+        .send()
+        .await
+    {
+        Ok(r) => r.json().await.unwrap_or_default(),
+        Err(_) => return Ok(None),
+    };
+    Ok(json["data"]["viewer"]["name"].as_str().map(|s| s.to_string()))
+}
+
+#[tauri::command]
+pub async fn cmd_get_jira_myself(
+    base_url: String,
+    email: String,
+    api_token: String,
+) -> Result<Option<AssigneeOption>, String> {
+    let url = format!("{}/rest/api/3/myself", base_url.trim_end_matches('/'));
+    let client = reqwest::Client::new();
+    let json: serde_json::Value = match client
+        .get(&url)
+        .basic_auth(&email, Some(&api_token))
+        .send()
+        .await
+    {
+        Ok(r) if r.status().is_success() => r.json().await.unwrap_or_default(),
+        _ => return Ok(None),
+    };
+    Ok(json["accountId"].as_str().map(|id| AssigneeOption {
+        value: id.to_string(),
+        label: json["displayName"].as_str().unwrap_or("Me").to_string(),
+    }))
 }
