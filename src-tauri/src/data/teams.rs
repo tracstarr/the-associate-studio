@@ -76,3 +76,98 @@ pub fn load_teams(claude_home: &Path, project_cwd: Option<&Path>) -> Result<Vec<
     teams.sort_by(|a, b| a.dir_name.cmp(&b.dir_name));
     Ok(teams)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    fn setup_team(tmp: &std::path::Path, name: &str, config_json: &str) {
+        let team_dir = tmp.join("teams").join(name);
+        std::fs::create_dir_all(&team_dir).unwrap();
+        std::fs::write(team_dir.join("config.json"), config_json).unwrap();
+    }
+
+    #[test]
+    fn test_load_teams_empty() {
+        let tmp = tempfile::tempdir().unwrap();
+        let teams = load_teams(tmp.path(), None).unwrap();
+        assert!(teams.is_empty());
+    }
+
+    #[test]
+    fn test_load_teams_no_filter() {
+        let tmp = tempfile::tempdir().unwrap();
+        setup_team(
+            tmp.path(),
+            "team-alpha",
+            r#"{"name":"Alpha","members":[{"name":"Agent A"}]}"#,
+        );
+        setup_team(
+            tmp.path(),
+            "team-beta",
+            r#"{"name":"Beta","members":[{"name":"Agent B"}]}"#,
+        );
+
+        let teams = load_teams(tmp.path(), None).unwrap();
+        assert_eq!(teams.len(), 2);
+        // sorted alphabetically
+        assert_eq!(teams[0].dir_name, "team-alpha");
+        assert_eq!(teams[1].dir_name, "team-beta");
+    }
+
+    #[test]
+    fn test_load_teams_with_cwd_filter_match() {
+        let tmp = tempfile::tempdir().unwrap();
+        setup_team(
+            tmp.path(),
+            "team-match",
+            r#"{"name":"Match","members":[{"name":"A","cwd":"/dev/my-project"}]}"#,
+        );
+        setup_team(
+            tmp.path(),
+            "team-other",
+            r#"{"name":"Other","members":[{"name":"B","cwd":"/dev/other"}]}"#,
+        );
+
+        let teams = load_teams(tmp.path(), Some(&PathBuf::from("/dev/my-project"))).unwrap();
+        assert_eq!(teams.len(), 1);
+        assert_eq!(teams[0].dir_name, "team-match");
+    }
+
+    #[test]
+    fn test_load_teams_falls_back_when_no_cwd_match() {
+        let tmp = tempfile::tempdir().unwrap();
+        setup_team(
+            tmp.path(),
+            "team-a",
+            r#"{"name":"A","members":[{"name":"Agent","cwd":"/somewhere/else"}]}"#,
+        );
+
+        // No match for /dev/nonexistent => falls back to all teams
+        let teams = load_teams(tmp.path(), Some(&PathBuf::from("/dev/nonexistent"))).unwrap();
+        assert_eq!(teams.len(), 1);
+    }
+
+    #[test]
+    fn test_team_without_config_but_with_inboxes() {
+        let tmp = tempfile::tempdir().unwrap();
+        let team_dir = tmp.path().join("teams").join("inbox-team");
+        std::fs::create_dir_all(team_dir.join("inboxes")).unwrap();
+
+        let teams = load_teams(tmp.path(), None).unwrap();
+        assert_eq!(teams.len(), 1);
+        assert_eq!(teams[0].dir_name, "inbox-team");
+        assert!(teams[0].config.name.is_none()); // default config
+    }
+
+    #[test]
+    fn test_team_dir_without_config_or_inboxes_skipped() {
+        let tmp = tempfile::tempdir().unwrap();
+        let team_dir = tmp.path().join("teams").join("empty-team");
+        std::fs::create_dir_all(&team_dir).unwrap();
+
+        let teams = load_teams(tmp.path(), None).unwrap();
+        assert!(teams.is_empty());
+    }
+}
