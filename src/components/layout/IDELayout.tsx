@@ -22,12 +22,12 @@ function IDELayoutComponent() {
   ];
 
   return (
-    <PanelGroup direction="vertical" className="flex-1 overflow-hidden p-1.5 gap-1.5 bg-bg-base">
-      {/* Top section: activity bars + sidebar + main + right panel */}
-      <Panel minSize={30}>
-        <div className="flex h-full overflow-hidden gap-1.5">
-          <ActivityBar />
+    <div className="flex flex-1 overflow-hidden p-1.5 gap-1.5 bg-bg-base">
+      <ActivityBar />
 
+      <PanelGroup direction="vertical" className="flex-1 overflow-hidden gap-1.5">
+        {/* Top section: sidebar + main + right panel */}
+        <Panel minSize={30}>
           <PanelGroup direction="horizontal" className="flex-1 gap-1.5">
             {sidebarOpen && (
               <>
@@ -70,23 +70,23 @@ function IDELayoutComponent() {
               </>
             )}
           </PanelGroup>
+        </Panel>
 
-          <RightActivityBar />
-        </div>
-      </Panel>
+        {/* Bottom panel — sits between the two activity bars */}
+        {bottomPanelOpen && (
+          <>
+            <PanelResizeHandle className="h-1 rounded-full hover:bg-accent-primary/60 cursor-row-resize transition-all duration-200" />
+            <Panel defaultSize={25} minSize={10} maxSize={60}>
+              <div className="h-full rounded-xl overflow-hidden bg-bg-surface" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }}>
+                <BottomPanel />
+              </div>
+            </Panel>
+          </>
+        )}
+      </PanelGroup>
 
-      {/* Full-width bottom panel */}
-      {bottomPanelOpen && (
-        <>
-          <PanelResizeHandle className="h-1 rounded-full hover:bg-accent-primary/60 cursor-row-resize transition-all duration-200" />
-          <Panel defaultSize={25} minSize={10} maxSize={60}>
-            <div className="h-full rounded-xl overflow-hidden bg-bg-surface" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }}>
-              <BottomPanel />
-            </div>
-          </Panel>
-        </>
-      )}
-    </PanelGroup>
+      <RightActivityBar />
+    </div>
   );
 }
 
