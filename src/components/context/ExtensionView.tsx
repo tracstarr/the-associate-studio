@@ -1,16 +1,18 @@
 import Markdown from "react-markdown";
 import type { SessionTab } from "@/stores/sessionStore";
+import { parseFrontmatter, FrontmatterBlock } from "@/lib/frontmatter";
 
 interface ExtensionViewProps {
   tab: SessionTab;
 }
 
 export function ExtensionView({ tab }: ExtensionViewProps) {
-  const content = tab.markdownContent ?? "";
+  const { fm, body } = parseFrontmatter(tab.markdownContent ?? "");
 
   return (
     <div className="h-full overflow-y-auto bg-[var(--color-bg-base)]">
       <div className="max-w-3xl mx-auto px-8 py-6 prose prose-invert prose-sm">
+        {fm && <FrontmatterBlock fm={fm} />}
         <Markdown
           components={{
             h1: ({ children }) => (
@@ -66,7 +68,7 @@ export function ExtensionView({ tab }: ExtensionViewProps) {
             ),
           }}
         >
-          {content}
+          {body}
         </Markdown>
       </div>
     </div>

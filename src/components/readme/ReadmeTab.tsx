@@ -5,6 +5,7 @@ import { readFile, writeFile, runClaudeInit, runReadmeGen } from "@/lib/tauri";
 import { debugLog } from "@/stores/debugStore";
 import { useUIStore } from "@/stores/uiStore";
 import { useSessionStore } from "@/stores/sessionStore";
+import { parseFrontmatter, FrontmatterBlock } from "@/lib/frontmatter";
 
 interface ReadmeTabProps {
   filePath: string;
@@ -289,7 +290,15 @@ export function ReadmeTab({ filePath, projectDir, isActive, tabId }: ReadmeTabPr
         <Pencil size={14} />
       </button>
       <div className="p-8 max-w-3xl mx-auto readme-content">
-        <Markdown components={markdownComponents}>{content ?? ""}</Markdown>
+        {(() => {
+          const { fm, body } = parseFrontmatter(content ?? "");
+          return (
+            <>
+              {fm && <FrontmatterBlock fm={fm} />}
+              <Markdown components={markdownComponents}>{body}</Markdown>
+            </>
+          );
+        })()}
       </div>
     </div>
   );

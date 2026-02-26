@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Save, Eye, Pencil, Check } from "lucide-react";
 import { readPlan, savePlan } from "../../lib/tauri";
 import { cn } from "../../lib/utils";
+import { parseFrontmatter, FrontmatterBlock } from "../../lib/frontmatter";
 
 const MonacoEditor = lazy(() =>
   import("@monaco-editor/react").then((m) => ({ default: m.default }))
@@ -159,9 +160,11 @@ export function PlanEditorView({ filename }: PlanEditorViewProps) {
 // ── Simple inline markdown renderer ─────────────────────────────────────────
 
 function MarkdownPreview({ content }: { content: string }) {
-  const blocks = parseBlocks(content);
+  const { fm, body } = parseFrontmatter(content);
+  const blocks = parseBlocks(body);
   return (
     <div className="px-8 py-6 max-w-3xl mx-auto space-y-1.5 text-[var(--color-text-secondary)]">
+      {fm && <FrontmatterBlock fm={fm} />}
       {blocks.map((block, i) => (
         <BlockView key={i} block={block} />
       ))}

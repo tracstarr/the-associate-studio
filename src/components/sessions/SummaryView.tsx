@@ -4,6 +4,7 @@ import { readSummary } from "@/lib/tauri";
 import type { SessionTab } from "@/stores/sessionStore";
 import { useSessionStore } from "@/stores/sessionStore";
 import { useActiveProjectTabs } from "@/hooks/useActiveProjectTabs";
+import { parseFrontmatter, FrontmatterBlock } from "@/lib/frontmatter";
 
 interface SummaryViewProps {
   tab: SessionTab;
@@ -104,9 +105,11 @@ export function SummaryView({ tab, projectId }: SummaryViewProps) {
 // ── Reused inline markdown renderer (same as PlanEditorView) ─────────────────
 
 function MarkdownPreview({ content }: { content: string }) {
-  const blocks = parseBlocks(content);
+  const { fm, body } = parseFrontmatter(content);
+  const blocks = parseBlocks(body);
   return (
     <div className="px-8 py-6 max-w-3xl mx-auto space-y-1.5 text-[var(--color-text-secondary)]">
+      {fm && <FrontmatterBlock fm={fm} />}
       {blocks.map((block, i) => (
         <BlockView key={i} block={block} />
       ))}
