@@ -4,6 +4,7 @@ import { ContextPanel } from "@/components/context/ContextPanel";
 import { TeamsRightPanel } from "@/components/context/TeamsRightPanel";
 import { PlansPanel } from "@/components/context/PlansPanel";
 import { DocsSection } from "@/components/context/DocsSection";
+import { NotesPanel } from "@/components/notes/NotesPanel";
 import { useProjectsStore } from "@/stores/projectsStore";
 
 function DocsTabPanel() {
@@ -39,6 +40,7 @@ function RightPanelComponent() {
         {activeTab === "teams" && <TeamsRightPanel />}
         {activeTab === "plans" && <PlansPanel />}
         {activeTab === "docs" && <DocsTabPanel />}
+        {activeTab === "notes" && <NotesPanel />}
       </div>
     </div>
   );

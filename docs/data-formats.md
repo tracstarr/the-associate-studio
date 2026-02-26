@@ -358,3 +358,44 @@ When a summary is saved, a `session-summary` event is emitted:
 ```
 
 The frontend listens for this event and invalidates the `["summaries"]` query cache.
+
+## Notes
+
+Notes are stored as individual JSON files, one per note.
+
+```
+~/.claude/notes/{id}.json                              <-- global notes
+~/.claude/projects/{encoded-path}/notes/{id}.json     <-- per-project notes
+```
+
+### Note schema
+
+```json
+{
+  "id": "m5xj2-ab3cd",
+  "title": "Auth bug investigation",
+  "content": "## Findings\n\nThe token is...",
+  "projectPath": "C:\\dev\\myapp",
+  "fileRefs": [
+    {
+      "id": "m5xj3-ef4gh",
+      "filePath": "C:\\dev\\myapp\\src\\auth.ts",
+      "lineStart": 42,
+      "lineEnd": 55,
+      "quote": "const token = jwt.sign(..."
+    }
+  ],
+  "created": 1700000000000,
+  "modified": 1700000001234
+}
+```
+
+- `projectPath: null` → global note, stored in `~/.claude/notes/`
+- `projectPath: "C:\\dev\\..."` → project note, stored in `~/.claude/projects/{encoded}/notes/`
+- `created`/`modified` are millisecond timestamps
+- `fileRefs` are optional line-anchored code snippets captured from the Monaco editor
+
+### File watcher events
+
+- `notes-changed` — emitted when any `~/.claude/notes/*.json` changes or when any `~/.claude/projects/*/notes/*.json` changes
+- Frontend invalidates the `["notes"]` React Query cache on this event

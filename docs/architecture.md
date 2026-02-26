@@ -19,7 +19,7 @@ Single-window desktop IDE. One Tauri window contains everything: multiple Claude
 |  | Git           |  Session view (read-only)       | Contxt |   |   |
 |  | Files         |  Plan editor (Monaco)           | Teams  |   |   |
 |  | PRs           |  Readme editor (Monaco)         | Plans  |   |   |
-|  |               |  File editor (Monaco)           |        |   |   |
+|  |               |  File editor (Monaco)           | Notes  |   |   |
 |  |               |  Settings tab                   |        |   |   |
 |  |               |  Diff viewer                    |        |   |   |
 |  |               |                                 |        |   |   |
@@ -31,7 +31,7 @@ Single-window desktop IDE. One Tauri window contains everything: multiple Claude
 +---------------------------------------------------------------------+
 
 AB  = Left ActivityBar (48px, 4 sidebar views + bottom toggle + settings)
-RAB = Right ActivityBar (48px, 3 right panel views)
+RAB = Right ActivityBar (48px, 5 right panel views)
 ```
 
 | Region | Size | Collapsible | Keybind |
@@ -79,8 +79,8 @@ App.tsx
             DiffViewer       -- inline diff viewer
             TabContextMenu   -- right-click context menu for tabs
             CloseTabsWarningDialog -- warns about active sessions / unsaved changes
-          RightPanel    -- ContextPanel | TeamsRightPanel | PlansPanel
-        RightActivityBar -- 48px icon strip (Context, Teams, Plans)
+          RightPanel    -- ContextPanel | TeamsRightPanel | PlansPanel | DocsSection | NotesPanel
+        RightActivityBar -- 48px icon strip (Context, Teams, Plans, Docs, Notes)
       Panel (bottom)
         BottomPanel     -- Log | Diff | PRs | Issues | Output tabs
     StatusBar           -- branch, counts, Claude status
@@ -156,6 +156,33 @@ User clicks "Open…" or "New Project…" in project dropdown
 2. `originalPath` from `sessions-index.json` (works for newly created projects with no sessions)
 3. `decode_dir_name()` best-effort decode (lossy — dashes in path segments become slashes)
 
+### File selection -> Note capture
+
+```
+User selects text in FileEditorTab (Monaco editor)
+  -> onDidChangeCursorSelection fires
+  -> Computes line range + 200-char quote + pixel position
+  -> Floating "Add to note" button appears above selection
+  -> User clicks (onMouseDown + preventDefault to preserve selection)
+  -> openNotesWithRef({ filePath, lineStart, lineEnd, quote })
+     -> uiStore: pendingNoteRef = ref, activeRightTab = "notes", rightPanelOpen = true
+  -> NotesPanel mounts / becomes visible
+     -> useEffect sees pendingNoteRef != null
+     -> Creates new Note with FileRef pre-filled, calls cmd_save_note
+     -> On success: navigates to NoteEditor for the new note
+     -> Clears pendingNoteRef
+```
+
+### Notes -> file tab indicator
+
+```
+useGlobalNotes() + useProjectNotes() run in MainAreaComponent
+  -> noteFileSet = Set of all filePaths referenced in any note (normalized, lowercase)
+  -> Each "file" tab renders TabNoteIndicator
+     -> If tab.filePath is in noteFileSet: shows accent-primary dot
+     -> Clicking dot: setRightTab("notes"), opens right panel if closed
+```
+
 ### Git actions -> Output panel
 ```
 User triggers git action (fetch, pull, rebase, etc.) in GitStatusPanel
@@ -179,14 +206,14 @@ TerminalView detects question pattern in PTY output
 
 | Store | Library | Responsibility |
 |-------|---------|----------------|
-| `uiStore` | Zustand | Panel visibility, active views/tabs, command palette, neural field, debug panel, diff selection, project dropdown, tab init status |
+| `uiStore` | Zustand | Panel visibility, active views/tabs, command palette, neural field, debug panel, diff selection, project dropdown, tab init status, `pendingNoteRef` for file-selection→note flow |
 | `sessionStore` | Zustand | Per-project open tabs, active tab ID per project, hook-tracked session state, subagents, plan links, dirty tabs |
 | `settingsStore` | Zustand | Font settings, integration credentials (in-memory mirror of keyring) |
 | `projectsStore` | Zustand | Project list, active project ID, project CRUD |
 | `notificationStore` | Zustand | Question notifications from Claude sessions (unread tracking) |
 | `outputStore` | Zustand | Output panel messages (git actions, system messages) |
 | `debugStore` | Zustand | DEV-only debug log entries (max 500) |
-| Server data | TanStack Query | Sessions, teams, inbox, tasks, todos, plans, git status/log/branches -- fetched via Tauri invoke |
+| Server data | TanStack Query | Sessions, teams, inbox, tasks, todos, plans, notes, git status/log/branches -- fetched via Tauri invoke |
 
 ## Sidebar views
 
@@ -208,6 +235,8 @@ The right ActivityBar controls which right panel view is shown:
 | Context | `ContextPanel` | CLAUDE.md content + memory files |
 | Teams | `TeamsRightPanel` | Team/agent status for active session |
 | Plans | `PlansPanel` | List and manage plan files |
+| Docs | `DocsSection` | Project documentation browser |
+| Notes | `NotesPanel` | Per-project and global markdown notes scratchpad |
 
 ## Bottom panel tabs
 
@@ -300,6 +329,7 @@ Summaries can be loaded via `cmd_load_summaries(project_dir, session_id)` and re
 | `inbox` | `cmd_load_inbox`, `cmd_send_inbox_message` |
 | `todos` | `cmd_load_todos` |
 | `plans` | `cmd_load_plans`, `cmd_read_plan`, `cmd_save_plan` |
+| `notes` | `cmd_load_global_notes`, `cmd_load_project_notes`, `cmd_save_note`, `cmd_delete_note` |
 | `git` | `cmd_git_status`, `cmd_git_diff`, `cmd_git_branches`, `cmd_git_current_branch`, `cmd_git_log`, `cmd_git_remote_branches`, `cmd_create_worktree`, `cmd_list_worktrees`, `cmd_get_worktree_copy`, `cmd_set_worktree_copy`, `cmd_claude_git_action`, `cmd_git_fetch`, `cmd_git_pull`, `cmd_git_create_branch`, `cmd_git_add`, `cmd_git_ignore`, `cmd_git_rebase` |
 | `pty` | `pty_spawn`, `pty_resize`, `pty_write`, `pty_kill`, `pty_list` |
 | `issues` | `cmd_list_prs`, `cmd_list_issues`, `cmd_list_linear_issues` |
@@ -319,6 +349,7 @@ Summaries can be loaded via `cmd_load_summaries(project_dir, session_id)` and re
 | `tasks` | Read task data from session directories |
 | `todos` | Read todo data from session directories |
 | `plans` | Read/write plan `.md` files |
+| `notes` | Read/write/delete note `.json` files (global + per-project) |
 | `transcripts` | Parse JSONL transcript files |
 | `git` | Git operations via `git2` crate + `gh` CLI |
 | `hook_state` | Manage hook event JSONL file state |
@@ -340,6 +371,7 @@ Summaries can be loaded via `cmd_load_summaries(project_dir, session_id)` and re
 | `transcript` | Transcript message model |
 | `git` | Git status/diff/branch models |
 | `hook_event` | Hook event types (SessionStart/End, SubagentStart/Stop) |
+| `note` | Note and FileRef models |
 | `summary` | Session completion summary file model |
 
 ## Neural Field Dashboard
@@ -371,3 +403,5 @@ When no `docsFolder` is configured, the Docs section in the context panel automa
 4. **Tab context menus**: Right-click on tabs provides Close, Close Others, Close to Left, Close to Right, Close All -- with warning dialogs for destructive actions.
 
 5. **Dual activity bars**: Left ActivityBar controls sidebar views, Right ActivityBar controls right panel views. Both are 48px fixed-width strips.
+
+6. **Notes as first-class UI objects**: Notes live in `~/.claude/notes/` (global) or `~/.claude/projects/{encoded}/notes/` (per-project) as individual JSON files. The `pendingNoteRef` field in `uiStore` is the handoff point between the Monaco editor's selection listener and the NotesPanel — it carries `{ filePath, lineStart, lineEnd, quote }` and clears itself after the panel consumes it. File tab dot indicators are computed in `MainArea` via a `useMemo` over all note file refs, avoiding any per-tab store lookups.

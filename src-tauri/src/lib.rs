@@ -2,6 +2,7 @@ mod cleanup;
 mod commands;
 mod data;
 mod models;
+mod startup;
 mod utils;
 mod watcher;
 
@@ -23,10 +24,15 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_store::Builder::default().build())
+        .plugin(tauri_plugin_notification::init())
         .manage(PtyState(std::sync::Arc::new(std::sync::Mutex::new(
             std::collections::HashMap::new(),
         ))))
         .setup(|app| {
+            // Create a Start Menu shortcut with AUMID so Windows toast notifications
+            // appear as "The Associate Studio" rather than PowerShell.
+            startup::ensure_start_menu_shortcut();
+
             // Auto-install hooks on every launch (idempotent — skips if already present)
             if let Err(e) = commands::hooks::cmd_setup_hooks() {
                 eprintln!("[ide] hook setup failed: {}", e);
@@ -120,6 +126,10 @@ pub fn run() {
             commands::summaries::cmd_load_summaries,
             commands::summaries::cmd_read_summary,
             commands::claude_config::cmd_load_extensions,
+            commands::notes::cmd_load_global_notes,
+            commands::notes::cmd_load_project_notes,
+            commands::notes::cmd_save_note,
+            commands::notes::cmd_delete_note,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

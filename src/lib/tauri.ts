@@ -93,6 +93,26 @@ export interface SummaryFile {
   preview: string;
 }
 
+// ---- Note Types ----
+
+export interface FileRef {
+  id: string;
+  filePath: string;
+  lineStart: number;
+  lineEnd: number;
+  quote: string;
+}
+
+export interface Note {
+  id: string;
+  title: string;
+  content: string;
+  projectPath: string | null;
+  fileRefs: FileRef[];
+  created: number;
+  modified: number;
+}
+
 // ---- Plan Types ----
 
 export type MarkdownLineKind = "Heading" | "CodeFence" | "CodeBlock" | "Normal";
@@ -234,6 +254,22 @@ export async function readPlan(filename: string): Promise<string> {
 
 export async function savePlan(filename: string, content: string): Promise<void> {
   return invoke("cmd_save_plan", { filename, content });
+}
+
+export function loadGlobalNotes(): Promise<Note[]> {
+  return invoke("cmd_load_global_notes");
+}
+
+export function loadProjectNotes(projectPath: string): Promise<Note[]> {
+  return invoke("cmd_load_project_notes", { projectPath });
+}
+
+export function saveNote(note: Note): Promise<void> {
+  return invoke("cmd_save_note", { note });
+}
+
+export function deleteNote(noteId: string, encodedProjectId: string | null): Promise<void> {
+  return invoke("cmd_delete_note", { noteId, encodedProjectId });
 }
 
 export async function gitStatus(cwd: string): Promise<GitStatus> {

@@ -5,6 +5,7 @@ pub mod hooks;
 pub mod inbox;
 pub mod integrations;
 pub mod issues;
+pub mod notes;
 pub mod plans;
 pub mod projects;
 pub mod pty;

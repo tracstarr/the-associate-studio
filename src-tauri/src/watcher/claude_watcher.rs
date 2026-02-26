@@ -63,6 +63,7 @@ pub fn start_claude_watcher(app_handle: tauri::AppHandle) {
     let projects_dir = claude_home.join("projects");
     let todos_dir = claude_home.join("todos");
     let plans_dir = claude_home.join("plans");
+    let notes_dir = claude_home.join("notes");
 
     watcher
         .watch(&teams_dir, RecursiveMode::Recursive)
@@ -78,6 +79,9 @@ pub fn start_claude_watcher(app_handle: tauri::AppHandle) {
         .ok();
     watcher
         .watch(&plans_dir, RecursiveMode::NonRecursive)
+        .ok();
+    watcher
+        .watch(&notes_dir, RecursiveMode::NonRecursive)
         .ok();
 
     let ide_dir = claude_home.join("theassociate");
@@ -130,6 +134,12 @@ pub fn start_claude_watcher(app_handle: tauri::AppHandle) {
                         let _ = app_handle.emit("todos-changed", &path_str);
                     } else if is_claude_child(path, "plans") {
                         let _ = app_handle.emit("plans-changed", &path_str);
+                    } else if is_claude_child(path, "notes") {
+                        let _ = app_handle.emit("notes-changed", &path_str);
+                    } else if is_claude_child(path, "projects")
+                        && (path_str.contains("/notes/") || path_str.contains("\\notes\\"))
+                    {
+                        let _ = app_handle.emit("notes-changed", &path_str);
                     } else if path_str.contains("hook-events.jsonl") {
                         use std::io::{Read, Seek, SeekFrom};
                         if let Ok(mut file) = std::fs::File::open(path) {
