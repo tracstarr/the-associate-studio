@@ -82,3 +82,108 @@ pub fn delete_note(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::note::Note;
+
+    fn make_note(id: &str, modified: u64) -> Note {
+        Note {
+            id: id.to_string(),
+            title: format!("Note {}", id),
+            content: "Test content".to_string(),
+            project_path: None,
+            file_refs: vec![],
+            created: 1000,
+            modified,
+        }
+    }
+
+    #[test]
+    fn test_load_notes_empty_dir() {
+        let tmp = tempfile::tempdir().unwrap();
+        let notes = load_notes_from_dir(tmp.path()).unwrap();
+        assert!(notes.is_empty());
+    }
+
+    #[test]
+    fn test_load_notes_nonexistent_dir() {
+        let notes = load_notes_from_dir(Path::new("/does/not/exist")).unwrap();
+        assert!(notes.is_empty());
+    }
+
+    #[test]
+    fn test_save_and_load_global_note() {
+        let tmp = tempfile::tempdir().unwrap();
+        let note = make_note("note-1", 2000);
+
+        save_note(tmp.path(), &note).unwrap();
+        let loaded = load_global_notes(tmp.path()).unwrap();
+        assert_eq!(loaded.len(), 1);
+        assert_eq!(loaded[0].id, "note-1");
+        assert_eq!(loaded[0].title, "Note note-1");
+    }
+
+    #[test]
+    fn test_save_and_load_project_note() {
+        let tmp = tempfile::tempdir().unwrap();
+        let mut note = make_note("note-2", 3000);
+        note.project_path = Some("/dev/my-project".to_string());
+
+        save_note(tmp.path(), &note).unwrap();
+
+        let encoded = crate::data::path_encoding::encode_project_path(
+            &std::path::PathBuf::from("/dev/my-project"),
+        );
+        let loaded = load_project_notes(tmp.path(), &encoded).unwrap();
+        assert_eq!(loaded.len(), 1);
+        assert_eq!(loaded[0].id, "note-2");
+    }
+
+    #[test]
+    fn test_notes_sorted_by_modified_desc() {
+        let tmp = tempfile::tempdir().unwrap();
+        let notes_dir = tmp.path().join("notes");
+        std::fs::create_dir_all(&notes_dir).unwrap();
+
+        for (id, modified) in [("old", 1000u64), ("new", 3000), ("mid", 2000)] {
+            let note = make_note(id, modified);
+            let text = serde_json::to_string_pretty(&note).unwrap();
+            std::fs::write(notes_dir.join(format!("{}.json", id)), text).unwrap();
+        }
+
+        let loaded = load_global_notes(tmp.path()).unwrap();
+        let ids: Vec<&str> = loaded.iter().map(|n| n.id.as_str()).collect();
+        assert_eq!(ids, vec!["new", "mid", "old"]);
+    }
+
+    #[test]
+    fn test_delete_note() {
+        let tmp = tempfile::tempdir().unwrap();
+        let note = make_note("to-delete", 1000);
+        save_note(tmp.path(), &note).unwrap();
+
+        assert_eq!(load_global_notes(tmp.path()).unwrap().len(), 1);
+        delete_note(tmp.path(), "to-delete", None).unwrap();
+        assert_eq!(load_global_notes(tmp.path()).unwrap().len(), 0);
+    }
+
+    #[test]
+    fn test_delete_nonexistent_note_ok() {
+        let tmp = tempfile::tempdir().unwrap();
+        // Should not error when deleting a note that doesn't exist
+        delete_note(tmp.path(), "nonexistent", None).unwrap();
+    }
+
+    #[test]
+    fn test_ignores_non_json_files() {
+        let tmp = tempfile::tempdir().unwrap();
+        let notes_dir = tmp.path().join("notes");
+        std::fs::create_dir_all(&notes_dir).unwrap();
+        std::fs::write(notes_dir.join("readme.txt"), "Not a note").unwrap();
+
+        let loaded = load_global_notes(tmp.path()).unwrap();
+        assert!(loaded.is_empty());
+    }
+}

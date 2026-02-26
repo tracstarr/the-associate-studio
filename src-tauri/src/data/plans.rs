@@ -93,3 +93,89 @@ pub fn parse_markdown_lines(content: &str) -> Vec<MarkdownLine> {
 
     result
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_extract_title_from_heading() {
+        assert_eq!(extract_title("# My Plan\n\nContent"), "My Plan");
+    }
+
+    #[test]
+    fn test_extract_title_untitled() {
+        assert_eq!(extract_title("No heading here"), "(untitled)");
+    }
+
+    #[test]
+    fn test_extract_title_skips_empty_heading() {
+        assert_eq!(extract_title("# \n# Real Title"), "Real Title");
+    }
+
+    #[test]
+    fn test_extract_title_ignores_subheadings() {
+        assert_eq!(
+            extract_title("## Subheading\n# Title"),
+            "Title"
+        );
+    }
+
+    #[test]
+    fn test_parse_markdown_normal_lines() {
+        let lines = parse_markdown_lines("Hello\nWorld");
+        assert_eq!(lines.len(), 2);
+        assert_eq!(lines[0].kind, MarkdownLineKind::Normal);
+        assert_eq!(lines[1].kind, MarkdownLineKind::Normal);
+    }
+
+    #[test]
+    fn test_parse_markdown_headings() {
+        let content = "# H1\n## H2\n### H3\nNormal";
+        let lines = parse_markdown_lines(content);
+        assert_eq!(lines[0].kind, MarkdownLineKind::Heading);
+        assert_eq!(lines[1].kind, MarkdownLineKind::Heading);
+        assert_eq!(lines[2].kind, MarkdownLineKind::Heading);
+        assert_eq!(lines[3].kind, MarkdownLineKind::Normal);
+    }
+
+    #[test]
+    fn test_parse_markdown_code_blocks() {
+        let content = "Before\n```rust\nlet x = 1;\n```\nAfter";
+        let lines = parse_markdown_lines(content);
+        assert_eq!(lines[0].kind, MarkdownLineKind::Normal); // Before
+        assert_eq!(lines[1].kind, MarkdownLineKind::CodeFence); // ```rust
+        assert_eq!(lines[2].kind, MarkdownLineKind::CodeBlock); // let x = 1;
+        assert_eq!(lines[3].kind, MarkdownLineKind::CodeFence); // ```
+        assert_eq!(lines[4].kind, MarkdownLineKind::Normal); // After
+    }
+
+    #[test]
+    fn test_parse_markdown_heading_inside_code_block_stays_code() {
+        let content = "```\n# Not a heading\n```";
+        let lines = parse_markdown_lines(content);
+        assert_eq!(lines[1].kind, MarkdownLineKind::CodeBlock);
+    }
+
+    #[test]
+    fn test_load_plans_empty() {
+        let tmp = tempfile::tempdir().unwrap();
+        let plans = load_plans(tmp.path()).unwrap();
+        assert!(plans.is_empty());
+    }
+
+    #[test]
+    fn test_load_plans_reads_md_files() {
+        let tmp = tempfile::tempdir().unwrap();
+        let plans_dir = tmp.path().join("plans");
+        std::fs::create_dir_all(&plans_dir).unwrap();
+
+        std::fs::write(plans_dir.join("plan1.md"), "# My Plan\n\nStep 1").unwrap();
+        std::fs::write(plans_dir.join("notes.txt"), "Not a plan").unwrap();
+
+        let plans = load_plans(tmp.path()).unwrap();
+        assert_eq!(plans.len(), 1);
+        assert_eq!(plans[0].filename, "plan1.md");
+        assert_eq!(plans[0].title, "My Plan");
+    }
+}

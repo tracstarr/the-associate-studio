@@ -210,3 +210,142 @@ fn extract_message_text(envelope: &TranscriptEnvelope) -> String {
     }
     String::new()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn parse_json(json: &str) -> TranscriptEnvelope {
+        serde_json::from_str(json).unwrap()
+    }
+
+    #[test]
+    fn test_parse_user_text_message() {
+        let env = parse_json(r#"{"type":"user","message":{"content":"Hello Claude"}}"#);
+        let items = parse_envelope(&env);
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0].kind, TranscriptItemKind::User);
+        assert_eq!(items[0].text, "Hello Claude");
+    }
+
+    #[test]
+    fn test_parse_assistant_text_message() {
+        let env = parse_json(r#"{"type":"assistant","message":{"content":"Sure!"}}"#);
+        let items = parse_envelope(&env);
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0].kind, TranscriptItemKind::Assistant);
+        assert_eq!(items[0].text, "Sure!");
+    }
+
+    #[test]
+    fn test_parse_assistant_blocks() {
+        let env = parse_json(
+            r#"{"type":"assistant","message":{"content":[
+                {"type":"text","text":"Let me help"},
+                {"type":"tool_use","name":"Read","input":{"file_path":"/src/main.rs"}}
+            ]}}"#,
+        );
+        let items = parse_envelope(&env);
+        assert_eq!(items.len(), 2);
+        assert_eq!(items[0].kind, TranscriptItemKind::Assistant);
+        assert_eq!(items[0].text, "Let me help");
+        assert_eq!(items[1].kind, TranscriptItemKind::ToolUse);
+        assert!(items[1].text.contains("Read"));
+    }
+
+    #[test]
+    fn test_parse_tool_result_string() {
+        let env = parse_json(
+            r#"{"type":"assistant","message":{"content":[
+                {"type":"tool_result","content":"File contents here"}
+            ]}}"#,
+        );
+        let items = parse_envelope(&env);
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0].kind, TranscriptItemKind::ToolResult);
+        assert_eq!(items[0].text, "File contents here");
+    }
+
+    #[test]
+    fn test_parse_tool_result_array() {
+        let env = parse_json(
+            r#"{"type":"assistant","message":{"content":[
+                {"type":"tool_result","content":[{"text":"Result text"}]}
+            ]}}"#,
+        );
+        let items = parse_envelope(&env);
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0].text, "Result text");
+    }
+
+    #[test]
+    fn test_parse_system_message() {
+        let env = parse_json(r#"{"type":"system","message":{"content":"System init"}}"#);
+        let items = parse_envelope(&env);
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0].kind, TranscriptItemKind::System);
+        assert_eq!(items[0].text, "System init");
+    }
+
+    #[test]
+    fn test_parse_progress_message() {
+        let env = parse_json(r#"{"type":"progress","content":"Processing..."}"#);
+        let items = parse_envelope(&env);
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0].kind, TranscriptItemKind::Progress);
+        assert_eq!(items[0].text, "Processing...");
+    }
+
+    #[test]
+    fn test_unknown_type_returns_empty() {
+        let env = parse_json(r#"{"type":"unknown_type"}"#);
+        let items = parse_envelope(&env);
+        assert!(items.is_empty());
+    }
+
+    #[test]
+    fn test_empty_message_returns_empty() {
+        let env = parse_json(r#"{"type":"user","message":{"content":""}}"#);
+        let items = parse_envelope(&env);
+        assert!(items.is_empty());
+    }
+
+    #[test]
+    fn test_no_message_returns_empty() {
+        let env = parse_json(r#"{"type":"user"}"#);
+        let items = parse_envelope(&env);
+        assert!(items.is_empty());
+    }
+
+    #[test]
+    fn test_timestamp_preserved() {
+        let env = parse_json(
+            r#"{"type":"user","timestamp":"2025-06-15T10:30:00Z","message":{"content":"Hi"}}"#,
+        );
+        let items = parse_envelope(&env);
+        assert!(items[0].timestamp.is_some());
+    }
+
+    #[test]
+    fn test_tool_use_without_input() {
+        let env = parse_json(
+            r#"{"type":"assistant","message":{"content":[
+                {"type":"tool_use","name":"Bash"}
+            ]}}"#,
+        );
+        let items = parse_envelope(&env);
+        assert_eq!(items[0].kind, TranscriptItemKind::ToolUse);
+        assert_eq!(items[0].text, "Bash");
+    }
+
+    #[test]
+    fn test_tool_use_without_name() {
+        let env = parse_json(
+            r#"{"type":"assistant","message":{"content":[
+                {"type":"tool_use"}
+            ]}}"#,
+        );
+        let items = parse_envelope(&env);
+        assert_eq!(items[0].text, "unknown");
+    }
+}

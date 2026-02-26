@@ -4742,6 +4742,7 @@ dependencies = [
  "tauri-plugin-opener",
  "tauri-plugin-shell",
  "tauri-plugin-store",
+ "tempfile",
  "tokio",
  "windows",
 ]

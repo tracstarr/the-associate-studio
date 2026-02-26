@@ -170,3 +170,124 @@ fn build_entry_from_jsonl(path: &Path, session_id: &str) -> Option<SessionEntry>
         is_sidechain: None,
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+
+    #[test]
+    fn test_load_session_index_missing_dir() {
+        let tmp = tempfile::tempdir().unwrap();
+        let result = load_session_index(&tmp.path().join("nonexistent")).unwrap();
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_load_session_index_from_file() {
+        let tmp = tempfile::tempdir().unwrap();
+        let index = r#"{
+            "originalPath": "C:\\dev\\app",
+            "entries": [
+                {
+                    "sessionId": "abc-123",
+                    "firstPrompt": "Hello",
+                    "messageCount": 5,
+                    "modified": "2025-01-15T10:00:00Z"
+                }
+            ]
+        }"#;
+        std::fs::write(tmp.path().join("sessions-index.json"), index).unwrap();
+
+        let result = load_session_index(tmp.path()).unwrap().unwrap();
+        assert_eq!(result.entries.len(), 1);
+        assert_eq!(result.entries[0].session_id, "abc-123");
+        assert_eq!(result.entries[0].first_prompt.as_deref(), Some("Hello"));
+    }
+
+    #[test]
+    fn test_load_sessions_filters_sidechains() {
+        let tmp = tempfile::tempdir().unwrap();
+        let index = r#"{
+            "entries": [
+                { "sessionId": "main-1", "modified": "2025-01-15T10:00:00Z" },
+                { "sessionId": "side-1", "isSidechain": true, "modified": "2025-01-15T11:00:00Z" },
+                { "sessionId": "main-2", "modified": "2025-01-15T09:00:00Z" }
+            ]
+        }"#;
+        std::fs::write(tmp.path().join("sessions-index.json"), index).unwrap();
+
+        let sessions = load_sessions(tmp.path()).unwrap();
+        let ids: Vec<&str> = sessions.iter().map(|s| s.session_id.as_str()).collect();
+        assert!(ids.contains(&"main-1"));
+        assert!(ids.contains(&"main-2"));
+        assert!(!ids.contains(&"side-1"));
+    }
+
+    #[test]
+    fn test_load_sessions_sorts_by_modified_desc() {
+        let tmp = tempfile::tempdir().unwrap();
+        let index = r#"{
+            "entries": [
+                { "sessionId": "old", "modified": "2025-01-01T00:00:00Z" },
+                { "sessionId": "new", "modified": "2025-06-01T00:00:00Z" },
+                { "sessionId": "mid", "modified": "2025-03-01T00:00:00Z" }
+            ]
+        }"#;
+        std::fs::write(tmp.path().join("sessions-index.json"), index).unwrap();
+
+        let sessions = load_sessions(tmp.path()).unwrap();
+        let ids: Vec<&str> = sessions.iter().map(|s| s.session_id.as_str()).collect();
+        assert_eq!(ids, vec!["new", "mid", "old"]);
+    }
+
+    #[test]
+    fn test_scan_jsonl_files_empty_dir() {
+        let tmp = tempfile::tempdir().unwrap();
+        let sessions = load_sessions(tmp.path()).unwrap();
+        assert!(sessions.is_empty());
+    }
+
+    #[test]
+    fn test_scan_jsonl_extracts_first_prompt() {
+        let tmp = tempfile::tempdir().unwrap();
+        let mut file =
+            std::fs::File::create(tmp.path().join("sess-001.jsonl")).unwrap();
+        writeln!(
+            file,
+            r#"{{"type":"user","message":"Help me debug this","timestamp":"2025-01-15T10:00:00Z","gitBranch":"main","cwd":"C:\\dev"}}"#
+        )
+        .unwrap();
+        writeln!(
+            file,
+            r#"{{"type":"assistant","message":"Sure!","timestamp":"2025-01-15T10:00:05Z"}}"#
+        )
+        .unwrap();
+
+        let sessions = load_sessions(tmp.path()).unwrap();
+        assert_eq!(sessions.len(), 1);
+        assert_eq!(sessions[0].session_id, "sess-001");
+        assert_eq!(
+            sessions[0].first_prompt.as_deref(),
+            Some("Help me debug this")
+        );
+        assert_eq!(sessions[0].git_branch.as_deref(), Some("main"));
+        assert_eq!(sessions[0].message_count, Some(2));
+    }
+
+    #[test]
+    fn test_scan_jsonl_ignores_non_jsonl_files() {
+        let tmp = tempfile::tempdir().unwrap();
+        std::fs::write(tmp.path().join("readme.txt"), "not a session").unwrap();
+        std::fs::write(tmp.path().join("data.json"), "{}").unwrap();
+
+        let sessions = load_sessions(tmp.path()).unwrap();
+        assert!(sessions.is_empty());
+    }
+
+    #[test]
+    fn test_nonexistent_dir_returns_empty() {
+        let result = load_sessions(Path::new("/does/not/exist/at/all")).unwrap();
+        assert!(result.is_empty());
+    }
+}

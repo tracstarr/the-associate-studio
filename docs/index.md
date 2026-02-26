@@ -17,6 +17,7 @@
 | [Terminal & PTY](terminal.md) | How Claude CLI is spawned, ConPTY, xterm.js wiring, resize |
 | [Data Formats](data-formats.md) | `~/.claude/` file layout, path encoding, session JSONL, teams JSON |
 | [Integrations](integrations.md) | GitHub OAuth device flow, Linear API key, Jira token, `gh` CLI wiring |
+| [Testing](testing.md) | Vitest + RTL frontend tests, Rust `#[cfg(test)]` backend tests, CI integration |
 
 ## Design
 
