@@ -18,6 +18,7 @@ export interface SessionTab {
   summaryProjectDir?: string; // encoded project dir for type === "summary"
   prNumber?: number; // only for type === "pr-detail"
   markdownContent?: string; // inline markdown for type === "extension"
+  forkSession?: boolean; // when true, spawns with --fork-session flag
 }
 
 interface SessionStore {

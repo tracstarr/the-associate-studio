@@ -8,11 +8,12 @@ TerminalView (React)
   +-- FitAddon -> measures container -> rows x cols
   +-- WebLinksAddon (clickable URLs)
   +-- SearchAddon (Ctrl+F search)
-  +-- invoke("pty_spawn", { sessionId, resumeSessionId?, cwd, rows, cols })
+  +-- invoke("pty_spawn", { sessionId, resumeSessionId?, forkSession?, cwd, rows, cols })
         +-- Rust: portable_pty::native_pty_system()
         +-- pty_system.openpty(PtySize { rows, cols })
         +-- CommandBuilder::new("claude").cwd(cwd)
         +-- if resumeSessionId: cmd.args(["--resume", id])
+        +-- if forkSession && resumeSessionId: cmd.arg("--fork-session")
         +-- env_remove("CLAUDECODE") <-- critical
         +-- env("TERM", "xterm-256color")
         +-- env("COLORTERM", "truecolor")
@@ -57,6 +58,10 @@ Two env vars are explicitly set for proper terminal behavior:
 ## Session resume
 
 `pty_spawn` accepts an optional `resume_session_id`. When provided, the Claude CLI is spawned with `--resume {id}` to continue an existing conversation.
+
+## Session fork
+
+`pty_spawn` accepts an optional `fork_session: bool`. When `true` (and a `resume_session_id` is also provided), the CLI is spawned with `--resume {id} --fork-session`. This creates a new independent session that branches from the history of the resumed session — the original session is not modified. The fork is wired through the UI via the `forkSession?: boolean` field on `SessionTab`, set when the user chooses "Fork into new session" from the session context menu.
 
 ## Terminal sizing
 
@@ -122,7 +127,7 @@ The reader is detached into a background thread and not stored in the struct (it
 
 | Command | Description |
 |---------|-------------|
-| `pty_spawn` | Open PTY, spawn `claude` (with optional `--resume`), start reader thread |
+| `pty_spawn` | Open PTY, spawn `claude` (with optional `--resume` and `--fork-session`), start reader thread |
 | `pty_write` | Write user input to PTY stdin, flush |
 | `pty_resize` | Resize PTY to new rows/cols |
 | `pty_kill` | Kill child process and remove session from map |

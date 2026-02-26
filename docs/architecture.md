@@ -68,6 +68,7 @@ App.tsx
         ActivityBar     -- 48px icon strip (Projects, Git, Files, PRs, Bottom toggle, Settings)
         PanelGroup (horizontal)
           Sidebar       -- ProjectSwitcher | GitStatusPanel | FileBrowserPanel | PRListPanel
+            SessionContextMenu  -- right-click context menu for session items (Resume/Fork/Delete)
           MainArea      -- per-project tab bar + content area
             TabBar      -- open session tabs with context menus (close all/others/left/right)
             TerminalView     -- xterm.js + PTY per tab (hidden, never unmounted)
@@ -323,7 +324,7 @@ Summaries can be loaded via `cmd_load_summaries(project_dir, session_id)` and re
 
 | Module | Commands |
 |--------|----------|
-| `sessions` | `cmd_load_sessions`, `cmd_load_transcript` |
+| `sessions` | `cmd_load_sessions`, `cmd_load_transcript`, `cmd_delete_session` |
 | `teams` | `cmd_load_teams`, `cmd_delete_team` |
 | `tasks` | `cmd_load_tasks` |
 | `inbox` | `cmd_load_inbox`, `cmd_send_inbox_message` |
@@ -402,6 +403,8 @@ When no `docsFolder` is configured, the Docs section in the context panel automa
 
 4. **Tab context menus**: Right-click on tabs provides Close, Close Others, Close to Left, Close to Right, Close All -- with warning dialogs for destructive actions.
 
-5. **Dual activity bars**: Left ActivityBar controls sidebar views, Right ActivityBar controls right panel views. Both are 48px fixed-width strips.
+5. **Session context menus**: Right-click on any session in the sidebar (`ProjectSwitcher`) shows a `SessionContextMenu` with Resume in terminal, Fork into new session, and Delete. Delete is disabled for live (pulsing) sessions. All sessions are shown regardless of whether hook events were observed for them (externally-run and historical sessions are always visible; `isLive`/`isOpen` indicators simply show as absent).
 
-6. **Notes as first-class UI objects**: Notes live in `~/.claude/notes/` (global) or `~/.claude/projects/{encoded}/notes/` (per-project) as individual JSON files. The `pendingNoteRef` field in `uiStore` is the handoff point between the Monaco editor's selection listener and the NotesPanel — it carries `{ filePath, lineStart, lineEnd, quote }` and clears itself after the panel consumes it. File tab dot indicators are computed in `MainArea` via a `useMemo` over all note file refs, avoiding any per-tab store lookups.
+6. **Dual activity bars**: Left ActivityBar controls sidebar views, Right ActivityBar controls right panel views. Both are 48px fixed-width strips.
+
+7. **Notes as first-class UI objects**: Notes live in `~/.claude/notes/` (global) or `~/.claude/projects/{encoded}/notes/` (per-project) as individual JSON files. The `pendingNoteRef` field in `uiStore` is the handoff point between the Monaco editor's selection listener and the NotesPanel — it carries `{ filePath, lineStart, lineEnd, quote }` and clears itself after the panel consumes it. File tab dot indicators are computed in `MainArea` via a `useMemo` over all note file refs, avoiding any per-tab store lookups.

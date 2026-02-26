@@ -11,11 +11,12 @@ import "@xterm/xterm/css/xterm.css";
 interface TerminalViewProps {
   sessionId: string;
   resumeSessionId?: string;
+  forkSession?: boolean;
   cwd: string;
   isActive: boolean;
 }
 
-export function TerminalView({ sessionId, resumeSessionId, cwd, isActive }: TerminalViewProps) {
+export function TerminalView({ sessionId, resumeSessionId, forkSession, cwd, isActive }: TerminalViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
@@ -124,6 +125,7 @@ export function TerminalView({ sessionId, resumeSessionId, cwd, isActive }: Term
     invoke("pty_spawn", {
       sessionId,
       resumeSessionId: resumeSessionId ?? null,
+      forkSession: forkSession ?? false,
       cwd,
       rows: dims.rows,
       cols: dims.cols,
@@ -165,7 +167,7 @@ export function TerminalView({ sessionId, resumeSessionId, cwd, isActive }: Term
       termRef.current = null;
       fitAddonRef.current = null;
     };
-  }, [sessionId, resumeSessionId, cwd]);
+  }, [sessionId, resumeSessionId, forkSession, cwd]);
 
   // Focus terminal when tab becomes active, and re-fit to correct any squish
   // from display:none → display:block not triggering ResizeObserver

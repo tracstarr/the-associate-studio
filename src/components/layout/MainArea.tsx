@@ -285,6 +285,7 @@ function MainAreaComponent({ projectId: projectIdProp }: { projectId?: string })
                 <TerminalView
                   sessionId={tab.id}
                   resumeSessionId={tab.sessionId}
+                  forkSession={tab.forkSession}
                   cwd={tab.projectDir || "C:/dev"}
                   isActive={activeTabId === tab.id}
                 />

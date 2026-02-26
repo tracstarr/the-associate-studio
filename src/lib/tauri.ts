@@ -196,6 +196,10 @@ export async function loadSessions(
   return invoke("cmd_load_sessions", { projectDir });
 }
 
+export async function deleteSession(projectDir: string, sessionId: string): Promise<void> {
+  return invoke("cmd_delete_session", { projectDir, sessionId });
+}
+
 export async function loadTranscript(
   sessionPath: string,
   offset: number

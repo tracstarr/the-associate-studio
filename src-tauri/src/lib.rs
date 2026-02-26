@@ -58,6 +58,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::sessions::cmd_load_sessions,
             commands::sessions::cmd_load_transcript,
+            commands::sessions::cmd_delete_session,
             commands::teams::cmd_load_teams,
             commands::teams::cmd_delete_team,
             commands::tasks::cmd_load_tasks,

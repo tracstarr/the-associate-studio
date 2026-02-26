@@ -1,17 +1,24 @@
 import { Terminal, GitBranch, X } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useProjectsStore } from "@/stores/projectsStore";
 import { useSessionStore } from "@/stores/sessionStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useActiveProjectTabs } from "@/hooks/useActiveProjectTabs";
 import { useSessions } from "@/hooks/useClaudeData";
 import type { SessionEntry } from "@/lib/tauri";
+import { deleteSession } from "@/lib/tauri";
+import { SessionContextMenu } from "@/components/sessions/SessionContextMenu";
 import { cn } from "@/lib/utils";
 
 export function ProjectSwitcher() {
   const { projects, activeProjectId } = useProjectsStore();
+  const queryClient = useQueryClient();
   const [namingSession, setNamingSession] = useState(false);
   const [sessionName, setSessionName] = useState("");
+  const [contextMenu, setContextMenu] = useState<{
+    x: number; y: number; session: SessionEntry; isLive: boolean;
+  } | null>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
 
   const { openTabs, activeTabId, projectId } = useActiveProjectTabs();
@@ -102,6 +109,46 @@ export function ProjectSwitcher() {
     );
   };
 
+  const handleResumeDirectly = (session: SessionEntry) => {
+    if (!projectId) return;
+    const existing = openTabs.find(
+      (t) => t.resolvedSessionId === session.sessionId || t.sessionId === session.sessionId
+    );
+    if (existing) { setActiveTab(existing.id, projectId); return; }
+    openTab(
+      {
+        id: `session-${session.sessionId}`,
+        title: session.summary || session.sessionId.slice(0, 8),
+        projectDir: activeProject?.path ?? "",
+        sessionId: session.sessionId,
+        spawnedAt: Date.now(),
+      },
+      projectId
+    );
+  };
+
+  const handleForkSession = (session: SessionEntry) => {
+    if (!projectId) return;
+    openTab(
+      {
+        id: `session-${Date.now()}`,
+        title: `Fork: ${session.summary || session.sessionId.slice(0, 8)}`,
+        projectDir: activeProject?.path ?? "",
+        sessionId: session.sessionId,
+        forkSession: true,
+        spawnedAt: Date.now(),
+      },
+      projectId
+    );
+  };
+
+  const handleDeleteSession = async (session: SessionEntry) => {
+    if (!activeProject) return;
+    await deleteSession(activeProject.path, session.sessionId);
+    queryClient.invalidateQueries({ queryKey: ["sessions"] });
+    setContextMenu(null);
+  };
+
   const openSessionIds = openTabs
     .flatMap((t) => [t.resolvedSessionId, t.sessionId])
     .filter(Boolean) as string[];
@@ -186,7 +233,7 @@ export function ProjectSwitcher() {
           </div>
         )}
         {sessions
-          ?.filter((s) => !s.isSidechain && knownSessions[s.sessionId] !== undefined)
+          ?.filter((s) => !s.isSidechain)
           .map((session) => {
             const isLive = knownSessions[session.sessionId] === "active";
             const subs = activeSubagents[session.sessionId] ?? [];
@@ -199,9 +246,25 @@ export function ProjectSwitcher() {
                 subagentCount={subs.length}
                 subagentTypes={subs.map((a) => a.agent_type).filter(Boolean) as string[]}
                 onClick={() => handleOpenSession(session)}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  setContextMenu({ x: e.clientX, y: e.clientY, session, isLive });
+                }}
               />
             );
           })}
+        {contextMenu && (
+          <SessionContextMenu
+            x={contextMenu.x}
+            y={contextMenu.y}
+            isOpen={openSessionIds.includes(contextMenu.session.sessionId)}
+            isLive={contextMenu.isLive}
+            onClose={() => setContextMenu(null)}
+            onResume={() => { setContextMenu(null); handleResumeDirectly(contextMenu.session); }}
+            onFork={() => { setContextMenu(null); handleForkSession(contextMenu.session); }}
+            onDelete={() => handleDeleteSession(contextMenu.session)}
+          />
+        )}
       </div>
     </div>
   );
@@ -214,6 +277,7 @@ function SessionItem({
   subagentCount,
   subagentTypes,
   onClick,
+  onContextMenu,
 }: {
   session: SessionEntry;
   isOpen: boolean;
@@ -221,6 +285,7 @@ function SessionItem({
   subagentCount: number;
   subagentTypes: string[];
   onClick: () => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
 }) {
   const title = session.summary || session.sessionId.slice(0, 8);
   const timeStr = session.modified ? formatRelativeTime(new Date(session.modified)) : "";
@@ -228,6 +293,7 @@ function SessionItem({
   return (
     <button
       onClick={onClick}
+      onContextMenu={onContextMenu}
       className={cn(
         "flex flex-col w-full px-3 py-2.5 text-left transition-all duration-200 mx-1 my-0.5 rounded-lg",
         isOpen

@@ -16,6 +16,7 @@ pub struct PtySession {
 pub async fn pty_spawn(
     session_id: String,
     resume_session_id: Option<String>,
+    fork_session: bool,
     cwd: String,
     rows: u16,
     cols: u16,
@@ -47,6 +48,9 @@ pub async fn pty_spawn(
 
     if let Some(ref id) = resume_session_id {
         cmd.args(["--resume", id]);
+        if fork_session {
+            cmd.arg("--fork-session");
+        }
     }
 
     if skip_permissions {

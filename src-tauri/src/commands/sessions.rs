@@ -1,7 +1,7 @@
 use crate::data::path_encoding::encode_project_path;
 use crate::data::sessions::load_sessions;
 use crate::data::transcripts::TranscriptReader;
-use crate::models::session::SessionEntry;
+use crate::models::session::{SessionEntry, SessionIndex};
 use crate::models::transcript::TranscriptItem;
 use std::path::PathBuf;
 
@@ -21,6 +21,34 @@ pub async fn cmd_load_sessions(project_dir: String) -> Result<Vec<SessionEntry>,
     let encoded = encode_project_path(&PathBuf::from(&project_dir));
     let project_sessions_dir = claude_home.join("projects").join(&encoded);
     load_sessions(&project_sessions_dir).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn cmd_delete_session(
+    project_dir: String,
+    session_id: String,
+) -> Result<(), String> {
+    let claude_home = get_claude_home()?;
+    let encoded = encode_project_path(&PathBuf::from(&project_dir));
+    let project_sessions_dir = claude_home.join("projects").join(&encoded);
+
+    // Delete the .jsonl transcript file
+    let transcript = project_sessions_dir.join(format!("{}.jsonl", session_id));
+    if transcript.exists() {
+        std::fs::remove_file(&transcript).map_err(|e| e.to_string())?;
+    }
+
+    // Remove from sessions-index.json
+    let index_path = project_sessions_dir.join("sessions-index.json");
+    if index_path.exists() {
+        let data = std::fs::read_to_string(&index_path).map_err(|e| e.to_string())?;
+        let mut index: SessionIndex = serde_json::from_str(&data).map_err(|e| e.to_string())?;
+        index.entries.retain(|e| e.session_id != session_id);
+        let updated = serde_json::to_string_pretty(&index).map_err(|e| e.to_string())?;
+        std::fs::write(&index_path, updated).map_err(|e| e.to_string())?;
+    }
+
+    Ok(())
 }
 
 #[tauri::command]
