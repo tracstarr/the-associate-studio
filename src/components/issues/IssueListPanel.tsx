@@ -17,9 +17,9 @@ export function IssueListPanel() {
   const hasJira = !!(jiraBaseUrl && jiraEmail && jiraApiToken);
   const [state, setState] = useState<"open" | "closed" | "all">("open");
 
-  const { data: ghIssues, isLoading: ghLoading, error: ghError, refetch: ghRefetch } = useIssues(activeProjectDir, state);
+  const { data: ghIssues, isLoading: ghLoading, refetch: ghRefetch } = useIssues(activeProjectDir, state);
   const { data: linearIssues, isLoading: linearLoading, refetch: linearRefetch } = useLinearIssues(!!linearApiKey, state);
-  const { data: jiraIssues, isLoading: jiraLoading, error: jiraError, refetch: jiraRefetch } = useJiraIssues(hasJira, jiraBaseUrl, jiraEmail, state);
+  const { data: jiraIssues, isLoading: jiraLoading, refetch: jiraRefetch } = useJiraIssues(hasJira, jiraBaseUrl, jiraEmail, state);
 
   const issues = useMemo(() => {
     const all = [...(ghIssues ?? []), ...(linearIssues ?? []), ...(jiraIssues ?? [])];
@@ -71,17 +71,7 @@ export function IssueListPanel() {
         {isLoading && (
           <div className="p-3 text-xs text-[var(--color-text-muted)]">Loading...</div>
         )}
-        {!isLoading && ghError && (
-          <div className="p-3 text-xs text-[var(--color-status-error)]">
-            {ghError instanceof Error ? ghError.message : "Failed to load GitHub issues"}
-          </div>
-        )}
-        {!isLoading && jiraError && (
-          <div className="p-3 text-xs text-[var(--color-status-error)]">
-            Jira: {jiraError instanceof Error ? jiraError.message : String(jiraError)}
-          </div>
-        )}
-        {!isLoading && !ghError && !jiraError && issues.length === 0 && (
+        {!isLoading && issues.length === 0 && (
           <div className="p-3 text-xs text-[var(--color-text-muted)] text-center">
             No {state === "all" ? "" : state} issues
           </div>

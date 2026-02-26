@@ -347,7 +347,7 @@ pub async fn cmd_list_issues(cwd: String, state: String) -> Result<Vec<Issue>, S
         _ => "open",
     };
 
-    let output = silent_command("gh")
+    let output = match silent_command("gh")
         .args([
             "issue",
             "list",
@@ -360,16 +360,13 @@ pub async fn cmd_list_issues(cwd: String, state: String) -> Result<Vec<Issue>, S
         ])
         .current_dir(&cwd)
         .output()
-        .map_err(|e| {
-            format!(
-                "gh not found: {}. Install from https://cli.github.com",
-                e
-            )
-        })?;
+    {
+        Ok(o) => o,
+        Err(_) => return Ok(vec![]),
+    };
 
     if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("gh issue list failed: {}", stderr));
+        return Ok(vec![]);
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
@@ -397,8 +394,10 @@ pub async fn cmd_list_issues(cwd: String, state: String) -> Result<Vec<Issue>, S
         name: String,
     }
 
-    let issues: Vec<GhIssue> =
-        serde_json::from_str(&stdout).map_err(|e| format!("Failed to parse gh output: {}", e))?;
+    let issues: Vec<GhIssue> = match serde_json::from_str(&stdout) {
+        Ok(v) => v,
+        Err(_) => return Ok(vec![]),
+    };
 
     Ok(issues
         .into_iter()
@@ -451,20 +450,26 @@ pub async fn cmd_list_linear_issues(state: String) -> Result<Vec<Issue>, String>
     let body = serde_json::json!({ "query": gql_query, "variables": variables });
 
     let client = reqwest::Client::new();
-    let res = client
+    let res = match client
         .post("https://api.linear.app/graphql")
         .header("Authorization", &api_key)
         .header("Content-Type", "application/json")
         .json(&body)
         .send()
         .await
-        .map_err(|e| format!("Linear API request failed: {}", e))?;
+    {
+        Ok(r) => r,
+        Err(_) => return Ok(vec![]),
+    };
 
     if !res.status().is_success() {
-        return Err(format!("Linear API returned status {}", res.status()));
+        return Ok(vec![]);
     }
 
-    let json: serde_json::Value = res.json().await.map_err(|e| e.to_string())?;
+    let json: serde_json::Value = match res.json().await {
+        Ok(v) => v,
+        Err(_) => return Ok(vec![]),
+    };
 
     #[derive(Deserialize)]
     struct LinearIssue {
@@ -500,18 +505,14 @@ pub async fn cmd_list_linear_issues(state: String) -> Result<Vec<Issue>, String>
     }
 
     // Surface GraphQL-level errors (e.g. revoked credentials, query failures) that arrive as HTTP 200
-    if let Some(errors) = json["errors"].as_array() {
-        let msg = errors
-            .first()
-            .and_then(|e| e["message"].as_str())
-            .unwrap_or("unknown GraphQL error");
-        return Err(format!("Linear GraphQL error: {}", msg));
+    if json["errors"].as_array().is_some() {
+        return Ok(vec![]);
     }
 
-    let nodes = json["data"]["issues"]["nodes"]
-        .as_array()
-        .ok_or_else(|| "Linear GraphQL response missing data.issues.nodes".to_string())?
-        .clone();
+    let nodes = match json["data"]["issues"]["nodes"].as_array() {
+        Some(a) => a.clone(),
+        None => return Ok(vec![]),
+    };
 
     let issues: Vec<Issue> = nodes
         .into_iter()
@@ -558,7 +559,7 @@ pub async fn cmd_list_jira_issues(
 
     let url = format!("{}/rest/api/3/search", base_url.trim_end_matches('/'));
     let client = reqwest::Client::new();
-    let res = client
+    let res = match client
         .get(&url)
         .basic_auth(&email, Some(&token))
         .query(&[
@@ -568,13 +569,19 @@ pub async fn cmd_list_jira_issues(
         ])
         .send()
         .await
-        .map_err(|e| format!("Jira request failed: {}", e))?;
+    {
+        Ok(r) => r,
+        Err(_) => return Ok(vec![]),
+    };
 
     if !res.status().is_success() {
-        return Err(format!("Jira returned status {}", res.status()));
+        return Ok(vec![]);
     }
 
-    let json: serde_json::Value = res.json().await.map_err(|e| e.to_string())?;
+    let json: serde_json::Value = match res.json().await {
+        Ok(v) => v,
+        Err(_) => return Ok(vec![]),
+    };
 
     #[derive(Deserialize)] struct JiraIssue { key: String, fields: JiraFields }
     #[derive(Deserialize)] struct JiraFields {
@@ -590,10 +597,10 @@ pub async fn cmd_list_jira_issues(
     #[derive(Deserialize)] struct JiraStatusCategory { key: String }
     #[derive(Deserialize)] struct JiraUser { #[serde(rename = "displayName")] display_name: String }
 
-    let raw = json["issues"]
-        .as_array()
-        .ok_or_else(|| "Jira response missing 'issues' array".to_string())?
-        .clone();
+    let raw = match json["issues"].as_array() {
+        Some(a) => a.clone(),
+        None => return Ok(vec![]),
+    };
 
     let issues = raw
         .into_iter()

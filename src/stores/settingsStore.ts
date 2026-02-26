@@ -62,27 +62,27 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
 
   setFontSize: (fontSize) => {
     set({ fontSize });
-    persistConfig({ fontSize, fontFamily: get().fontFamily, githubClientId: get().githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail: get().jiraEmail, openStartupFiles: get().openStartupFiles, dangerouslySkipPermissions: get().dangerouslySkipPermissions, nativeNotificationsEnabled: get().nativeNotificationsEnabled });
+    persistConfig({ fontSize, fontFamily: get().fontFamily, githubClientId: get().githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail: get().jiraEmail, jiraUsername: get().jiraUsername, openStartupFiles: get().openStartupFiles, dangerouslySkipPermissions: get().dangerouslySkipPermissions, nativeNotificationsEnabled: get().nativeNotificationsEnabled });
   },
   setFontFamily: (fontFamily) => {
     set({ fontFamily });
-    persistConfig({ fontSize: get().fontSize, fontFamily, githubClientId: get().githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail: get().jiraEmail, openStartupFiles: get().openStartupFiles, dangerouslySkipPermissions: get().dangerouslySkipPermissions, nativeNotificationsEnabled: get().nativeNotificationsEnabled });
+    persistConfig({ fontSize: get().fontSize, fontFamily, githubClientId: get().githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail: get().jiraEmail, jiraUsername: get().jiraUsername, openStartupFiles: get().openStartupFiles, dangerouslySkipPermissions: get().dangerouslySkipPermissions, nativeNotificationsEnabled: get().nativeNotificationsEnabled });
   },
   setOpenStartupFiles: (openStartupFiles) => {
     set({ openStartupFiles });
-    persistConfig({ fontSize: get().fontSize, fontFamily: get().fontFamily, githubClientId: get().githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail: get().jiraEmail, openStartupFiles, dangerouslySkipPermissions: get().dangerouslySkipPermissions, nativeNotificationsEnabled: get().nativeNotificationsEnabled });
+    persistConfig({ fontSize: get().fontSize, fontFamily: get().fontFamily, githubClientId: get().githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail: get().jiraEmail, jiraUsername: get().jiraUsername, openStartupFiles, dangerouslySkipPermissions: get().dangerouslySkipPermissions, nativeNotificationsEnabled: get().nativeNotificationsEnabled });
   },
   setDangerouslySkipPermissions: (dangerouslySkipPermissions) => {
     set({ dangerouslySkipPermissions });
-    persistConfig({ fontSize: get().fontSize, fontFamily: get().fontFamily, githubClientId: get().githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail: get().jiraEmail, openStartupFiles: get().openStartupFiles, dangerouslySkipPermissions, nativeNotificationsEnabled: get().nativeNotificationsEnabled });
+    persistConfig({ fontSize: get().fontSize, fontFamily: get().fontFamily, githubClientId: get().githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail: get().jiraEmail, jiraUsername: get().jiraUsername, openStartupFiles: get().openStartupFiles, dangerouslySkipPermissions, nativeNotificationsEnabled: get().nativeNotificationsEnabled });
   },
   setNativeNotificationsEnabled: (nativeNotificationsEnabled) => {
     set({ nativeNotificationsEnabled });
-    persistConfig({ fontSize: get().fontSize, fontFamily: get().fontFamily, githubClientId: get().githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail: get().jiraEmail, openStartupFiles: get().openStartupFiles, dangerouslySkipPermissions: get().dangerouslySkipPermissions, nativeNotificationsEnabled });
+    persistConfig({ fontSize: get().fontSize, fontFamily: get().fontFamily, githubClientId: get().githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail: get().jiraEmail, jiraUsername: get().jiraUsername, openStartupFiles: get().openStartupFiles, dangerouslySkipPermissions: get().dangerouslySkipPermissions, nativeNotificationsEnabled });
   },
   setGithubClientId: (githubClientId) => {
     set({ githubClientId });
-    persistConfig({ fontSize: get().fontSize, fontFamily: get().fontFamily, githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail: get().jiraEmail, openStartupFiles: get().openStartupFiles, dangerouslySkipPermissions: get().dangerouslySkipPermissions, nativeNotificationsEnabled: get().nativeNotificationsEnabled });
+    persistConfig({ fontSize: get().fontSize, fontFamily: get().fontFamily, githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail: get().jiraEmail, jiraUsername: get().jiraUsername, openStartupFiles: get().openStartupFiles, dangerouslySkipPermissions: get().dangerouslySkipPermissions, nativeNotificationsEnabled: get().nativeNotificationsEnabled });
   },
   setGithubToken: (githubToken) => set({ githubToken }),
   setGithubUsername: (githubUsername) => set({ githubUsername }),
@@ -90,14 +90,17 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   setLinearUsername: (linearUsername) => set({ linearUsername }),
   setJiraBaseUrl: (jiraBaseUrl) => {
     set({ jiraBaseUrl });
-    persistConfig({ fontSize: get().fontSize, fontFamily: get().fontFamily, githubClientId: get().githubClientId, jiraBaseUrl, jiraEmail: get().jiraEmail, openStartupFiles: get().openStartupFiles, dangerouslySkipPermissions: get().dangerouslySkipPermissions, nativeNotificationsEnabled: get().nativeNotificationsEnabled });
+    persistConfig({ fontSize: get().fontSize, fontFamily: get().fontFamily, githubClientId: get().githubClientId, jiraBaseUrl, jiraEmail: get().jiraEmail, jiraUsername: get().jiraUsername, openStartupFiles: get().openStartupFiles, dangerouslySkipPermissions: get().dangerouslySkipPermissions, nativeNotificationsEnabled: get().nativeNotificationsEnabled });
   },
   setJiraEmail: (jiraEmail) => {
     set({ jiraEmail });
-    persistConfig({ fontSize: get().fontSize, fontFamily: get().fontFamily, githubClientId: get().githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail, openStartupFiles: get().openStartupFiles, dangerouslySkipPermissions: get().dangerouslySkipPermissions, nativeNotificationsEnabled: get().nativeNotificationsEnabled });
+    persistConfig({ fontSize: get().fontSize, fontFamily: get().fontFamily, githubClientId: get().githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail, jiraUsername: get().jiraUsername, openStartupFiles: get().openStartupFiles, dangerouslySkipPermissions: get().dangerouslySkipPermissions, nativeNotificationsEnabled: get().nativeNotificationsEnabled });
   },
   setJiraApiToken: (jiraApiToken) => set({ jiraApiToken }),
-  setJiraUsername: (jiraUsername) => set({ jiraUsername }),
+  setJiraUsername: (jiraUsername) => {
+    set({ jiraUsername });
+    persistConfig({ fontSize: get().fontSize, fontFamily: get().fontFamily, githubClientId: get().githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail: get().jiraEmail, jiraUsername, openStartupFiles: get().openStartupFiles, dangerouslySkipPermissions: get().dangerouslySkipPermissions, nativeNotificationsEnabled: get().nativeNotificationsEnabled });
+  },
 
   loadFromDisk: async () => {
     debugLog("Settings", "Loading settings from disk", undefined, "info");
@@ -109,6 +112,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       const githubClientId = await store.get<string>("githubClientId");
       const jiraBaseUrl = await store.get<string>("jiraBaseUrl");
       const jiraEmail = await store.get<string>("jiraEmail");
+      const jiraUsername = await store.get<string>("jiraUsername");
       const openStartupFiles = await store.get<boolean>("openStartupFiles");
       const dangerouslySkipPermissions = await store.get<boolean>("dangerouslySkipPermissions");
       const nativeNotificationsEnabled = await store.get<boolean>("nativeNotificationsEnabled");
@@ -118,6 +122,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         ...(githubClientId != null && { githubClientId }),
         ...(jiraBaseUrl != null && { jiraBaseUrl }),
         ...(jiraEmail != null && { jiraEmail }),
+        ...(jiraUsername != null && { jiraUsername }),
         ...(openStartupFiles != null && { openStartupFiles }),
         ...(dangerouslySkipPermissions != null && { dangerouslySkipPermissions }),
         ...(nativeNotificationsEnabled != null && { nativeNotificationsEnabled }),
@@ -152,6 +157,7 @@ interface Config {
   githubClientId: string;
   jiraBaseUrl: string;
   jiraEmail: string;
+  jiraUsername: string | null;
   openStartupFiles: boolean;
   dangerouslySkipPermissions: boolean;
   nativeNotificationsEnabled: boolean;
@@ -170,6 +176,7 @@ function persistConfig(config: Config) {
       await store.set("githubClientId", config.githubClientId);
       await store.set("jiraBaseUrl", config.jiraBaseUrl);
       await store.set("jiraEmail", config.jiraEmail);
+      await store.set("jiraUsername", config.jiraUsername);
       await store.set("openStartupFiles", config.openStartupFiles);
       await store.set("dangerouslySkipPermissions", config.dangerouslySkipPermissions);
       await store.set("nativeNotificationsEnabled", config.nativeNotificationsEnabled);
