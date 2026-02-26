@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Documentation — The Associate Studio</title>
+<style>
+  :root {
+    --bg-base: #0F0F14;
+    --bg-surface: #181820;
+    --bg-raised: #22222C;
+    --bg-code: #1A1A24;
+    --gold: #D4A853;
+    --gold-dim: #B8933F;
+    --gold-glow: rgba(212,168,83,0.15);
+    --text-primary: #F5F5F8;
+    --text-secondary: #B0B0C0;
+    --text-muted: #7A7A92;
+    --border: #2A2A38;
+    --purple: #BC8CFF;
+    --green: #4ACA62;
+    --red: #F85149;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Inter", -apple-system, system-ui, sans-serif;
+    background: var(--bg-base);
+    color: var(--text-primary);
+    line-height: 1.7;
+    padding: 0;
+  }
+  .doc-container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 60px 32px;
+  }
+  .breadcrumb {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 40px;
+  }
+  .breadcrumb a {
+    color: var(--gold);
+    text-decoration: none;
+  }
+  .breadcrumb a:hover { text-decoration: underline; }
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+  }
+  h1 span { color: var(--gold); }
+  .subtitle {
+    font-size: 1.15rem;
+    color: var(--text-secondary);
+    margin-bottom: 48px;
+  }
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 48px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--gold);
+    margin: 32px 0 12px;
+  }
+  p { margin: 0 0 16px; color: var(--text-secondary); }
+  ul, ol {
+    margin: 0 0 20px 24px;
+    color: var(--text-secondary);
+  }
+  li { margin-bottom: 8px; }
+  li strong { color: var(--text-primary); }
+  code {
+    font-family: "Cascadia Code", "JetBrains Mono", "Fira Code", monospace;
+    background: var(--bg-code);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 0.88em;
+    color: var(--gold);
+    border: 1px solid var(--border);
+  }
+  a { color: var(--gold); }
+  .back-link {
+    display: inline-block;
+    margin-top: 48px;
+    padding: 10px 24px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--gold);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .back-link:hover { background: var(--bg-raised); }
+
+  /* ── Card grid ──────────────────────────────────────────────── */
+  .card-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 24px 0 16px;
+  }
+  @media (max-width: 640px) {
+    .card-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  .card {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    text-decoration: none;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .card:hover {
+    background: var(--bg-raised);
+    border-color: var(--gold-dim);
+  }
+  .card-body {
+    flex: 1;
+  }
+  .card-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--gold);
+    margin-bottom: 6px;
+  }
+  .card-desc {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+  .card-arrow {
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    margin-left: 16px;
+    margin-top: 2px;
+    flex-shrink: 0;
+    transition: color 0.15s ease, transform 0.15s ease;
+  }
+  .card:hover .card-arrow {
+    color: var(--gold);
+    transform: translateX(3px);
+  }
+
+  /* ── Reference list ─────────────────────────────────────────── */
+  .ref-list {
+    list-style: none;
+    margin: 16px 0 24px 0;
+    padding: 0;
+  }
+  .ref-list li {
+    display: flex;
+    align-items: baseline;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0;
+  }
+  .ref-list li:last-child {
+    border-bottom: none;
+  }
+  .ref-file {
+    font-family: "Cascadia Code", "JetBrains Mono", "Fira Code", monospace;
+    font-size: 0.85rem;
+    color: var(--gold);
+    min-width: 180px;
+    flex-shrink: 0;
+  }
+  .ref-desc {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+  }
+
+  /* ── Hero section ───────────────────────────────────────────── */
+  .hero-intro {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px 28px;
+    margin-bottom: 48px;
+  }
+  .hero-intro p {
+    margin-bottom: 12px;
+  }
+  .hero-intro p:last-child {
+    margin-bottom: 0;
+  }
+</style>
+</head>
+<body>
+<div class="doc-container">
+  <div class="breadcrumb"><a href="../index.html">Home</a> / Docs</div>
+
+  <h1><span>Documentation</span></h1>
+  <p class="subtitle">Everything you need to know about The Associate Studio.</p>
+
+  <div class="hero-intro">
+    <p>The Associate Studio is a native Windows desktop IDE built around Claude Code CLI. It provides a multi-session terminal environment, real-time project tracking, and integrated access to GitHub, Linear, and Jira — all in a single window.</p>
+    <p style="color: var(--text-muted); margin-bottom: 0;">Built with Tauri v2 (Rust backend) and React 19 (TypeScript frontend). Approximately 10MB as a standalone binary.</p>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────────────── -->
+  <h2>Guides</h2>
+
+  <div class="card-grid">
+    <a href="getting-started.html" class="card">
+      <div class="card-body">
+        <div class="card-title">Getting Started</div>
+        <div class="card-desc">Installation, prerequisites, first launch, and building from source.</div>
+      </div>
+      <div class="card-arrow">&rarr;</div>
+    </a>
+
+    <a href="features.html" class="card">
+      <div class="card-body">
+        <div class="card-title">Features</div>
+        <div class="card-desc">Complete feature reference covering sessions, panels, git, and more.</div>
+      </div>
+      <div class="card-arrow">&rarr;</div>
+    </a>
+
+    <a href="architecture.html" class="card">
+      <div class="card-body">
+        <div class="card-title">Architecture</div>
+        <div class="card-desc">System design, component tree, data flow between Rust and React.</div>
+      </div>
+      <div class="card-arrow">&rarr;</div>
+    </a>
+
+    <a href="integrations.html" class="card">
+      <div class="card-body">
+        <div class="card-title">Integrations</div>
+        <div class="card-desc">GitHub, Linear, Jira setup and Claude CLI hook configuration.</div>
+      </div>
+      <div class="card-arrow">&rarr;</div>
+    </a>
+
+    <a href="keyboard-shortcuts.html" class="card">
+      <div class="card-body">
+        <div class="card-title">Keyboard Shortcuts</div>
+        <div class="card-desc">Every shortcut, the command palette, and terminal focus behavior.</div>
+      </div>
+      <div class="card-arrow">&rarr;</div>
+    </a>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────────────── -->
+  <h2>Technical Reference</h2>
+
+  <p>The source repository's <code>docs/</code> directory contains detailed technical documentation maintained alongside the code. These markdown files are the primary reference for contributors and cover implementation decisions, format specifications, and build system details.</p>
+
+  <ul class="ref-list">
+    <li>
+      <span class="ref-file">architecture.md</span>
+      <span class="ref-desc">Component tree, data flow, state management, watcher system</span>
+    </li>
+    <li>
+      <span class="ref-file">tech-stack.md</span>
+      <span class="ref-desc">Every library and crate with version, purpose, and decision rationale</span>
+    </li>
+    <li>
+      <span class="ref-file">build.md</span>
+      <span class="ref-desc">Build toolchain, PATH requirements, MSYS2/MinGW setup, crate-type gotchas</span>
+    </li>
+    <li>
+      <span class="ref-file">terminal.md</span>
+      <span class="ref-desc">PTY implementation, portable-pty, ConPTY, nested Claude detection</span>
+    </li>
+    <li>
+      <span class="ref-file">data-formats.md</span>
+      <span class="ref-desc">Structure of <code>~/.claude/</code> directories, JSONL formats, session index</span>
+    </li>
+    <li>
+      <span class="ref-file">integrations.md</span>
+      <span class="ref-desc">Auth flows, API endpoints, credential storage implementation</span>
+    </li>
+    <li>
+      <span class="ref-file">security.md</span>
+      <span class="ref-desc">Windows Credential Manager usage, DPAPI, secret handling policy</span>
+    </li>
+    <li>
+      <span class="ref-file">theming.md</span>
+      <span class="ref-desc">Color palette, CSS custom properties, design system</span>
+    </li>
+    <li>
+      <span class="ref-file">keybindings.md</span>
+      <span class="ref-desc">Shortcut implementation, input guard logic, terminal-safe bindings</span>
+    </li>
+  </ul>
+
+  <p>These files are kept in sync with the codebase. When a significant implementation decision is made — a new library chosen, a format quirk discovered, a security boundary drawn — the relevant doc is updated as part of the same change.</p>
+
+  <a class="back-link" href="../index.html">&larr; Back to Home</a>
+</div>
+</body>
+</html>

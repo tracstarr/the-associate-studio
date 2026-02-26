@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Associate Studio — The IDE That Thinks With You</title>
+<meta name="description" content="A native Windows desktop IDE built around Claude Code CLI. Run unlimited AI sessions, track live agents, manage git, PRs, and issues — all in one window. No Electron. No bloat.">
+<style>
+/* ═══════════════════════════════════════════════════
+   THE ASSOCIATE STUDIO — Marketing Site
+   Dark theme with gold (#D4A853) accents
+   ═══════════════════════════════════════════════════ */
+
+:root {
+  --bg-void: #08080C;
+  --bg-base: #0F0F14;
+  --bg-surface: #181820;
+  --bg-raised: #22222C;
+  --bg-code: #1A1A24;
+  --gold: #D4A853;
+  --gold-bright: #E8C97A;
+  --gold-dim: #B8933F;
+  --gold-glow: rgba(212,168,83,0.12);
+  --gold-glow-strong: rgba(212,168,83,0.25);
+  --text-primary: #F5F5F8;
+  --text-secondary: #B0B0C0;
+  --text-muted: #7A7A92;
+  --border: #2A2A38;
+  --border-dim: #1E1E2A;
+  --purple: #BC8CFF;
+  --green: #4ACA62;
+  --red: #F85149;
+  --warning: #E0A82E;
+}
+
+/* ── Reset & Base ── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; font-size: 16px; }
+body {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  background: var(--bg-void);
+  color: var(--text-primary);
+  line-height: 1.65;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--gold); text-decoration: none; transition: color 0.2s; }
+a:hover { color: var(--gold-bright); }
+code, pre {
+  font-family: "Cascadia Code", "JetBrains Mono", "Fira Code", monospace;
+}
+
+/* ── Utility ── */
+.container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+.container--narrow { max-width: 900px; margin: 0 auto; padding: 0 32px; }
+.gold { color: var(--gold); }
+.purple { color: var(--purple); }
+.green { color: var(--green); }
+.text-muted { color: var(--text-muted); }
+.text-secondary { color: var(--text-secondary); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+
+/* ══════════════════════════════════════════════
+   NAV
+   ══════════════════════════════════════════════ */
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: 0 32px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(8,8,12,0.85);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-dim);
+}
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+.nav-logo-icon {
+  width: 32px;
+  height: 32px;
+  background: var(--gold);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--bg-void);
+}
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  list-style: none;
+}
+.nav-links a {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--text-primary); }
+.nav-cta {
+  padding: 8px 20px;
+  background: var(--gold);
+  color: var(--bg-void) !important;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  transition: background 0.2s, transform 0.15s;
+}
+.nav-cta:hover { background: var(--gold-bright); transform: translateY(-1px); }
+
+/* ══════════════════════════════════════════════
+   HERO
+   ══════════════════════════════════════════════ */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 120px 32px 80px;
+  overflow: hidden;
+}
+
+/* Grain texture overlay */
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Radial glow behind hero text */
+.hero-glow {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 900px;
+  height: 600px;
+  background: radial-gradient(ellipse, rgba(212,168,83,0.08) 0%, transparent 65%);
+  pointer-events: none;
+}
+
+/* Scanline grid */
+.hero-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(212,168,83,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(212,168,83,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 70% 50% at 50% 40%, black 30%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 820px;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  background: var(--gold-glow);
+  border: 1px solid rgba(212,168,83,0.2);
+  border-radius: 100px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--gold);
+  margin-bottom: 32px;
+  letter-spacing: 0.02em;
+}
+.hero-badge-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--gold);
+  border-radius: 50%;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(212,168,83,0.4); }
+  50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(212,168,83,0); }
+}
+
+.hero h1 {
+  font-size: clamp(2.8rem, 6vw, 4.5rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  margin-bottom: 24px;
+}
+.hero h1 .line { display: block; }
+.hero h1 .gold-text {
+  color: var(--gold);
+  position: relative;
+}
+.hero h1 .gold-text::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--gold), transparent);
+  border-radius: 2px;
+}
+
+.hero-sub {
+  font-size: clamp(1.05rem, 2vw, 1.25rem);
+  color: var(--text-secondary);
+  max-width: 600px;
+  margin: 0 auto 40px;
+  line-height: 1.7;
+}
+
+.hero-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 32px;
+  background: var(--gold);
+  color: var(--bg-void);
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 1rem;
+  transition: all 0.2s;
+  border: none;
+  cursor: pointer;
+}
+.btn-primary:hover {
+  background: var(--gold-bright);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(212,168,83,0.25);
+  color: var(--bg-void);
+}
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 32px;
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.btn-secondary:hover {
+  border-color: var(--gold-dim);
+  background: var(--gold-glow);
+  color: var(--text-primary);
+}
+
+.hero-stats {
+  display: flex;
+  justify-content: center;
+  gap: 48px;
+  margin-top: 64px;
+  padding-top: 32px;
+  border-top: 1px solid var(--border-dim);
+}
+.hero-stat {
+  text-align: center;
+}
+.hero-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+.hero-stat-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ══════════════════════════════════════════════
+   TERMINAL SHOWCASE
+   ══════════════════════════════════════════════ */
+.terminal-section {
+  padding: 40px 0 100px;
+  position: relative;
+}
+.terminal-window {
+  max-width: 900px;
+  margin: 0 auto;
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px var(--border-dim),
+    0 24px 80px rgba(0,0,0,0.5),
+    0 0 120px rgba(212,168,83,0.04);
+}
+.terminal-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-dim);
+}
+.terminal-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+.terminal-dot--red { background: var(--red); }
+.terminal-dot--yellow { background: var(--warning); }
+.terminal-dot--green { background: var(--green); }
+.terminal-titlebar-text {
+  flex: 1;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.terminal-body {
+  padding: 24px;
+  font-family: "Cascadia Code", "JetBrains Mono", monospace;
+  font-size: 0.85rem;
+  line-height: 1.8;
+  min-height: 320px;
+  color: var(--text-secondary);
+  position: relative;
+  overflow: hidden;
+}
+.terminal-line { margin-bottom: 2px; white-space: pre-wrap; }
+.t-prompt { color: var(--gold); font-weight: 600; }
+.t-cmd { color: var(--text-primary); }
+.t-comment { color: var(--text-muted); font-style: italic; }
+.t-success { color: var(--green); }
+.t-info { color: var(--purple); }
+.t-dim { color: var(--text-muted); }
+.t-cursor {
+  display: inline-block;
+  width: 8px;
+  height: 16px;
+  background: var(--gold);
+  animation: blink 1s step-end infinite;
+  vertical-align: middle;
+  margin-left: 2px;
+}
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+/* ══════════════════════════════════════════════
+   SECTION HEADERS
+   ══════════════════════════════════════════════ */
+.section-header {
+  text-align: center;
+  margin-bottom: 64px;
+}
+.section-label {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--gold);
+  margin-bottom: 16px;
+}
+.section-title {
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin-bottom: 16px;
+}
+.section-desc {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* ══════════════════════════════════════════════
+   FEATURE GRID
+   ══════════════════════════════════════════════ */
+.features {
+  padding: 100px 0;
+  background: var(--bg-base);
+  position: relative;
+}
+.features::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  background: var(--border-dim);
+  border: 1px solid var(--border-dim);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.feature-card {
+  padding: 40px 32px;
+  background: var(--bg-surface);
+  transition: background 0.3s;
+  position: relative;
+}
+.feature-card:hover {
+  background: var(--bg-raised);
+}
+.feature-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 32px;
+  right: 32px;
+  height: 2px;
+  background: var(--gold);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.feature-card:hover::before {
+  transform: scaleX(1);
+}
+.feature-icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gold-glow);
+  border: 1px solid rgba(212,168,83,0.15);
+  border-radius: 10px;
+  margin-bottom: 20px;
+  font-size: 1.2rem;
+}
+.feature-card h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: var(--text-primary);
+}
+.feature-card p {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.65;
+}
+
+/* ══════════════════════════════════════════════
+   SPOTLIGHT (alternating feature deep-dives)
+   ══════════════════════════════════════════════ */
+.spotlight {
+  padding: 120px 0;
+  position: relative;
+}
+.spotlight + .spotlight { padding-top: 0; }
+
+.spotlight-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: center;
+  margin-bottom: 120px;
+}
+.spotlight-row:last-child { margin-bottom: 0; }
+.spotlight-row--reverse { direction: rtl; }
+.spotlight-row--reverse > * { direction: ltr; }
+
+.spotlight-text { max-width: 480px; }
+.spotlight-label {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--gold);
+  margin-bottom: 16px;
+  padding: 4px 12px;
+  background: var(--gold-glow);
+  border: 1px solid rgba(212,168,83,0.15);
+  border-radius: 4px;
+}
+.spotlight-text h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  margin-bottom: 16px;
+}
+.spotlight-text p {
+  font-size: 1.02rem;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  line-height: 1.7;
+}
+.spotlight-list {
+  list-style: none;
+  margin-top: 24px;
+}
+.spotlight-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+}
+.spotlight-list li::before {
+  content: "›";
+  color: var(--gold);
+  font-weight: 700;
+  font-size: 1.2rem;
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+
+/* Spotlight visual panels */
+.spotlight-visual {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+}
+.spotlight-visual-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--border-dim);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.spotlight-visual-body {
+  padding: 20px;
+  font-family: "Cascadia Code", monospace;
+  font-size: 0.82rem;
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+.spotlight-visual-body .line-number {
+  color: var(--text-muted);
+  user-select: none;
+  margin-right: 16px;
+  min-width: 20px;
+  display: inline-block;
+  text-align: right;
+}
+
+/* ══════════════════════════════════════════════
+   TECH STACK SECTION
+   ══════════════════════════════════════════════ */
+.tech-section {
+  padding: 100px 0;
+  background: var(--bg-base);
+  position: relative;
+}
+.tech-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+}
+
+.tech-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 48px;
+}
+.tech-column h3 {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--gold);
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.tech-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.tech-item-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  min-width: 120px;
+}
+.tech-item-desc {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+.tech-item-version {
+  font-family: "Cascadia Code", monospace;
+  font-size: 0.75rem;
+  color: var(--gold-dim);
+  background: var(--gold-glow);
+  padding: 1px 8px;
+  border-radius: 4px;
+  margin-left: 8px;
+}
+
+/* ══════════════════════════════════════════════
+   LAYOUT DIAGRAM
+   ══════════════════════════════════════════════ */
+.diagram-section {
+  padding: 100px 0;
+}
+.diagram-wrap {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.diagram-header {
+  padding: 16px 24px;
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--border-dim);
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.diagram-body {
+  padding: 32px;
+  overflow-x: auto;
+}
+.diagram-body pre {
+  font-family: "Cascadia Code", monospace;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin: 0;
+}
+.diagram-body .d-gold { color: var(--gold); }
+.diagram-body .d-purple { color: var(--purple); }
+.diagram-body .d-green { color: var(--green); }
+.diagram-body .d-dim { color: var(--text-muted); }
+
+/* ══════════════════════════════════════════════
+   NUMBERS / STATS STRIP
+   ══════════════════════════════════════════════ */
+.stats-strip {
+  padding: 64px 0;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-dim);
+  border-bottom: 1px solid var(--border-dim);
+}
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 32px;
+  text-align: center;
+}
+.stat-item {}
+.stat-number {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--gold);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.stat-suffix {
+  font-size: 1.8rem;
+  color: var(--gold-dim);
+}
+.stat-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* ══════════════════════════════════════════════
+   COMPARISON TABLE
+   ══════════════════════════════════════════════ */
+.compare-section {
+  padding: 100px 0;
+}
+.compare-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.compare-table th {
+  padding: 16px 20px;
+  background: var(--bg-raised);
+  text-align: left;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+.compare-table th:first-child { color: var(--text-primary); }
+.compare-table th.highlight {
+  color: var(--gold);
+  background: rgba(212,168,83,0.06);
+}
+.compare-table td {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-dim);
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+.compare-table td.highlight {
+  background: rgba(212,168,83,0.03);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.check { color: var(--green); font-weight: 700; }
+.cross { color: var(--text-muted); }
+
+/* ══════════════════════════════════════════════
+   CTA SECTION
+   ══════════════════════════════════════════════ */
+.cta-section {
+  padding: 120px 0;
+  text-align: center;
+  position: relative;
+}
+.cta-section::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 600px;
+  height: 400px;
+  background: radial-gradient(ellipse, rgba(212,168,83,0.06) 0%, transparent 60%);
+  pointer-events: none;
+}
+.cta-content {
+  position: relative;
+  z-index: 1;
+}
+.cta-content h2 {
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 16px;
+}
+.cta-content p {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  margin-bottom: 40px;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ══════════════════════════════════════════════
+   FOOTER
+   ══════════════════════════════════════════════ */
+.footer {
+  padding: 48px 0;
+  border-top: 1px solid var(--border-dim);
+  background: var(--bg-void);
+}
+.footer-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.footer-left {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.footer-links {
+  display: flex;
+  gap: 24px;
+  list-style: none;
+}
+.footer-links a {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  transition: color 0.2s;
+}
+.footer-links a:hover { color: var(--gold); }
+
+/* ══════════════════════════════════════════════
+   RESPONSIVE
+   ══════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .feature-grid { grid-template-columns: repeat(2, 1fr); }
+  .spotlight-row { grid-template-columns: 1fr; gap: 40px; }
+  .spotlight-row--reverse { direction: ltr; }
+  .tech-grid { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .hero-stats { gap: 24px; flex-wrap: wrap; }
+}
+@media (max-width: 600px) {
+  .feature-grid { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: 1fr; }
+  .nav-links { display: none; }
+  .compare-table { font-size: 0.8rem; }
+  .compare-table th, .compare-table td { padding: 10px 12px; }
+  .footer-inner { flex-direction: column; gap: 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ NAV ═══════════════ -->
+<nav class="nav">
+  <a href="#" class="nav-logo">
+    <div class="nav-logo-icon">AS</div>
+    The Associate Studio
+  </a>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#tech">Tech Stack</a></li>
+    <li><a href="#compare">Compare</a></li>
+    <li><a href="docs/index.html">Docs</a></li>
+    <li><a href="docs/getting-started.html" class="nav-cta">Get Started</a></li>
+  </ul>
+</nav>
+
+<!-- ═══════════════ HERO ═══════════════ -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-content">
+    <div class="hero-badge">
+      <span class="hero-badge-dot"></span>
+      Built with Tauri v2 + Rust
+    </div>
+    <h1>
+      <span class="line">The IDE That</span>
+      <span class="line"><span class="gold-text">Thinks With You</span></span>
+    </h1>
+    <p class="hero-sub">
+      A native Windows desktop IDE built around Claude Code CLI. Run unlimited AI sessions, track live agents, manage git, PRs, and issues — all in one window. No Electron. No bloat.
+    </p>
+    <div class="hero-actions">
+      <a href="docs/getting-started.html" class="btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Get Started
+      </a>
+      <a href="#features" class="btn-secondary">
+        See What's Inside
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </a>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-value">~10MB</div>
+        <div class="hero-stat-label">Binary Size</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-value">44</div>
+        <div class="hero-stat-label">Tauri Commands</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-value">7</div>
+        <div class="hero-stat-label">Tab Types</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-value">0</div>
+        <div class="hero-stat-label">Electron Dependencies</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ TERMINAL SHOWCASE ═══════════════ -->
+<section class="terminal-section">
+  <div class="container">
+    <div class="terminal-window">
+      <div class="terminal-titlebar">
+        <span class="terminal-dot terminal-dot--red"></span>
+        <span class="terminal-dot terminal-dot--yellow"></span>
+        <span class="terminal-dot terminal-dot--green"></span>
+        <span class="terminal-titlebar-text">The Associate Studio — Claude Session</span>
+      </div>
+      <div class="terminal-body">
+        <div class="terminal-line"><span class="t-prompt">❯ </span><span class="t-cmd">claude</span></div>
+        <div class="terminal-line"><span class="t-dim">╭─────────────────────────────────────────────────╮</span></div>
+        <div class="terminal-line"><span class="t-dim">│</span> <span class="t-info">Claude Code</span>   <span class="t-dim">v1.0.29   model: opus-4-6</span>      <span class="t-dim">│</span></div>
+        <div class="terminal-line"><span class="t-dim">╰─────────────────────────────────────────────────╯</span></div>
+        <div class="terminal-line"></div>
+        <div class="terminal-line"><span class="t-prompt">? </span><span class="t-cmd">What would you like to work on?</span></div>
+        <div class="terminal-line"></div>
+        <div class="terminal-line"><span class="t-success">●</span> <span class="t-dim">Session active</span>  <span class="t-info">⚡2 subagents</span>  <span class="t-dim">branch:</span> <span class="t-success">feature/auth</span></div>
+        <div class="terminal-line"></div>
+        <div class="terminal-line"><span class="t-comment"># Real ConPTY terminal — not a simulation.</span></div>
+        <div class="terminal-line"><span class="t-comment"># Every session is a real Claude CLI process.</span></div>
+        <div class="terminal-line"><span class="t-comment"># Switch tabs freely — sessions never die.</span></div>
+        <div class="terminal-line"></div>
+        <div class="terminal-line"><span class="t-prompt">❯ </span><span class="t-cursor"></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ FEATURE GRID ═══════════════ -->
+<section class="features" id="features">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">Capabilities</div>
+      <h2 class="section-title">Everything You Need.<br><span class="gold">Nothing You Don't.</span></h2>
+      <p class="section-desc">A purpose-built IDE for working with Claude — not a chat window bolted onto an editor.</p>
+    </div>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D4A853" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+        </div>
+        <h3>Unlimited Sessions</h3>
+        <p>Open as many Claude Code sessions as you need, each in its own tab backed by a real Windows ConPTY terminal. Sessions survive tab switches — they're hidden, never killed.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D4A853" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v6M12 17v6M4.22 4.22l4.24 4.24M15.54 15.54l4.24 4.24M1 12h6M17 12h6M4.22 19.78l4.24-4.24M15.54 8.46l4.24-4.24"/></svg>
+        </div>
+        <h3>Live Agent Tracking</h3>
+        <p>See which sessions are active with pulsing green indicators. Track subagent count in real time. Know exactly what Claude is doing across every session.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D4A853" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 01-9 9"/></svg>
+        </div>
+        <h3>Full Git Integration</h3>
+        <p>Staged/unstaged/untracked files, inline diffs, commit log with branch tree, worktree management, fetch, pull, rebase — all powered by libgit2 and the git CLI.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D4A853" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        </div>
+        <h3>PRs &amp; Issues</h3>
+        <p>GitHub PRs with detail views and review comments. GitHub, Linear, and Jira issues unified in one panel with label and assignee filtering.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D4A853" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+        </div>
+        <h3>File Browser &amp; Editor</h3>
+        <p>Browse project files in a tree view. Open any file in Monaco editor with syntax highlighting for 20+ languages. Dirty state, auto-reload, and note attachment built in.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D4A853" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        </div>
+        <h3>Teams &amp; Agents</h3>
+        <p>View Claude agent teams, track member status and models, send inter-agent messages via inbox, and monitor task dependencies with blocking relationships.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D4A853" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+        </div>
+        <h3>Plans &amp; Notes</h3>
+        <p>Session-linked markdown plans with preview and edit modes. Global and per-project notes with file reference capture — select code, click "Add to note."</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D4A853" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+        </div>
+        <h3>Multi-Project Workspace</h3>
+        <p>Switch between projects in one click. Each project gets its own isolated tab set. Tabs are never mixed across projects. Worktree-aware navigation in the status bar.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D4A853" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        </div>
+        <h3>Neural Field</h3>
+        <p>Mission control overlay (Ctrl+Shift+Space) that visualizes active sessions, teams, and agents as an animated canvas node graph with physics-based layout.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ STATS STRIP ═══════════════ -->
+<section class="stats-strip">
+  <div class="container">
+    <div class="stats-grid">
+      <div class="stat-item">
+        <div class="stat-number">44</div>
+        <div class="stat-label">Backend Commands</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">25<span class="stat-suffix">+</span></div>
+        <div class="stat-label">Command Palette Actions</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">7</div>
+        <div class="stat-label">Zustand Stores</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">3</div>
+        <div class="stat-label">Issue Trackers Integrated</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ SPOTLIGHT FEATURES ═══════════════ -->
+<section class="spotlight" id="architecture">
+  <div class="container">
+    <!-- Spotlight 1: Terminal -->
+    <div class="spotlight-row">
+      <div class="spotlight-text">
+        <div class="spotlight-label">Terminal Engine</div>
+        <h2>Real Terminals.<br>Not a <span class="gold">Simulation.</span></h2>
+        <p>Every Claude session runs in a real Windows ConPTY terminal, the same technology used by Windows Terminal and VS Code. Claude sees a real TTY — no degraded mode, no limitations.</p>
+        <ul class="spotlight-list">
+          <li>Sessions backed by portable-pty with full ConPTY support</li>
+          <li>Never unmounted when switching tabs — process keeps running</li>
+          <li>Auto-detects plan files and questions in terminal output</li>
+          <li>Resume any previous session, or fork it into a new branch</li>
+          <li>CLAUDECODE env var stripped to prevent nested detection</li>
+        </ul>
+      </div>
+      <div class="spotlight-visual">
+        <div class="spotlight-visual-header">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7A7A92" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+          pty.rs — ConPTY spawn
+        </div>
+        <div class="spotlight-visual-body">
+<span class="line-number"> 1</span><span style="color:#BC8CFF">let</span> pty_system = portable_pty::native_pty_system();
+<span class="line-number"> 2</span><span style="color:#BC8CFF">let</span> pair = pty_system.openpty(PtySize {
+<span class="line-number"> 3</span>    rows, cols, ..Default::default()
+<span class="line-number"> 4</span>})?;
+<span class="line-number"> 5</span>
+<span class="line-number"> 6</span><span style="color:#BC8CFF">let mut</span> cmd = CommandBuilder::new(<span style="color:#4ACA62">"claude"</span>);
+<span class="line-number"> 7</span>cmd.cwd(&cwd);
+<span class="line-number"> 8</span>cmd.env_remove(<span style="color:#4ACA62">"CLAUDECODE"</span>); <span style="color:#7A7A92">// critical</span>
+<span class="line-number"> 9</span>cmd.env(<span style="color:#4ACA62">"TERM"</span>, <span style="color:#4ACA62">"xterm-256color"</span>);
+<span class="line-number">10</span>
+<span class="line-number">11</span><span style="color:#BC8CFF">let</span> child = pair.slave.spawn_command(cmd)?;
+        </div>
+      </div>
+    </div>
+
+    <!-- Spotlight 2: Git -->
+    <div class="spotlight-row spotlight-row--reverse">
+      <div class="spotlight-text">
+        <div class="spotlight-label">Git Engine</div>
+        <h2>Git Without <span class="gold">Leaving.</span></h2>
+        <p>Full git integration powered by libgit2 for status operations and the git CLI for advanced workflows. Stage files, view diffs, manage branches, create worktrees — all from within the IDE.</p>
+        <ul class="spotlight-list">
+          <li>Status panel with staged, unstaged, and untracked sections</li>
+          <li>Inline diff viewer with syntax-colored additions and removals</li>
+          <li>Branch tree in the git log panel with commit history</li>
+          <li>Worktree creation with selective file copying</li>
+          <li>Fetch, pull, and rebase with output logging</li>
+        </ul>
+      </div>
+      <div class="spotlight-visual">
+        <div class="spotlight-visual-header">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7A7A92" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 01-9 9"/></svg>
+          Git Status Panel
+        </div>
+        <div class="spotlight-visual-body">
+<span style="color:#D4A853">STAGED</span> <span style="color:#7A7A92">(3 files)</span>
+<span style="color:#4ACA62">  M</span>  src/components/auth/LoginForm.tsx
+<span style="color:#4ACA62">  A</span>  src/hooks/useAuth.ts
+<span style="color:#4ACA62">  M</span>  src/stores/authStore.ts
+
+<span style="color:#D4A853">UNSTAGED</span> <span style="color:#7A7A92">(1 file)</span>
+<span style="color:#F85149">  M</span>  src/App.tsx
+
+<span style="color:#D4A853">UNTRACKED</span> <span style="color:#7A7A92">(2 files)</span>
+<span style="color:#7A7A92">  ?</span>  src/utils/tokens.ts
+<span style="color:#7A7A92">  ?</span>  tests/auth.test.ts
+        </div>
+      </div>
+    </div>
+
+    <!-- Spotlight 3: Integrations -->
+    <div class="spotlight-row">
+      <div class="spotlight-text">
+        <div class="spotlight-label">Integrations</div>
+        <h2>Your Tools. <span class="gold">One Window.</span></h2>
+        <p>Connect GitHub, Linear, and Jira to see PRs, issues, and review comments without leaving the IDE. All credentials secured in Windows Credential Manager — never stored in plain files.</p>
+        <ul class="spotlight-list">
+          <li>GitHub OAuth device flow — no redirect URI needed</li>
+          <li>PR detail view with inline review comments</li>
+          <li>Linear issues with status, team, and assignee filtering</li>
+          <li>Jira issues with project and status filtering</li>
+          <li>All tokens DPAPI-encrypted in Windows Credential Manager</li>
+        </ul>
+      </div>
+      <div class="spotlight-visual">
+        <div class="spotlight-visual-header">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7A7A92" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+          Security Model
+        </div>
+        <div class="spotlight-visual-body">
+<span style="color:#D4A853">Secret Storage</span>
+<span style="color:#7A7A92">────────────────────────────────────</span>
+<span style="color:#4ACA62">✓</span> github-token   → <span style="color:#BC8CFF">Credential Manager</span>
+<span style="color:#4ACA62">✓</span> linear-api-key → <span style="color:#BC8CFF">Credential Manager</span>
+<span style="color:#4ACA62">✓</span> jira-api-token → <span style="color:#BC8CFF">Credential Manager</span>
+
+<span style="color:#D4A853">settings.json</span>  <span style="color:#7A7A92">(safe to sync)</span>
+<span style="color:#7A7A92">────────────────────────────────────</span>
+  githubClientId: <span style="color:#4ACA62">"Ov23li..."</span>
+  jiraBaseUrl:    <span style="color:#4ACA62">"https://co.atlassian.net"</span>
+  fontSize:       <span style="color:#E0A82E">13</span>
+  <span style="color:#7A7A92">// No secrets here. Ever.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ LAYOUT DIAGRAM ═══════════════ -->
+<section class="diagram-section">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">Layout</div>
+      <h2 class="section-title">Designed Like <span class="gold">a Real IDE</span></h2>
+      <p class="section-desc">Every panel is resizable, collapsible, and keyboard-accessible. The layout adapts to how you work.</p>
+    </div>
+    <div class="diagram-wrap">
+      <div class="diagram-header">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7A7A92" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+        IDE Layout — 5 regions, all resizable
+      </div>
+      <div class="diagram-body"><pre>
+<span class="d-dim">┌─────────────────────────────────────────────────────────────────────┐</span>
+<span class="d-dim">│</span>  <span class="d-gold">The Associate Studio</span>  /  project-name          <span class="d-dim">[🔔] [─] [□] [✕]</span>  <span class="d-purple">TitleBar</span>
+<span class="d-dim">├──┬──────────────────────────────────────────────────────────────┬──┤</span>
+<span class="d-dim">│</span>  <span class="d-dim">│</span> <span class="d-gold">[Tabs: New Session ×  session2  +]</span>                          <span class="d-dim">│</span>  <span class="d-dim">│</span>
+<span class="d-dim">│</span><span class="d-purple">AB</span><span class="d-dim">│──────────────────────────────────────────────────────────</span><span class="d-dim">│</span><span class="d-purple">RA</span><span class="d-dim">│</span>
+<span class="d-dim">│</span>  <span class="d-dim">│</span>                                                          <span class="d-dim">│</span>  <span class="d-dim">│</span>
+<span class="d-dim">│</span>  <span class="d-dim">│</span> <span class="d-green">SIDEBAR</span>       <span class="d-dim">│</span>  <span class="d-gold">MAIN CONTENT</span>              <span class="d-dim">│</span> <span class="d-purple">RIGHT</span>  <span class="d-dim">│</span>  <span class="d-dim">│</span>
+<span class="d-dim">│</span>  <span class="d-dim">│</span>               <span class="d-dim">│</span>                             <span class="d-dim">│</span>        <span class="d-dim">│</span>  <span class="d-dim">│</span>
+<span class="d-dim">│</span>  <span class="d-dim">│</span> Projects      <span class="d-dim">│</span>  xterm.js terminal          <span class="d-dim">│</span> Contxt <span class="d-dim">│</span>  <span class="d-dim">│</span>
+<span class="d-dim">│</span>  <span class="d-dim">│</span> Git           <span class="d-dim">│</span>  Session viewer             <span class="d-dim">│</span> Teams  <span class="d-dim">│</span>  <span class="d-dim">│</span>
+<span class="d-dim">│</span>  <span class="d-dim">│</span> Files         <span class="d-dim">│</span>  Plan editor (Monaco)       <span class="d-dim">│</span> Plans  <span class="d-dim">│</span>  <span class="d-dim">│</span>
+<span class="d-dim">│</span>  <span class="d-dim">│</span> PRs           <span class="d-dim">│</span>  File editor (Monaco)       <span class="d-dim">│</span> Docs   <span class="d-dim">│</span>  <span class="d-dim">│</span>
+<span class="d-dim">│</span>  <span class="d-dim">│</span>               <span class="d-dim">│</span>  Settings                   <span class="d-dim">│</span> Notes  <span class="d-dim">│</span>  <span class="d-dim">│</span>
+<span class="d-dim">├──┴───────────────┴─────────────────────────────┴────────┴──┤</span>
+<span class="d-dim">│</span>  <span class="d-green">BOTTOM PANEL</span> <span class="d-dim">(full-width, collapsible)</span>                         <span class="d-dim">│</span>
+<span class="d-dim">│</span>  <span class="d-gold">Log</span> │ <span class="d-gold">Diff</span> │ <span class="d-gold">PRs</span> │ <span class="d-gold">Issues</span> │ <span class="d-gold">Output</span>                            <span class="d-dim">│</span>
+<span class="d-dim">├──────────────────────────────────────────────────────────────┤</span>
+<span class="d-dim">│</span>  <span class="d-dim">[branch]</span> <span class="d-dim">[sessions]</span> <span class="d-dim">[agents]</span>           <span class="d-dim">[todos]</span> <span class="d-dim">[status]</span>   <span class="d-dim">│</span>  <span class="d-purple">StatusBar</span>
+<span class="d-dim">└─────────────────────────────────────────────────────────────────────┘</span>
+</pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ TECH STACK ═══════════════ -->
+<section class="tech-section" id="tech">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">Under the Hood</div>
+      <h2 class="section-title">Built With <span class="gold">Intention</span></h2>
+      <p class="section-desc">Every dependency chosen for a reason. No bloat, no unnecessary abstractions.</p>
+    </div>
+
+    <div class="tech-grid">
+      <div class="tech-column">
+        <h3>Frontend</h3>
+        <div class="tech-item">
+          <span class="tech-item-name">React<span class="tech-item-version">19</span></span>
+          <span class="tech-item-desc">Concurrent features, mature ecosystem</span>
+        </div>
+        <div class="tech-item">
+          <span class="tech-item-name">TypeScript<span class="tech-item-version">5.8</span></span>
+          <span class="tech-item-desc">Type safety at scale</span>
+        </div>
+        <div class="tech-item">
+          <span class="tech-item-name">Vite<span class="tech-item-version">6</span></span>
+          <span class="tech-item-desc">Instant HMR, native ESM</span>
+        </div>
+        <div class="tech-item">
+          <span class="tech-item-name">Tailwind<span class="tech-item-version">v4</span></span>
+          <span class="tech-item-desc">CSS-first config, design tokens as CSS vars</span>
+        </div>
+        <div class="tech-item">
+          <span class="tech-item-name">xterm.js<span class="tech-item-version">5</span></span>
+          <span class="tech-item-desc">Terminal emulator with ANSI support</span>
+        </div>
+        <div class="tech-item">
+          <span class="tech-item-name">Monaco<span class="tech-item-version">4.7</span></span>
+          <span class="tech-item-desc">VS Code's editor for files, plans, README</span>
+        </div>
+        <div class="tech-item">
+          <span class="tech-item-name">Zustand<span class="tech-item-version">5</span></span>
+          <span class="tech-item-desc">7 stores for synchronous UI state</span>
+        </div>
+        <div class="tech-item">
+          <span class="tech-item-name">TanStack Query<span class="tech-item-version">5</span></span>
+          <span class="tech-item-desc">Async data with caching + invalidation</span>
+        </div>
+      </div>
+
+      <div class="tech-column">
+        <h3>Backend (Rust)</h3>
+        <div class="tech-item">
+          <span class="tech-item-name">Tauri<span class="tech-item-version">2</span></span>
+          <span class="tech-item-desc">WebView2 + Rust backend, ~10MB binary</span>
+        </div>
+        <div class="tech-item">
+          <span class="tech-item-name">portable-pty<span class="tech-item-version">0.8</span></span>
+          <span class="tech-item-desc">Real Windows ConPTY terminals</span>
+        </div>
+        <div class="tech-item">
+          <span class="tech-item-name">notify<span class="tech-item-version">8</span></span>
+          <span class="tech-item-desc">File watcher for ~/.claude/ live updates</span>
+        </div>
+        <div class="tech-item">
+          <span class="tech-item-name">git2<span class="tech-item-version">0.20</span></span>
+          <span class="tech-item-desc">Rust-native libgit2 bindings</span>
+        </div>
+        <div class="tech-item">
+          <span class="tech-item-name">keyring<span class="tech-item-version">3</span></span>
+          <span class="tech-item-desc">Windows Credential Manager (DPAPI)</span>
+        </div>
+        <div class="tech-item">
+          <span class="tech-item-name">reqwest<span class="tech-item-version">0.12</span></span>
+          <span class="tech-item-desc">Async HTTP for GitHub/Linear/Jira</span>
+        </div>
+        <div class="tech-item">
+          <span class="tech-item-name">serde<span class="tech-item-version">1</span></span>
+          <span class="tech-item-desc">JSON serialization for all data models</span>
+        </div>
+        <div class="tech-item">
+          <span class="tech-item-name">tokio<span class="tech-item-version">1</span></span>
+          <span class="tech-item-desc">Async runtime (via Tauri)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ COMPARISON ═══════════════ -->
+<section class="compare-section" id="compare">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">Why This</div>
+      <h2 class="section-title">Not Another <span class="gold">Extension</span></h2>
+      <p class="section-desc">The Associate Studio is a purpose-built IDE, not a plugin bolted onto an existing editor.</p>
+    </div>
+
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>Capability</th>
+          <th class="highlight">The Associate Studio</th>
+          <th>VS Code + Extensions</th>
+          <th>Cursor / Windsurf</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Multiple concurrent Claude sessions</td>
+          <td class="highlight"><span class="check">&#10003;</span> Unlimited tabs</td>
+          <td><span class="cross">&#10007;</span> Single panel</td>
+          <td><span class="cross">&#10007;</span> Single chat</td>
+        </tr>
+        <tr>
+          <td>Real PTY terminals</td>
+          <td class="highlight"><span class="check">&#10003;</span> ConPTY</td>
+          <td><span class="check">&#10003;</span> Built-in</td>
+          <td><span class="check">&#10003;</span> Built-in</td>
+        </tr>
+        <tr>
+          <td>Live agent tracking</td>
+          <td class="highlight"><span class="check">&#10003;</span> Hook events</td>
+          <td><span class="cross">&#10007;</span></td>
+          <td><span class="cross">&#10007;</span></td>
+        </tr>
+        <tr>
+          <td>Subagent visibility</td>
+          <td class="highlight"><span class="check">&#10003;</span> Real-time badges</td>
+          <td><span class="cross">&#10007;</span></td>
+          <td><span class="cross">&#10007;</span></td>
+        </tr>
+        <tr>
+          <td>Team coordination view</td>
+          <td class="highlight"><span class="check">&#10003;</span> Teams + Inbox</td>
+          <td><span class="cross">&#10007;</span></td>
+          <td><span class="cross">&#10007;</span></td>
+        </tr>
+        <tr>
+          <td>Neural field visualization</td>
+          <td class="highlight"><span class="check">&#10003;</span> Canvas overlay</td>
+          <td><span class="cross">&#10007;</span></td>
+          <td><span class="cross">&#10007;</span></td>
+        </tr>
+        <tr>
+          <td>GitHub + Linear + Jira unified</td>
+          <td class="highlight"><span class="check">&#10003;</span> Built-in</td>
+          <td>Partial (extensions)</td>
+          <td><span class="cross">&#10007;</span></td>
+        </tr>
+        <tr>
+          <td>Session resume &amp; fork</td>
+          <td class="highlight"><span class="check">&#10003;</span></td>
+          <td><span class="cross">&#10007;</span></td>
+          <td><span class="cross">&#10007;</span></td>
+        </tr>
+        <tr>
+          <td>Binary size</td>
+          <td class="highlight">~10MB</td>
+          <td>~300MB</td>
+          <td>~400MB</td>
+        </tr>
+        <tr>
+          <td>Runtime</td>
+          <td class="highlight">WebView2 + Rust</td>
+          <td>Electron (Chromium)</td>
+          <td>Electron (Chromium)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════════ CTA ═══════════════ -->
+<section class="cta-section">
+  <div class="container">
+    <div class="cta-content">
+      <h2>Ready to Work <span class="gold">Differently?</span></h2>
+      <p>The Associate Studio is open source and free. Clone it, build it, make it yours.</p>
+      <div class="hero-actions">
+        <a href="docs/getting-started.html" class="btn-primary">
+          Get Started
+        </a>
+        <a href="docs/index.html" class="btn-secondary">
+          Read the Docs
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ FOOTER ═══════════════ -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-left">
+        The Associate Studio &mdash; Built with Tauri, Rust, and React.
+      </div>
+      <ul class="footer-links">
+        <li><a href="docs/index.html">Documentation</a></li>
+        <li><a href="docs/getting-started.html">Getting Started</a></li>
+        <li><a href="docs/features.html">Features</a></li>
+        <li><a href="docs/architecture.html">Architecture</a></li>
+      </ul>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
