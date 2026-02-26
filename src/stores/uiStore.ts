@@ -1,20 +1,14 @@
 import { create } from "zustand";
 
-export type SidebarView = "sessions" | "git" | "prs" | "files";
+export type SidebarView = "sessions" | "git" | "prs" | "issues" | "files";
 export type RightTab = "context" | "teams" | "plans" | "docs" | "notes";
-export type BottomTab = "log" | "git" | "prs" | "issues" | "output" | "debug";
+export type BottomTab = "log" | "output" | "debug";
 
 export interface PendingNoteRef {
   filePath: string;
   lineStart: number;
   lineEnd: number;
   quote: string;
-}
-
-export interface SelectedDiffFile {
-  cwd: string;
-  path: string;
-  staged: boolean;
 }
 
 interface UIStore {
@@ -26,7 +20,6 @@ interface UIStore {
   activeBottomTab: BottomTab;
   commandPaletteOpen: boolean;
   neuralFieldOpen: boolean;
-  selectedDiffFile: SelectedDiffFile | null;
   projectDropdownOpen: boolean;
   tabInitStatus: Record<string, 'initializing' | 'error'>;
   tabInitError: Record<string, string>;
@@ -45,7 +38,6 @@ interface UIStore {
   openCommandPalette: () => void;
   closeCommandPalette: () => void;
   toggleNeuralField: () => void;
-  setSelectedDiffFile: (file: SelectedDiffFile | null) => void;
   toggleDebugPanel: () => void;
   openProjectDropdown: () => void;
   closeProjectDropdown: () => void;
@@ -66,10 +58,9 @@ export const useUIStore = create<UIStore>((set) => ({
   bottomPanelOpen: true,
   activeSidebarView: "sessions",
   activeRightTab: "context",
-  activeBottomTab: "git",
+  activeBottomTab: "log",
   commandPaletteOpen: false,
   neuralFieldOpen: false,
-  selectedDiffFile: null,
   projectDropdownOpen: false,
   tabInitStatus: {},
   tabInitError: {},
@@ -88,7 +79,6 @@ export const useUIStore = create<UIStore>((set) => ({
   openCommandPalette: () => set({ commandPaletteOpen: true }),
   closeCommandPalette: () => set({ commandPaletteOpen: false }),
   toggleNeuralField: () => set((s) => ({ neuralFieldOpen: !s.neuralFieldOpen })),
-  setSelectedDiffFile: (file) => set({ selectedDiffFile: file }),
   toggleDebugPanel: () => set((s) => {
     if (s.activeBottomTab === "debug" && s.bottomPanelOpen) {
       return { bottomPanelOpen: false };

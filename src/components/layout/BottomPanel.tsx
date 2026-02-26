@@ -2,26 +2,17 @@ import { memo } from "react";
 import { cn } from "@/lib/utils";
 import { useUIStore, type BottomTab } from "@/stores/uiStore";
 import { useDebugStore } from "@/stores/debugStore";
-import { DiffViewer } from "@/components/git/DiffViewer";
 import { GitLogPanel } from "@/components/git/GitLogPanel";
-import { PRListPanel } from "@/components/issues/PRListPanel";
-import { IssueListPanel } from "@/components/issues/IssueListPanel";
 import { OutputPanel } from "@/components/layout/OutputPanel";
 import { DebugPanel } from "@/components/debug/DebugPanel";
 
 const BASE_TABS: { id: BottomTab; label: string }[] = [
-  { id: "log", label: "Log" },
-  { id: "git", label: "Diff" },
-  { id: "prs", label: "PRs" },
-  { id: "issues", label: "Issues" },
+  { id: "log", label: "Git" },
   { id: "output", label: "Output" },
 ];
 
 const tabPlaceholders: Record<BottomTab, string> = {
   log: "Select a project to view git log.",
-  git: "Select a file from the Git panel to view its diff.",
-  prs: "No pull requests.",
-  issues: "No issues.",
   output: "No output.",
   debug: "No debug entries.",
 };
@@ -29,7 +20,6 @@ const tabPlaceholders: Record<BottomTab, string> = {
 function BottomPanelComponent() {
   const activeTab = useUIStore((s) => s.activeBottomTab);
   const setTab = useUIStore((s) => s.setBottomTab);
-  const selectedDiffFile = useUIStore((s) => s.selectedDiffFile);
   const debugCount = useDebugStore((s) => s.entries.length);
 
   const tabs = import.meta.env.DEV
@@ -65,22 +55,6 @@ function BottomPanelComponent() {
       {activeTab === "log" ? (
         <div className="flex-1 overflow-hidden">
           <GitLogPanel />
-        </div>
-      ) : activeTab === "git" && selectedDiffFile ? (
-        <div className="flex-1 overflow-auto">
-          <DiffViewer
-            cwd={selectedDiffFile.cwd}
-            filePath={selectedDiffFile.path}
-            staged={selectedDiffFile.staged}
-          />
-        </div>
-      ) : activeTab === "prs" ? (
-        <div className="flex-1 overflow-hidden">
-          <PRListPanel />
-        </div>
-      ) : activeTab === "issues" ? (
-        <div className="flex-1 overflow-hidden">
-          <IssueListPanel />
         </div>
       ) : activeTab === "output" ? (
         <div className="flex-1 overflow-hidden">

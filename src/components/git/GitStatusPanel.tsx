@@ -26,7 +26,6 @@ export function GitStatusPanel() {
   const addAndActivateProject = useProjectsStore((s) => s.addAndActivateProject);
   const setActiveProject = useProjectsStore((s) => s.setActiveProject);
   const openTab = useSessionStore((s) => s.openTab);
-  const setSelectedDiffFile = useUIStore((s) => s.setSelectedDiffFile);
   const setBottomTab = useUIStore((s) => s.setBottomTab);
   const bottomPanelOpen = useUIStore((s) => s.bottomPanelOpen);
   const toggleBottomPanel = useUIStore((s) => s.toggleBottomPanel);
@@ -218,15 +217,6 @@ export function GitStatusPanel() {
         },
         activeProjectId
       );
-    } else {
-      if (!activeProjectDir) return;
-      setSelectedDiffFile({
-        cwd: activeProjectDir,
-        path: file.path,
-        staged: file.section === "Staged",
-      });
-      setBottomTab("git");
-      if (!bottomPanelOpen) toggleBottomPanel();
     }
   };
 
