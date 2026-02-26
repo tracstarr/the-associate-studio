@@ -10,13 +10,6 @@ fn get_linear_api_key() -> Option<String> {
         .ok()
 }
 
-fn get_jira_api_token() -> Option<String> {
-    keyring::Entry::new(KEYRING_SERVICE, "jira-api-token")
-        .ok()?
-        .get_password()
-        .ok()
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PullRequest {
     pub number: u32,
@@ -540,16 +533,138 @@ pub async fn cmd_list_linear_issues(state: String) -> Result<Vec<Issue>, String>
     Ok(issues)
 }
 
+fn extract_adf_text(node: &serde_json::Value) -> String {
+    let obj = match node.as_object() {
+        Some(o) => o,
+        None => return String::new(),
+    };
+    let node_type = obj.get("type").and_then(|t| t.as_str()).unwrap_or("");
+    if node_type == "text" {
+        return obj.get("text").and_then(|t| t.as_str()).unwrap_or("").to_string();
+    }
+    if node_type == "hardBreak" {
+        return "\n".to_string();
+    }
+    let parts: Vec<String> = obj
+        .get("content")
+        .and_then(|c| c.as_array())
+        .map(|arr| arr.iter().map(|c| extract_adf_text(c)).collect())
+        .unwrap_or_default();
+    match node_type {
+        "paragraph" | "heading" => format!("{}\n", parts.join("")),
+        "listItem" => format!("• {}", parts.join("")),
+        _ => parts.join(""),
+    }
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct JiraIssueDetail {
+    pub key: String,
+    pub summary: String,
+    pub status: String,
+    pub description: Option<String>,
+    pub assignee: Option<String>,
+    pub reporter: Option<String>,
+    pub priority: Option<String>,
+    pub issue_type: Option<String>,
+    pub created: String,
+    pub updated: String,
+    pub labels: Vec<String>,
+    pub comment_count: u32,
+    pub url: String,
+}
+
+#[tauri::command]
+pub async fn cmd_get_jira_issue(
+    base_url: String,
+    email: String,
+    api_token: String,
+    issue_key: String,
+) -> Result<JiraIssueDetail, String> {
+    let url = format!(
+        "{}/rest/api/3/issue/{}?fields=summary,description,status,assignee,reporter,priority,issuetype,created,updated,labels,comment",
+        base_url.trim_end_matches('/'),
+        issue_key
+    );
+
+    let client = reqwest::Client::new();
+    let res = client
+        .get(&url)
+        .basic_auth(&email, Some(&api_token))
+        .send()
+        .await
+        .map_err(|e| format!("Jira request failed: {}", e))?;
+
+    if !res.status().is_success() {
+        let status = res.status();
+        let body = res.text().await.unwrap_or_default();
+        return Err(format!("Jira API error {}: {}", status, body));
+    }
+
+    let json: serde_json::Value = res
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse Jira response: {}", e))?;
+
+    let key = json["key"].as_str().unwrap_or("").to_string();
+    let fields = &json["fields"];
+
+    let summary = fields["summary"].as_str().unwrap_or("").to_string();
+    let status = fields["status"]["name"].as_str().unwrap_or("").to_string();
+
+    let description = if fields["description"].is_null() {
+        None
+    } else {
+        let text = extract_adf_text(&fields["description"]).trim().to_string();
+        if text.is_empty() { None } else { Some(text) }
+    };
+
+    let assignee = fields["assignee"]["displayName"].as_str().map(|s| s.to_string());
+    let reporter = fields["reporter"]["displayName"].as_str().map(|s| s.to_string());
+    let priority = fields["priority"]["name"].as_str().map(|s| s.to_string());
+    let issue_type = fields["issuetype"]["name"].as_str().map(|s| s.to_string());
+
+    let created = fields["created"].as_str().unwrap_or("").to_string();
+    let updated = fields["updated"].as_str().unwrap_or("").to_string();
+
+    let labels: Vec<String> = fields["labels"]
+        .as_array()
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|v| v.as_str())
+                .map(|s| s.to_string())
+                .collect()
+        })
+        .unwrap_or_default();
+
+    let comment_count = fields["comment"]["total"].as_u64().unwrap_or(0) as u32;
+    let url_val = format!("{}/browse/{}", base_url.trim_end_matches('/'), key);
+
+    Ok(JiraIssueDetail {
+        key,
+        summary,
+        status,
+        description,
+        assignee,
+        reporter,
+        priority,
+        issue_type,
+        created,
+        updated,
+        labels,
+        comment_count,
+        url: url_val,
+    })
+}
+
 #[tauri::command]
 pub async fn cmd_list_jira_issues(
     base_url: String,
     email: String,
+    api_token: String,
     state: String,
 ) -> Result<Vec<Issue>, String> {
-    let token = match get_jira_api_token() {
-        Some(t) => t,
-        None => return Ok(vec![]),
-    };
+    let token = api_token;
 
     let jql = match state.as_str() {
         "open"   => "statusCategory in (new, indeterminate) ORDER BY created DESC",
@@ -557,9 +672,9 @@ pub async fn cmd_list_jira_issues(
         _        => "ORDER BY created DESC",
     };
 
-    let url = format!("{}/rest/api/3/search", base_url.trim_end_matches('/'));
+    let url = format!("{}/rest/api/3/search/jql", base_url.trim_end_matches('/'));
     let client = reqwest::Client::new();
-    let res = match client
+    let res = client
         .get(&url)
         .basic_auth(&email, Some(&token))
         .query(&[
@@ -569,19 +684,16 @@ pub async fn cmd_list_jira_issues(
         ])
         .send()
         .await
-    {
-        Ok(r) => r,
-        Err(_) => return Ok(vec![]),
-    };
+        .map_err(|e| format!("Jira request failed: {}", e))?;
 
     if !res.status().is_success() {
-        return Ok(vec![]);
+        let status = res.status();
+        let body = res.text().await.unwrap_or_default();
+        return Err(format!("Jira API error {}: {}", status, body));
     }
 
-    let json: serde_json::Value = match res.json().await {
-        Ok(v) => v,
-        Err(_) => return Ok(vec![]),
-    };
+    let json: serde_json::Value = res.json().await
+        .map_err(|e| format!("Failed to parse Jira response: {}", e))?;
 
     #[derive(Deserialize)] struct JiraIssue { key: String, fields: JiraFields }
     #[derive(Deserialize)] struct JiraFields {
@@ -599,7 +711,7 @@ pub async fn cmd_list_jira_issues(
 
     let raw = match json["issues"].as_array() {
         Some(a) => a.clone(),
-        None => return Ok(vec![]),
+        None => return Err(format!("Unexpected Jira response shape: {}", json)),
     };
 
     let issues = raw

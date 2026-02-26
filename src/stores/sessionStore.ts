@@ -4,7 +4,7 @@ import { useNotificationStore } from "./notificationStore";
 
 export interface SessionTab {
   id: string;
-  type?: "terminal" | "plan" | "readme" | "settings" | "diff" | "session-view" | "file" | "summary" | "pr-detail" | "extension";
+  type?: "terminal" | "plan" | "readme" | "settings" | "diff" | "session-view" | "file" | "summary" | "pr-detail" | "extension" | "issue-detail";
   projectDir: string;
   sessionId?: string;
   title: string;
@@ -19,6 +19,9 @@ export interface SessionTab {
   prNumber?: number; // only for type === "pr-detail"
   markdownContent?: string; // inline markdown for type === "extension"
   forkSession?: boolean; // when true, spawns with --fork-session flag
+  issueKey?: string; // Jira key "PROJ-123", GitHub "#42", Linear identifier; for type === "issue-detail"
+  issueSource?: "github" | "linear" | "jira"; // source system; for type === "issue-detail"
+  issueUrl?: string; // direct link to open externally; for type === "issue-detail"
 }
 
 interface SessionStore {

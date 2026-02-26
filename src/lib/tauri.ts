@@ -459,8 +459,28 @@ export function listLinearIssues(state = "open"): Promise<Issue[]> {
   return invoke("cmd_list_linear_issues", { state });
 }
 
-export function listJiraIssues(baseUrl: string, email: string, state = "open"): Promise<Issue[]> {
-  return invoke("cmd_list_jira_issues", { baseUrl, email, state });
+export function listJiraIssues(baseUrl: string, email: string, apiToken: string, state = "open"): Promise<Issue[]> {
+  return invoke("cmd_list_jira_issues", { baseUrl, email, apiToken, state });
+}
+
+export interface JiraIssueDetail {
+  key: string;
+  summary: string;
+  status: string;
+  description?: string;
+  assignee?: string;
+  reporter?: string;
+  priority?: string;
+  issue_type?: string;
+  created: string;
+  updated: string;
+  labels: string[];
+  comment_count: number;
+  url: string;
+}
+
+export function getJiraIssueDetail(baseUrl: string, email: string, apiToken: string, issueKey: string): Promise<JiraIssueDetail> {
+  return invoke("cmd_get_jira_issue", { baseUrl, email, apiToken, issueKey });
 }
 
 // ---- Hook / Session Tracking Types ----

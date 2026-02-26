@@ -253,12 +253,22 @@ export function useLinearIssues(hasKey: boolean, state = "open") {
   });
 }
 
-export function useJiraIssues(hasCredentials: boolean, baseUrl: string, email: string, state = "open") {
+export function useJiraIssues(hasCredentials: boolean, baseUrl: string, email: string, apiToken: string, state = "open") {
   return useQuery({
     queryKey: ["jira-issues", state, baseUrl, email, hasCredentials],
-    queryFn: () => tauri.listJiraIssues(baseUrl, email, state),
+    queryFn: () => tauri.listJiraIssues(baseUrl, email, apiToken, state),
     enabled: hasCredentials,
     staleTime: 60_000,
+    retry: false,
+  });
+}
+
+export function useJiraIssueDetail(enabled: boolean, baseUrl: string, email: string, apiToken: string, issueKey: string) {
+  return useQuery({
+    queryKey: ["jira-issue", issueKey],
+    queryFn: () => tauri.getJiraIssueDetail(baseUrl, email, apiToken, issueKey),
+    enabled: enabled && !!issueKey,
+    staleTime: 120_000,
     retry: false,
   });
 }

@@ -7,12 +7,27 @@ const KEYRING_SERVICE: &str = "the-associate-studio";
 
 fn secret_set(key: &str, value: &str) -> Result<(), String> {
     let entry = keyring::Entry::new(KEYRING_SERVICE, key).map_err(|e| e.to_string())?;
-    entry.set_password(value).map_err(|e| e.to_string())
+    match entry.set_password(value) {
+        Ok(()) => {
+            eprintln!("[keyring] set '{}' OK", key);
+            Ok(())
+        }
+        Err(e) => {
+            eprintln!("[keyring] set '{}' FAILED: {}", key, e);
+            Err(e.to_string())
+        }
+    }
 }
 
 fn secret_get(key: &str) -> Option<String> {
     let entry = keyring::Entry::new(KEYRING_SERVICE, key).ok()?;
-    entry.get_password().ok()
+    match entry.get_password() {
+        Ok(v) => Some(v),
+        Err(e) => {
+            eprintln!("[keyring] get '{}' failed: {}", key, e);
+            None
+        }
+    }
 }
 
 fn secret_delete(key: &str) {
@@ -27,14 +42,28 @@ pub struct IntegrationSecrets {
     pub github_token: Option<String>,
     pub linear_api_key: Option<String>,
     pub jira_api_token: Option<String>,
+    pub jira_keyring_error: Option<String>,
+}
+
+fn secret_get_with_error(key: &str) -> (Option<String>, Option<String>) {
+    let entry = match keyring::Entry::new(KEYRING_SERVICE, key) {
+        Ok(e) => e,
+        Err(e) => return (None, Some(format!("Entry creation failed: {}", e))),
+    };
+    match entry.get_password() {
+        Ok(v) => (Some(v), None),
+        Err(e) => (None, Some(format!("{}", e))),
+    }
 }
 
 #[tauri::command]
 pub async fn cmd_load_integration_secrets() -> Result<IntegrationSecrets, String> {
+    let (jira_api_token, jira_keyring_error) = secret_get_with_error("jira-api-token");
     Ok(IntegrationSecrets {
         github_token: secret_get("github-token"),
         linear_api_key: secret_get("linear-api-key"),
-        jira_api_token: secret_get("jira-api-token"),
+        jira_api_token,
+        jira_keyring_error,
     })
 }
 

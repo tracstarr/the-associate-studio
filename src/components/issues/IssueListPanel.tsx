@@ -2,14 +2,16 @@ import { useState, useMemo } from "react";
 import { CircleDot, CheckCircle2, Github } from "lucide-react";
 import { useIssues, useLinearIssues, useJiraIssues } from "@/hooks/useClaudeData";
 import { useProjectsStore } from "@/stores/projectsStore";
+import { useSessionStore } from "@/stores/sessionStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import type { Issue } from "@/lib/tauri";
-import { cn } from "@/lib/utils";
+import { cn, pathToProjectId } from "@/lib/utils";
 
 export function IssueListPanel() {
   const activeProjectDir = useProjectsStore((s) =>
     s.projects.find((p) => p.id === s.activeProjectId)?.path ?? null
   );
+  const openTab = useSessionStore((s) => s.openTab);
   const linearApiKey = useSettingsStore((s) => s.linearApiKey);
   const jiraBaseUrl = useSettingsStore((s) => s.jiraBaseUrl);
   const jiraEmail = useSettingsStore((s) => s.jiraEmail);
@@ -17,9 +19,28 @@ export function IssueListPanel() {
   const hasJira = !!(jiraBaseUrl && jiraEmail && jiraApiToken);
   const [state, setState] = useState<"open" | "closed" | "all">("open");
 
+  const openIssueTab = (issue: Issue) => {
+    if (!activeProjectDir) return;
+    const projectId = pathToProjectId(activeProjectDir);
+    const key = issue.identifier ?? String(issue.number);
+    const title = issue.source === "github" ? `#${issue.number}` : key;
+    openTab(
+      {
+        id: `issue:${issue.source}:${key}`,
+        type: "issue-detail",
+        title,
+        projectDir: activeProjectDir,
+        issueKey: key,
+        issueSource: issue.source,
+        issueUrl: issue.url,
+      },
+      projectId
+    );
+  };
+
   const { data: ghIssues, isLoading: ghLoading, refetch: ghRefetch } = useIssues(activeProjectDir, state);
   const { data: linearIssues, isLoading: linearLoading, refetch: linearRefetch } = useLinearIssues(!!linearApiKey, state);
-  const { data: jiraIssues, isLoading: jiraLoading, refetch: jiraRefetch } = useJiraIssues(hasJira, jiraBaseUrl, jiraEmail, state);
+  const { data: jiraIssues, isLoading: jiraLoading, error: jiraError, refetch: jiraRefetch } = useJiraIssues(hasJira, jiraBaseUrl, jiraEmail, jiraApiToken, state);
 
   const issues = useMemo(() => {
     const all = [...(ghIssues ?? []), ...(linearIssues ?? []), ...(jiraIssues ?? [])];
@@ -71,13 +92,18 @@ export function IssueListPanel() {
         {isLoading && (
           <div className="p-3 text-xs text-[var(--color-text-muted)]">Loading...</div>
         )}
-        {!isLoading && issues.length === 0 && (
+        {!isLoading && jiraError && (
+          <div className="p-3 text-xs text-[var(--color-status-error)] break-all">
+            Jira: {String(jiraError)}
+          </div>
+        )}
+        {!isLoading && issues.length === 0 && !jiraError && (
           <div className="p-3 text-xs text-[var(--color-text-muted)] text-center">
             No {state === "all" ? "" : state} issues
           </div>
         )}
         {issues.map((issue, i) => (
-          <IssueItem key={`${issue.source}-${issue.identifier ?? issue.number}-${i}`} issue={issue} />
+          <IssueItem key={`${issue.source}-${issue.identifier ?? issue.number}-${i}`} issue={issue} onSelect={openIssueTab} />
         ))}
       </div>
     </div>
@@ -113,12 +139,15 @@ function SourceBadge({ source }: { source: Issue["source"] }) {
   return null;
 }
 
-function IssueItem({ issue }: { issue: Issue }) {
+function IssueItem({ issue, onSelect }: { issue: Issue; onSelect: (issue: Issue) => void }) {
   const timeAgo = formatTimeAgo(issue.created_at);
   const displayId = issue.identifier ?? `#${issue.number}`;
 
   return (
-    <div className="px-3 py-2 border-b border-[var(--color-border-muted)] hover:bg-[var(--color-bg-raised)] transition-all duration-200">
+    <div
+      className="px-3 py-2 border-b border-[var(--color-border-muted)] hover:bg-[var(--color-bg-raised)] transition-all duration-200 cursor-pointer"
+      onClick={() => onSelect(issue)}
+    >
       <div className="flex items-start gap-2">
         <SourceBadge source={issue.source} />
         {issue.state === "open" ? (

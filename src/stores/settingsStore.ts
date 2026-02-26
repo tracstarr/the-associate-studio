@@ -99,7 +99,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   setJiraApiToken: (jiraApiToken) => set({ jiraApiToken }),
   setJiraUsername: (jiraUsername) => {
     set({ jiraUsername });
-    persistConfig({ fontSize: get().fontSize, fontFamily: get().fontFamily, githubClientId: get().githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail: get().jiraEmail, jiraUsername, openStartupFiles: get().openStartupFiles, dangerouslySkipPermissions: get().dangerouslySkipPermissions, nativeNotificationsEnabled: get().nativeNotificationsEnabled });
+    persistConfig({ fontSize: get().fontSize, fontFamily: get().fontFamily, githubClientId: get().githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail: get().jiraEmail, jiraApiToken: get().jiraApiToken, jiraUsername, openStartupFiles: get().openStartupFiles, dangerouslySkipPermissions: get().dangerouslySkipPermissions, nativeNotificationsEnabled: get().nativeNotificationsEnabled });
   },
 
   loadFromDisk: async () => {
@@ -138,11 +138,15 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         github_token: string | null;
         linear_api_key: string | null;
         jira_api_token: string | null;
+        jira_keyring_error: string | null;
       }>("cmd_load_integration_secrets");
 
       if (secrets.github_token) set({ githubToken: secrets.github_token });
       if (secrets.linear_api_key) set({ linearApiKey: secrets.linear_api_key });
       if (secrets.jira_api_token) set({ jiraApiToken: secrets.jira_api_token });
+      if (secrets.jira_keyring_error) {
+        debugLog("Settings", "Jira keyring read failed", { error: secrets.jira_keyring_error }, "error");
+      }
       debugLog("Settings", "Secrets loaded from keyring", { hasGithub: !!secrets.github_token, hasLinear: !!secrets.linear_api_key, hasJira: !!secrets.jira_api_token }, "success");
     } catch {
       // not in Tauri context
