@@ -9,6 +9,7 @@ interface SettingsStore {
   fontFamily: string;
   openStartupFiles: boolean;
   dangerouslySkipPermissions: boolean;
+  nativeNotificationsEnabled: boolean;
 
   // GitHub (token in Windows Credential Manager, rest in settings.json)
   githubClientId: string;
@@ -30,6 +31,7 @@ interface SettingsStore {
   setFontFamily: (family: string) => void;
   setOpenStartupFiles: (value: boolean) => void;
   setDangerouslySkipPermissions: (value: boolean) => void;
+  setNativeNotificationsEnabled: (value: boolean) => void;
   setGithubClientId: (id: string) => void;
   setGithubToken: (token: string) => void;
   setGithubUsername: (name: string | null) => void;
@@ -47,6 +49,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   fontFamily: "Cascadia Code, JetBrains Mono, Fira Code, monospace",
   openStartupFiles: false,
   dangerouslySkipPermissions: false,
+  nativeNotificationsEnabled: true,
   githubClientId: "",
   githubToken: "",
   githubUsername: null,
@@ -59,23 +62,27 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
 
   setFontSize: (fontSize) => {
     set({ fontSize });
-    persistConfig({ fontSize, fontFamily: get().fontFamily, githubClientId: get().githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail: get().jiraEmail, openStartupFiles: get().openStartupFiles, dangerouslySkipPermissions: get().dangerouslySkipPermissions });
+    persistConfig({ fontSize, fontFamily: get().fontFamily, githubClientId: get().githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail: get().jiraEmail, openStartupFiles: get().openStartupFiles, dangerouslySkipPermissions: get().dangerouslySkipPermissions, nativeNotificationsEnabled: get().nativeNotificationsEnabled });
   },
   setFontFamily: (fontFamily) => {
     set({ fontFamily });
-    persistConfig({ fontSize: get().fontSize, fontFamily, githubClientId: get().githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail: get().jiraEmail, openStartupFiles: get().openStartupFiles, dangerouslySkipPermissions: get().dangerouslySkipPermissions });
+    persistConfig({ fontSize: get().fontSize, fontFamily, githubClientId: get().githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail: get().jiraEmail, openStartupFiles: get().openStartupFiles, dangerouslySkipPermissions: get().dangerouslySkipPermissions, nativeNotificationsEnabled: get().nativeNotificationsEnabled });
   },
   setOpenStartupFiles: (openStartupFiles) => {
     set({ openStartupFiles });
-    persistConfig({ fontSize: get().fontSize, fontFamily: get().fontFamily, githubClientId: get().githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail: get().jiraEmail, openStartupFiles, dangerouslySkipPermissions: get().dangerouslySkipPermissions });
+    persistConfig({ fontSize: get().fontSize, fontFamily: get().fontFamily, githubClientId: get().githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail: get().jiraEmail, openStartupFiles, dangerouslySkipPermissions: get().dangerouslySkipPermissions, nativeNotificationsEnabled: get().nativeNotificationsEnabled });
   },
   setDangerouslySkipPermissions: (dangerouslySkipPermissions) => {
     set({ dangerouslySkipPermissions });
-    persistConfig({ fontSize: get().fontSize, fontFamily: get().fontFamily, githubClientId: get().githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail: get().jiraEmail, openStartupFiles: get().openStartupFiles, dangerouslySkipPermissions });
+    persistConfig({ fontSize: get().fontSize, fontFamily: get().fontFamily, githubClientId: get().githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail: get().jiraEmail, openStartupFiles: get().openStartupFiles, dangerouslySkipPermissions, nativeNotificationsEnabled: get().nativeNotificationsEnabled });
+  },
+  setNativeNotificationsEnabled: (nativeNotificationsEnabled) => {
+    set({ nativeNotificationsEnabled });
+    persistConfig({ fontSize: get().fontSize, fontFamily: get().fontFamily, githubClientId: get().githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail: get().jiraEmail, openStartupFiles: get().openStartupFiles, dangerouslySkipPermissions: get().dangerouslySkipPermissions, nativeNotificationsEnabled });
   },
   setGithubClientId: (githubClientId) => {
     set({ githubClientId });
-    persistConfig({ fontSize: get().fontSize, fontFamily: get().fontFamily, githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail: get().jiraEmail, openStartupFiles: get().openStartupFiles, dangerouslySkipPermissions: get().dangerouslySkipPermissions });
+    persistConfig({ fontSize: get().fontSize, fontFamily: get().fontFamily, githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail: get().jiraEmail, openStartupFiles: get().openStartupFiles, dangerouslySkipPermissions: get().dangerouslySkipPermissions, nativeNotificationsEnabled: get().nativeNotificationsEnabled });
   },
   setGithubToken: (githubToken) => set({ githubToken }),
   setGithubUsername: (githubUsername) => set({ githubUsername }),
@@ -83,11 +90,11 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   setLinearUsername: (linearUsername) => set({ linearUsername }),
   setJiraBaseUrl: (jiraBaseUrl) => {
     set({ jiraBaseUrl });
-    persistConfig({ fontSize: get().fontSize, fontFamily: get().fontFamily, githubClientId: get().githubClientId, jiraBaseUrl, jiraEmail: get().jiraEmail, openStartupFiles: get().openStartupFiles, dangerouslySkipPermissions: get().dangerouslySkipPermissions });
+    persistConfig({ fontSize: get().fontSize, fontFamily: get().fontFamily, githubClientId: get().githubClientId, jiraBaseUrl, jiraEmail: get().jiraEmail, openStartupFiles: get().openStartupFiles, dangerouslySkipPermissions: get().dangerouslySkipPermissions, nativeNotificationsEnabled: get().nativeNotificationsEnabled });
   },
   setJiraEmail: (jiraEmail) => {
     set({ jiraEmail });
-    persistConfig({ fontSize: get().fontSize, fontFamily: get().fontFamily, githubClientId: get().githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail, openStartupFiles: get().openStartupFiles, dangerouslySkipPermissions: get().dangerouslySkipPermissions });
+    persistConfig({ fontSize: get().fontSize, fontFamily: get().fontFamily, githubClientId: get().githubClientId, jiraBaseUrl: get().jiraBaseUrl, jiraEmail, openStartupFiles: get().openStartupFiles, dangerouslySkipPermissions: get().dangerouslySkipPermissions, nativeNotificationsEnabled: get().nativeNotificationsEnabled });
   },
   setJiraApiToken: (jiraApiToken) => set({ jiraApiToken }),
   setJiraUsername: (jiraUsername) => set({ jiraUsername }),
@@ -104,6 +111,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       const jiraEmail = await store.get<string>("jiraEmail");
       const openStartupFiles = await store.get<boolean>("openStartupFiles");
       const dangerouslySkipPermissions = await store.get<boolean>("dangerouslySkipPermissions");
+      const nativeNotificationsEnabled = await store.get<boolean>("nativeNotificationsEnabled");
       set({
         ...(fontSize != null && { fontSize }),
         ...(fontFamily != null && { fontFamily }),
@@ -112,6 +120,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         ...(jiraEmail != null && { jiraEmail }),
         ...(openStartupFiles != null && { openStartupFiles }),
         ...(dangerouslySkipPermissions != null && { dangerouslySkipPermissions }),
+        ...(nativeNotificationsEnabled != null && { nativeNotificationsEnabled }),
       });
       debugLog("Settings", "Config loaded from disk", { fontSize, fontFamily, githubClientId }, "success");
     } catch {
@@ -145,6 +154,7 @@ interface Config {
   jiraEmail: string;
   openStartupFiles: boolean;
   dangerouslySkipPermissions: boolean;
+  nativeNotificationsEnabled: boolean;
 }
 
 let persistTimer: ReturnType<typeof setTimeout> | null = null;
@@ -162,6 +172,7 @@ function persistConfig(config: Config) {
       await store.set("jiraEmail", config.jiraEmail);
       await store.set("openStartupFiles", config.openStartupFiles);
       await store.set("dangerouslySkipPermissions", config.dangerouslySkipPermissions);
+      await store.set("nativeNotificationsEnabled", config.nativeNotificationsEnabled);
       await store.save();
     } catch {
       // not in Tauri context

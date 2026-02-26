@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { listen } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { isPermissionGranted, requestPermission, sendNotification } from "@tauri-apps/plugin-notification";
 import * as tauri from "../lib/tauri";
 import { getActiveSessions } from "../lib/tauri";
 import type { HookEvent } from "../lib/tauri";
@@ -8,7 +10,29 @@ import { pathToProjectId } from "../lib/utils";
 import { useSessionStore } from "../stores/sessionStore";
 import { useProjectsStore } from "../stores/projectsStore";
 import { useNotificationStore } from "../stores/notificationStore";
+import { useSettingsStore } from "../stores/settingsStore";
 import { debugLog } from "../stores/debugStore";
+
+async function maybeSendNativeNotification(
+  title: string,
+  body: string,
+  enabled: boolean
+): Promise<void> {
+  if (!enabled) return;
+  try {
+    const focused = await getCurrentWindow().isFocused();
+    if (focused) return;
+    let granted = await isPermissionGranted();
+    if (!granted) {
+      const perm = await requestPermission();
+      granted = perm === "granted";
+    }
+    if (!granted) return;
+    sendNotification({ title, body });
+  } catch {
+    // swallow: not in Tauri context or permission API unavailable
+  }
+}
 
 // ---- Summary Hooks ----
 
@@ -90,6 +114,25 @@ export function usePlans() {
   return useQuery({
     queryKey: ["plans"],
     queryFn: () => tauri.loadPlans(),
+    staleTime: 10_000,
+  });
+}
+
+// ---- Notes Hooks ----
+
+export function useGlobalNotes() {
+  return useQuery({
+    queryKey: ["notes", "global"],
+    queryFn: () => tauri.loadGlobalNotes(),
+    staleTime: 10_000,
+  });
+}
+
+export function useProjectNotes(projectPath: string | null) {
+  return useQuery({
+    queryKey: ["notes", "project", projectPath],
+    queryFn: () => tauri.loadProjectNotes(projectPath!),
+    enabled: !!projectPath,
     staleTime: 10_000,
   });
 }
@@ -485,6 +528,11 @@ export function useClaudeWatcher() {
       })
     );
     unlisteners.push(
+      listen("notes-changed", () => {
+        queryClient.invalidateQueries({ queryKey: ["notes"] });
+      })
+    );
+    unlisteners.push(
       listen<{ tab_id: string; filename: string }>("plan-linked", ({ payload }) => {
         const s = useSessionStore.getState();
         s.linkPlan(payload.filename, payload.tab_id);
@@ -497,7 +545,7 @@ export function useClaudeWatcher() {
 
     // Claude CLI question detected — notify user
     unlisteners.push(
-      listen<{ tab_id: string; question: string }>("claude-question", ({ payload }) => {
+      listen<{ tab_id: string; question: string }>("claude-question", async ({ payload }) => {
         const { tabsByProject } = useSessionStore.getState();
         for (const [projectId, tabs] of Object.entries(tabsByProject)) {
           const tab = tabs.find((t) => t.id === payload.tab_id);
@@ -508,6 +556,9 @@ export function useClaudeWatcher() {
               sessionTitle: tab.title ?? "Session",
               question: payload.question,
             });
+            const { nativeNotificationsEnabled } = useSettingsStore.getState();
+            const body = `${tab.title ?? "Session"}: ${payload.question.slice(0, 100)}${payload.question.length > 100 ? "…" : ""}`;
+            await maybeSendNativeNotification("Claude needs input", body, nativeNotificationsEnabled);
             break;
           }
         }
@@ -518,7 +569,7 @@ export function useClaudeWatcher() {
     unlisteners.push(
       listen<{ session_id: string; project_path: string; project_dir: string; filename: string; preview: string }>(
         "session-summary",
-        ({ payload }) => {
+        async ({ payload }) => {
           debugLog("Hooks", "SessionSummary", { session_id: payload.session_id, filename: payload.filename }, "info");
           queryClient.invalidateQueries({ queryKey: ["summaries"] });
           const projectId = pathToProjectId(payload.project_path);
@@ -538,6 +589,9 @@ export function useClaudeWatcher() {
             filename: payload.filename,
             preview: payload.preview,
           });
+          const { nativeNotificationsEnabled } = useSettingsStore.getState();
+          const body = `${sessionTitle}: ${payload.preview.slice(0, 100)}${payload.preview.length > 100 ? "…" : ""}`;
+          await maybeSendNativeNotification("Session complete", body, nativeNotificationsEnabled);
         }
       )
     );

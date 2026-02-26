@@ -1,8 +1,15 @@
 import { create } from "zustand";
 
 export type SidebarView = "sessions" | "git" | "prs" | "files";
-export type RightTab = "context" | "teams" | "plans" | "docs";
+export type RightTab = "context" | "teams" | "plans" | "docs" | "notes";
 export type BottomTab = "log" | "git" | "prs" | "issues" | "output" | "debug";
+
+export interface PendingNoteRef {
+  filePath: string;
+  lineStart: number;
+  lineEnd: number;
+  quote: string;
+}
 
 export interface SelectedDiffFile {
   cwd: string;
@@ -24,6 +31,10 @@ interface UIStore {
   tabInitStatus: Record<string, 'initializing' | 'error'>;
   tabInitError: Record<string, string>;
   tabReloadKey: Record<string, number>;
+  pendingNoteRef: PendingNoteRef | null;
+  pendingNoteId: string | null;
+  pendingAttachToNoteId: string | null;
+  activeNoteId: string | null;
 
   toggleSidebar: () => void;
   toggleRightPanel: () => void;
@@ -41,6 +52,12 @@ interface UIStore {
   setTabInitStatus: (tabId: string, status: 'initializing' | 'error' | null) => void;
   setTabInitError: (tabId: string, error: string | null) => void;
   bumpReloadKey: (tabId: string) => void;
+  setPendingNoteRef: (ref: PendingNoteRef | null) => void;
+  openNotesWithRef: (ref: PendingNoteRef) => void;
+  openNoteById: (id: string) => void;
+  setPendingNoteId: (id: string | null) => void;
+  setPendingAttachToNoteId: (id: string | null) => void;
+  setActiveNoteId: (id: string | null) => void;
 }
 
 export const useUIStore = create<UIStore>((set) => ({
@@ -57,6 +74,10 @@ export const useUIStore = create<UIStore>((set) => ({
   tabInitStatus: {},
   tabInitError: {},
   tabReloadKey: {},
+  pendingNoteRef: null,
+  pendingNoteId: null,
+  pendingAttachToNoteId: null,
+  activeNoteId: null,
 
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   toggleRightPanel: () => set((s) => ({ rightPanelOpen: !s.rightPanelOpen })),
@@ -100,4 +121,10 @@ export const useUIStore = create<UIStore>((set) => ({
     set((s) => ({
       tabReloadKey: { ...s.tabReloadKey, [tabId]: (s.tabReloadKey[tabId] ?? 0) + 1 },
     })),
+  setPendingNoteRef: (ref) => set({ pendingNoteRef: ref }),
+  openNotesWithRef: (ref) => set({ pendingNoteRef: ref, activeRightTab: "notes", rightPanelOpen: true }),
+  openNoteById: (id) => set({ pendingNoteId: id, activeRightTab: "notes", rightPanelOpen: true }),
+  setPendingNoteId: (id) => set({ pendingNoteId: id }),
+  setPendingAttachToNoteId: (id) => set({ pendingAttachToNoteId: id }),
+  setActiveNoteId: (id) => set({ activeNoteId: id }),
 }));

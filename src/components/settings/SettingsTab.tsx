@@ -631,6 +631,31 @@ function LiveDangerouslySection() {
   );
 }
 
+function NotificationsSection() {
+  const { nativeNotificationsEnabled, setNativeNotificationsEnabled } = useSettingsStore();
+  return (
+    <div className="space-y-3">
+      <SectionLabel>Native Notifications</SectionLabel>
+      <div>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={nativeNotificationsEnabled}
+            onChange={(e) => setNativeNotificationsEnabled(e.target.checked)}
+            className="rounded-md"
+          />
+          <span className="text-xs font-medium text-text-secondary">
+            Show Windows notifications when app is in background
+          </span>
+        </label>
+        <p className="text-[11px] text-text-muted mt-1 ml-5">
+          Sends a toast to Windows Notification Center for Claude questions and session completions, only while the app is not focused.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ── Sticky section header ─────────────────────────────────────────────────────
 
 function SectionHeader({ children }: { children: React.ReactNode }) {
@@ -788,6 +813,8 @@ export function SettingsTab() {
           <div className="space-y-6">
             <SessionTrackingSection />
             <LiveDangerouslySection />
+            <div className="border-t border-border-muted" />
+            <NotificationsSection />
           </div>
         </section>
       </div>

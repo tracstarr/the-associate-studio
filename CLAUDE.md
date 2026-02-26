@@ -49,14 +49,14 @@ npm run tauri build      # release build
 | Area | Files | Purpose |
 |------|-------|---------|
 | Entry | `src/main.tsx`, `src/App.tsx` | No StrictMode; ErrorBoundary wraps IDEShell; loads settings + projects on mount |
-| Stores | `src/stores/uiStore.ts` | Panel visibility, sidebar/right/bottom tab state, neural field, debug panel |
+| Stores | `src/stores/uiStore.ts` | Panel visibility, sidebar/right/bottom tab state, neural field, debug panel, `pendingNoteRef` for editor→notes handoff |
 | | `src/stores/sessionStore.ts` | Per-project tabs (open/close/resume), subagent tracking, plan links |
 | | `src/stores/projectsStore.ts` | Multi-project management, active project, `pathToProjectId()` encoding |
 | | `src/stores/settingsStore.ts` | Font, GitHub/Linear/Jira config; secrets via keyring, rest via `settings.json` |
 | | `src/stores/notificationStore.ts` | Claude question notifications (per-tab, read/unread) |
 | | `src/stores/outputStore.ts` | Output panel messages (git actions, operations log) |
 | | `src/stores/debugStore.ts` | Dev-only debug log (max 500 entries) |
-| Hooks | `src/hooks/useClaudeData.ts` | React Query hooks for all data (sessions, teams, tasks, inbox, git, PRs, issues); `useClaudeWatcher()` listens for Tauri events |
+| Hooks | `src/hooks/useClaudeData.ts` | React Query hooks for all data (sessions, teams, tasks, inbox, git, PRs, issues, notes); `useClaudeWatcher()` listens for Tauri events |
 | | `src/hooks/useKeyBindings.ts` | Global keyboard shortcuts |
 | | `src/hooks/useGitAction.ts` | Wraps async git ops with output panel logging |
 | | `src/hooks/useActiveProjectTabs.ts` | Derives tabs/activeTab for current project |
@@ -83,9 +83,10 @@ npm run tauri build      # release build
 | | `commands/issues.rs` | List GitHub PRs, GitHub issues, and Linear issues |
 | | `commands/summaries.rs` | Load/read session completion summaries |
 | | `commands/files.rs` | Directory listing for file browser |
-| Data layer | `data/` module | File I/O + parsing for each domain: `sessions`, `transcripts`, `teams`, `tasks`, `inboxes`, `todos`, `plans`, `summaries`, `projects`, `git`, `hook_state`, `watcher_state`, `path_encoding` |
-| Models | `models/` module | Serde structs: `session`, `transcript`, `team`, `task`, `inbox`, `todo`, `plan`, `summary`, `git`, `hook_event` |
-| Watcher | `watcher/claude_watcher.rs` | Watches `~/.claude/` dirs (teams, tasks, projects, todos, plans, theassociate); emits Tauri events on file changes; parses `hook-events.jsonl` for session/subagent lifecycle |
+| | `commands/notes.rs` | Load/save/delete notes from `~/.claude/notes/` (global) and `~/.claude/projects/{encoded}/notes/` (per-project) |
+| Data layer | `data/` module | File I/O + parsing for each domain: `sessions`, `transcripts`, `teams`, `tasks`, `inboxes`, `todos`, `plans`, `notes`, `summaries`, `projects`, `git`, `hook_state`, `watcher_state`, `path_encoding` |
+| Models | `models/` module | Serde structs: `session`, `transcript`, `team`, `task`, `inbox`, `todo`, `plan`, `note`, `summary`, `git`, `hook_event` |
+| Watcher | `watcher/claude_watcher.rs` | Watches `~/.claude/` dirs (teams, tasks, projects, todos, plans, notes, theassociate); emits Tauri events on file changes; parses `hook-events.jsonl` for session/subagent lifecycle |
 
 ## Component areas
 
@@ -104,8 +105,9 @@ npm run tauri build      # release build
 | Notifications | `components/notifications/` | Claude question notification badges |
 | Settings | `components/settings/` | Settings tab (font, integrations) |
 | Debug | `components/debug/` | Dev-only debug panel (Ctrl+Shift+D) |
-| Files | `components/files/` | File browser sidebar view |
+| Files | `components/files/` | File browser sidebar view; `FileEditorTab` has Monaco selection → "Add to note" button |
 | README | `components/readme/` | README viewer/editor tab |
+| Notes | `components/notes/` | `NotesPanel` (orchestrator), `NotesList` (scoped list), `NoteEditor` (markdown editor + file refs) |
 
 ## Critical gotchas (details in docs)
 

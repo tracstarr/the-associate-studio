@@ -2,6 +2,7 @@ pub mod claude_config;
 pub mod git;
 pub mod hook_state;
 pub mod inboxes;
+pub mod notes;
 pub mod path_encoding;
 pub mod plans;
 pub mod projects;

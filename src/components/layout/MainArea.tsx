@@ -1,8 +1,11 @@
-import { memo, useState, useCallback } from "react";
+import { memo, useState, useCallback, useMemo } from "react";
 import { X, FileText, BookOpen, Settings, GitBranch, History, Terminal, Code2, CheckCircle2, GitPullRequest, Puzzle } from "lucide-react";
 import { useSessionStore } from "@/stores/sessionStore";
 import type { SessionTab } from "@/stores/sessionStore";
 import { useActiveProjectTabs } from "@/hooks/useActiveProjectTabs";
+import { useGlobalNotes, useProjectNotes } from "@/hooks/useClaudeData";
+import { useProjectsStore } from "@/stores/projectsStore";
+import { useUIStore } from "@/stores/uiStore";
 import { TerminalView } from "../terminal/TerminalView";
 import { SessionView } from "../sessions/SessionView";
 import { SummaryView } from "../sessions/SummaryView";
@@ -17,6 +20,25 @@ import { TabContextMenu } from "./TabContextMenu";
 import type { TabCloseAction } from "./TabContextMenu";
 import { CloseTabsWarningDialog } from "./CloseTabsWarningDialog";
 import { cn } from "@/lib/utils";
+
+function TabNoteIndicator({ filePath, noteFileSet }: { filePath: string; noteFileSet: Set<string> }) {
+  const normalized = filePath.replace(/\\/g, "/").toLowerCase();
+  if (!noteFileSet.has(normalized)) return null;
+  const setRightTab = useUIStore((s) => s.setRightTab);
+  const rightPanelOpen = useUIStore((s) => s.rightPanelOpen);
+  const toggleRightPanel = useUIStore((s) => s.toggleRightPanel);
+  return (
+    <button
+      title="Has notes — click to open Notes panel"
+      onClick={(e) => {
+        e.stopPropagation();
+        setRightTab("notes");
+        if (!rightPanelOpen) toggleRightPanel();
+      }}
+      className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent-primary)] shrink-0 hover:opacity-75 transition-all duration-200"
+    />
+  );
+}
 
 function tabAccent(tab: SessionTab, knownSessions: Record<string, "active" | "idle" | "completed">) {
   const isTerminal = !tab.type || tab.type === "terminal";
@@ -46,6 +68,19 @@ function MainAreaComponent({ projectId: projectIdProp }: { projectId?: string })
   const closeOtherTabs = useSessionStore((s) => s.closeOtherTabs);
   const closeTabsToLeft = useSessionStore((s) => s.closeTabsToLeft);
   const closeTabsToRight = useSessionStore((s) => s.closeTabsToRight);
+
+  const activeProject = useProjectsStore((s) => s.projects.find((p) => p.id === s.activeProjectId));
+  const { data: globalNotes } = useGlobalNotes();
+  const { data: projectNotes } = useProjectNotes(activeProject?.path ?? null);
+  const noteFileSet = useMemo(() => {
+    const s = new Set<string>();
+    for (const note of [...(globalNotes ?? []), ...(projectNotes ?? [])]) {
+      for (const ref of note.fileRefs) {
+        s.add(ref.filePath.replace(/\\/g, "/").toLowerCase());
+      }
+    }
+    return s;
+  }, [globalNotes, projectNotes]);
 
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tab: SessionTab } | null>(null);
   const [pendingClose, setPendingClose] = useState<{ action: TabCloseAction; tabId: string } | null>(null);
@@ -163,6 +198,9 @@ function MainAreaComponent({ projectId: projectIdProp }: { projectId?: string })
                 <Terminal size={10} className={cn("shrink-0", isActive ? accent.icon : "text-text-muted")} />
               )}
               {tab.title}
+              {tab.type === "file" && tab.filePath && (
+                <TabNoteIndicator filePath={tab.filePath} noteFileSet={noteFileSet} />
+              )}
               <button
                 className="text-text-muted hover:text-text-primary rounded-full hover:bg-bg-overlay p-0.5 transition-all duration-200"
                 onClick={(e) => {
