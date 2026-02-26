@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Architecture — The Associate Studio</title>
+<style>
+  :root {
+    --bg-base: #0F0F14;
+    --bg-surface: #181820;
+    --bg-raised: #22222C;
+    --bg-code: #1A1A24;
+    --gold: #D4A853;
+    --gold-dim: #B8933F;
+    --gold-glow: rgba(212,168,83,0.15);
+    --text-primary: #F5F5F8;
+    --text-secondary: #B0B0C0;
+    --text-muted: #7A7A92;
+    --border: #2A2A38;
+    --purple: #BC8CFF;
+    --green: #4ACA62;
+    --red: #F85149;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Inter", -apple-system, system-ui, sans-serif;
+    background: var(--bg-base);
+    color: var(--text-primary);
+    line-height: 1.7;
+  }
+  .doc-container {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 60px 32px;
+  }
+  .breadcrumb {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 40px;
+  }
+  .breadcrumb a { color: var(--gold); text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+  }
+  h1 span { color: var(--gold); }
+  .subtitle {
+    font-size: 1.15rem;
+    color: var(--text-secondary);
+    margin-bottom: 48px;
+  }
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 52px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--gold);
+    margin: 28px 0 12px;
+  }
+  p { margin: 0 0 16px; color: var(--text-secondary); }
+  ul, ol { margin: 0 0 20px 24px; color: var(--text-secondary); }
+  li { margin-bottom: 8px; }
+  li strong { color: var(--text-primary); }
+  code {
+    font-family: "Cascadia Code", "JetBrains Mono", "Fira Code", monospace;
+    background: var(--bg-code);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 0.88em;
+    color: var(--gold);
+    border: 1px solid var(--border);
+  }
+  pre {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    overflow-x: auto;
+    margin: 0 0 24px;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    border: none;
+    color: var(--text-secondary);
+  }
+  .callout {
+    background: var(--gold-glow);
+    border-left: 3px solid var(--gold);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 24px 0;
+  }
+  .callout p { color: var(--text-primary); margin: 0; }
+  .callout strong { color: var(--gold); }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 24px;
+  }
+  th {
+    text-align: left;
+    padding: 10px 14px;
+    background: var(--bg-surface);
+    color: var(--gold);
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+  td code { font-size: 0.82em; }
+  a { color: var(--gold); }
+  .diagram-box {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 24px 0;
+  }
+  .diagram-header {
+    padding: 10px 16px;
+    background: var(--bg-raised);
+    border-bottom: 1px solid var(--border);
+    font-size: 0.78rem;
+    color: var(--text-muted);
+  }
+  .diagram-body {
+    padding: 20px 24px;
+    overflow-x: auto;
+  }
+  .diagram-body pre {
+    margin: 0;
+    background: none;
+    border: none;
+    padding: 0;
+  }
+  .d-gold { color: var(--gold); }
+  .d-purple { color: var(--purple); }
+  .d-green { color: var(--green); }
+  .d-dim { color: var(--text-muted); }
+  .back-link {
+    display: inline-block;
+    margin-top: 48px;
+    padding: 10px 24px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--gold);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .back-link:hover { background: var(--bg-raised); }
+</style>
+</head>
+<body>
+<div class="doc-container">
+  <div class="breadcrumb"><a href="../index.html">Home</a> / <a href="index.html">Docs</a> / Architecture</div>
+
+  <h1>Archi<span>tecture</span></h1>
+  <p class="subtitle">How The Associate Studio is designed — from the window shell down to the file watcher.</p>
+
+  <h2>Overview</h2>
+  <p>The Associate Studio is a single-window desktop IDE built with <strong>Tauri v2</strong> (Rust backend + WebView2) and <strong>React 19</strong> (TypeScript frontend). One native window contains everything: multiple Claude CLI sessions, git integration, PR and issue panels, file browsing and editing, plans, team and agent visibility, notifications, a mission control dashboard, and settings.</p>
+  <p>No secondary windows. No system tray. No Electron. The compiled binary is approximately 10MB — compared to 200MB+ for equivalent Electron applications — because Tauri uses the operating system's existing WebView2 runtime instead of bundling Chromium.</p>
+
+  <h2>Layout Regions</h2>
+  <p>The IDE is divided into five resizable regions, each controlled independently:</p>
+
+  <div class="diagram-box">
+    <div class="diagram-header">Window Layout — 5 resizable regions</div>
+    <div class="diagram-body"><pre><code><span class="d-dim">┌─────────────────────────────────────────────────────────────────────┐</span>
+<span class="d-dim">│</span>  <span class="d-gold">The Associate Studio</span>  /  project-name          <span class="d-dim">[🔔] [─] [□] [✕]</span>  <span class="d-purple">TitleBar (36px)</span>
+<span class="d-dim">├──┬──────────────────────────────────────────────────────────────┬──┤</span>
+<span class="d-dim">│</span>  <span class="d-dim">│</span> <span class="d-gold">[Tabs: New Session ×  session2  +]</span>                          <span class="d-dim">│</span>  <span class="d-dim">│</span>
+<span class="d-dim">│</span><span class="d-purple">AB</span><span class="d-dim">│──────────────────────────────────────────────────────────</span><span class="d-dim">│</span><span class="d-purple">RA</span><span class="d-dim">│</span>
+<span class="d-dim">│</span>  <span class="d-dim">│</span> <span class="d-green">SIDEBAR (18%)</span> <span class="d-dim">│</span>  <span class="d-gold">MAIN CONTENT</span>              <span class="d-dim">│</span> <span class="d-purple">RIGHT (25%)</span><span class="d-dim">│</span>  <span class="d-dim">│</span>
+<span class="d-dim">│</span>  <span class="d-dim">│</span>               <span class="d-dim">│</span>                             <span class="d-dim">│</span>           <span class="d-dim">│</span>  <span class="d-dim">│</span>
+<span class="d-dim">│</span>  <span class="d-dim">│</span> Projects      <span class="d-dim">│</span>  xterm.js terminal          <span class="d-dim">│</span> Context   <span class="d-dim">│</span>  <span class="d-dim">│</span>
+<span class="d-dim">│</span>  <span class="d-dim">│</span> Git           <span class="d-dim">│</span>  Session viewer             <span class="d-dim">│</span> Teams     <span class="d-dim">│</span>  <span class="d-dim">│</span>
+<span class="d-dim">│</span>  <span class="d-dim">│</span> Files         <span class="d-dim">│</span>  Plan editor (Monaco)       <span class="d-dim">│</span> Plans     <span class="d-dim">│</span>  <span class="d-dim">│</span>
+<span class="d-dim">│</span>  <span class="d-dim">│</span> PRs           <span class="d-dim">│</span>  File editor (Monaco)       <span class="d-dim">│</span> Docs      <span class="d-dim">│</span>  <span class="d-dim">│</span>
+<span class="d-dim">│</span>  <span class="d-dim">│</span>               <span class="d-dim">│</span>  Settings                   <span class="d-dim">│</span> Notes     <span class="d-dim">│</span>  <span class="d-dim">│</span>
+<span class="d-dim">├──┴───────────────┴─────────────────────────────┴───────────┴──┤</span>
+<span class="d-dim">│</span>  <span class="d-green">BOTTOM PANEL (full-width, 25%)</span>                                   <span class="d-dim">│</span>
+<span class="d-dim">│</span>  <span class="d-gold">Log</span> <span class="d-dim">│</span> <span class="d-gold">Diff</span> <span class="d-dim">│</span> <span class="d-gold">PRs</span> <span class="d-dim">│</span> <span class="d-gold">Issues</span> <span class="d-dim">│</span> <span class="d-gold">Output</span>                             <span class="d-dim">│</span>
+<span class="d-dim">├──────────────────────────────────────────────────────────────────┤</span>
+<span class="d-dim">│</span>  <span class="d-dim">[branch]</span> <span class="d-dim">[sessions]</span> <span class="d-dim">[agents]</span>          <span class="d-dim">[todos]</span> <span class="d-dim">[status]</span>    <span class="d-dim">│</span>  <span class="d-purple">StatusBar (24px)</span>
+<span class="d-dim">└─────────────────────────────────────────────────────────────────────┘</span></code></pre></div>
+  </div>
+
+  <table>
+    <tr><th>Region</th><th>Size</th><th>Collapsible</th><th>Keybinding</th></tr>
+    <tr><td>TitleBar</td><td>36px fixed</td><td>No</td><td>—</td></tr>
+    <tr><td>Left ActivityBar</td><td>48px fixed</td><td>No</td><td>—</td></tr>
+    <tr><td>Sidebar</td><td>18% default</td><td>Yes</td><td><code>Ctrl+B</code></td></tr>
+    <tr><td>Main Content</td><td>flex</td><td>No</td><td>—</td></tr>
+    <tr><td>Right Panel</td><td>25% default</td><td>Yes</td><td><code>Ctrl+Shift+B</code></td></tr>
+    <tr><td>Bottom Panel</td><td>25% default</td><td>Yes</td><td><code>Ctrl+J</code></td></tr>
+    <tr><td>Right ActivityBar</td><td>48px fixed</td><td>No</td><td>—</td></tr>
+    <tr><td>StatusBar</td><td>24px fixed</td><td>No</td><td>—</td></tr>
+  </table>
+
+  <p>The bottom panel spans the full window width — it sits below the sidebar, main content, and right panel. This is achieved by wrapping the layout in a vertical <code>PanelGroup</code> with the top section (containing sidebar/main/right) as one panel and the bottom as a second panel.</p>
+
+  <h2>Component Tree</h2>
+  <p>Every visible element in the IDE maps to a React component. Here's the full tree from the root down:</p>
+
+  <div class="diagram-box">
+    <div class="diagram-header">React Component Hierarchy</div>
+    <div class="diagram-body"><pre><code><span class="d-gold">App.tsx</span>
+  ErrorBoundary <span class="d-dim">(outer)</span>
+  QueryClientProvider <span class="d-dim">(TanStack Query)</span>
+  ErrorBoundary <span class="d-dim">(inner)</span>
+  <span class="d-gold">IDEShell</span>
+    <span class="d-purple">TitleBar</span>            <span class="d-dim">— frameless drag + window controls + NotificationBell</span>
+    <span class="d-purple">IDELayout</span>           <span class="d-dim">— react-resizable-panels root (vertical)</span>
+      Panel <span class="d-dim">(top)</span>
+        <span class="d-green">ActivityBar</span>     <span class="d-dim">— 48px icon strip: Sessions, Git, Files, PRs, Bottom, Settings</span>
+        PanelGroup <span class="d-dim">(horizontal)</span>
+          <span class="d-green">Sidebar</span>       <span class="d-dim">— ProjectSwitcher | GitStatusPanel | FileBrowserPanel | PRListPanel</span>
+          <span class="d-gold">MainArea</span>      <span class="d-dim">— per-project tab bar + content area</span>
+            TabBar    <span class="d-dim">— open tabs with context menus</span>
+            TerminalView     <span class="d-dim">— xterm.js + PTY (hidden, never unmounted)</span>
+            SessionView      <span class="d-dim">— read-only session transcript</span>
+            PlanEditorView   <span class="d-dim">— Monaco editor for plan files</span>
+            ReadmeTab        <span class="d-dim">— Monaco editor for README.md</span>
+            FileEditorTab    <span class="d-dim">— Monaco editor for files</span>
+            SettingsTab      <span class="d-dim">— settings as a tab</span>
+            DiffViewer       <span class="d-dim">— inline diff viewer</span>
+          <span class="d-purple">RightPanel</span>    <span class="d-dim">— Context | Teams | Plans | Docs | Notes</span>
+        <span class="d-green">RightActivityBar</span> <span class="d-dim">— 48px icon strip: Context, Teams, Plans, Docs, Notes</span>
+      Panel <span class="d-dim">(bottom)</span>
+        <span class="d-green">BottomPanel</span>     <span class="d-dim">— Log | Diff | PRs | Issues | Output tabs</span>
+    <span class="d-purple">StatusBar</span>           <span class="d-dim">— branch, counts, Claude status</span>
+    CommandPalette      <span class="d-dim">— cmdk modal (Ctrl+P)</span>
+    NeuralFieldOverlay  <span class="d-dim">— fullscreen dashboard (Ctrl+Shift+Space)</span>
+    DebugPanel          <span class="d-dim">— DEV-only floating debug log</span></code></pre></div>
+  </div>
+
+  <h2>Tab System</h2>
+  <p>The main content area supports seven distinct tab types, each rendering a different component:</p>
+
+  <table>
+    <tr><th>Type</th><th>Component</th><th>Description</th></tr>
+    <tr><td><code>terminal</code></td><td>TerminalView</td><td>Live Claude CLI session via ConPTY</td></tr>
+    <tr><td><code>session-view</code></td><td>SessionView</td><td>Read-only transcript of a past session</td></tr>
+    <tr><td><code>plan</code></td><td>PlanEditorView</td><td>Monaco editor for markdown plan files</td></tr>
+    <tr><td><code>readme</code></td><td>ReadmeTab</td><td>Monaco editor for README.md</td></tr>
+    <tr><td><code>file</code></td><td>FileEditorTab</td><td>Monaco editor with 20+ language support</td></tr>
+    <tr><td><code>settings</code></td><td>SettingsTab</td><td>Application settings</td></tr>
+    <tr><td><code>diff</code></td><td>DiffViewer</td><td>Git diff viewer for specific files</td></tr>
+  </table>
+
+  <p>Tabs are isolated per project. Each project in <code>tabsByProject[projectId]</code> has its own tab array and active tab pointer. When switching projects, the entire tab set changes — there is no cross-project tab leakage.</p>
+
+  <div class="callout">
+    <p><strong>Never-unmount pattern:</strong> Terminal tabs are rendered with <code>display: none/block</code> rather than conditional mounting. This ensures PTY processes are never accidentally killed by React re-renders when switching between tabs.</p>
+  </div>
+
+  <h2>Data Flow</h2>
+
+  <h3>Terminal Session Lifecycle</h3>
+  <p>When a user clicks "New Session," the following chain executes:</p>
+  <ol>
+    <li><code>sessionStore.openTab()</code> creates a tab with type <code>terminal</code></li>
+    <li><code>TerminalView</code> mounts, calls <code>FitAddon.fit()</code> to measure rows and columns</li>
+    <li>Frontend invokes <code>pty_spawn</code> with the session ID, working directory, and terminal dimensions</li>
+    <li>Rust opens a ConPTY via <code>portable-pty</code>, spawns <code>claude</code> with <code>CLAUDECODE</code> env var removed</li>
+    <li>A reader thread emits <code>pty-data-{id}</code> events as output arrives</li>
+    <li>The frontend writes data to xterm.js via <code>term.write()</code></li>
+    <li>User input flows back through <code>pty_write</code> to the PTY stdin</li>
+  </ol>
+
+  <h3>File Watcher &rarr; Reactive UI</h3>
+  <p>The Rust <code>notify</code> crate watches specific subdirectories of <code>~/.claude/</code> using <code>ReadDirectoryChangesW</code> on Windows:</p>
+
+  <table>
+    <tr><th>Directory</th><th>Mode</th><th>Tauri Events</th></tr>
+    <tr><td><code>teams/</code></td><td>Recursive</td><td><code>team-changed</code>, <code>inbox-changed</code></td></tr>
+    <tr><td><code>tasks/</code></td><td>Recursive</td><td><code>task-changed</code></td></tr>
+    <tr><td><code>projects/</code></td><td>Recursive</td><td><code>session-changed</code>, <code>transcript-updated</code></td></tr>
+    <tr><td><code>todos/</code></td><td>NonRecursive</td><td><code>todos-changed</code></td></tr>
+    <tr><td><code>plans/</code></td><td>NonRecursive</td><td><code>plans-changed</code></td></tr>
+    <tr><td><code>notes/</code></td><td>NonRecursive</td><td><code>notes-changed</code></td></tr>
+    <tr><td><code>theassociate/</code></td><td>NonRecursive</td><td><code>hook-event</code>, <code>session-summary</code></td></tr>
+  </table>
+
+  <p>Events are debounced (100–500ms) and emitted as targeted Tauri events. The frontend's <code>useClaudeWatcher()</code> hook listens for these and invalidates the corresponding TanStack Query caches, triggering automatic refetches.</p>
+
+  <h3>Settings and Secrets</h3>
+  <p>On application mount, the frontend loads configuration from two sources:</p>
+  <ul>
+    <li><strong>settings.json</strong> (via <code>tauri-plugin-store</code>) — font size, font family, Jira base URL, Jira email, GitHub client ID. Non-sensitive preferences only.</li>
+    <li><strong>Windows Credential Manager</strong> (via <code>keyring</code> crate) — GitHub token, Linear API key, Jira API token. Encrypted with DPAPI.</li>
+  </ul>
+  <p>Secrets are loaded into the Zustand <code>settingsStore</code> in memory and are never serialized back to disk by the frontend.</p>
+
+  <h2>State Management</h2>
+  <p>The application splits state between two systems based on a clear principle: synchronous UI state goes to Zustand, async backend data goes to TanStack Query.</p>
+
+  <table>
+    <tr><th>Store</th><th>Library</th><th>Responsibility</th></tr>
+    <tr><td><code>uiStore</code></td><td>Zustand</td><td>Panel visibility, active views/tabs, command palette, neural field, pending note refs</td></tr>
+    <tr><td><code>sessionStore</code></td><td>Zustand</td><td>Per-project tabs, active tab per project, subagents, plan links, dirty tabs</td></tr>
+    <tr><td><code>settingsStore</code></td><td>Zustand</td><td>Font settings, integration credentials (in-memory mirror of keyring)</td></tr>
+    <tr><td><code>projectsStore</code></td><td>Zustand</td><td>Project list, active project ID, project CRUD</td></tr>
+    <tr><td><code>notificationStore</code></td><td>Zustand</td><td>Claude question and completion notifications with read/unread tracking</td></tr>
+    <tr><td><code>outputStore</code></td><td>Zustand</td><td>Output panel messages from git actions and system operations</td></tr>
+    <tr><td><code>debugStore</code></td><td>Zustand</td><td>DEV-only debug log entries (max 500)</td></tr>
+    <tr><td>Server data</td><td>TanStack Query</td><td>Sessions, teams, tasks, inbox, todos, plans, notes, git status/log/branches</td></tr>
+  </table>
+
+  <h2>Rust Backend</h2>
+  <p>The backend exposes <strong>44 Tauri commands</strong> across 17 modules, organized by domain:</p>
+
+  <table>
+    <tr><th>Module</th><th>Commands</th><th>Purpose</th></tr>
+    <tr><td>PTY</td><td>5</td><td>Spawn, resize, write, kill, kill-all for Claude CLI processes</td></tr>
+    <tr><td>Sessions</td><td>3</td><td>Load session index, load transcripts, delete sessions</td></tr>
+    <tr><td>Git</td><td>13</td><td>Status, diff, branches, log, worktrees, fetch, pull, rebase, add, ignore</td></tr>
+    <tr><td>Projects</td><td>11</td><td>List, create, delete, pick folder, read/write files, settings, docs detection</td></tr>
+    <tr><td>Issues</td><td>9</td><td>GitHub PRs/issues, Linear issues, Jira issues, labels, assignees</td></tr>
+    <tr><td>Integrations</td><td>8</td><td>OAuth device flow, token management, keyring operations</td></tr>
+    <tr><td>Hooks</td><td>4</td><td>Setup/remove CLI hooks, check configuration, get active sessions</td></tr>
+    <tr><td>Notes</td><td>4</td><td>Load/save/delete global and per-project notes</td></tr>
+    <tr><td>Plans</td><td>3</td><td>Load, read, save markdown plan files</td></tr>
+    <tr><td>Teams</td><td>2</td><td>Load teams (with CWD filtering), delete teams</td></tr>
+    <tr><td>Summaries</td><td>2</td><td>Load and read session completion summaries</td></tr>
+    <tr><td>Inbox</td><td>2</td><td>Load and send inter-agent inbox messages</td></tr>
+    <tr><td>Tasks</td><td>1</td><td>Load team tasks</td></tr>
+    <tr><td>Todos</td><td>1</td><td>Load todo files</td></tr>
+    <tr><td>Files</td><td>1</td><td>Directory listing for file browser</td></tr>
+    <tr><td>Extensions</td><td>1</td><td>Discover MCP servers, skills, agents, allowed tools</td></tr>
+  </table>
+
+  <p>The data layer consists of 15 modules handling file I/O and parsing for each domain, plus 12 model modules defining serde structs for all data types.</p>
+
+  <h2>Hook Event Pipeline</h2>
+  <p>Live session tracking flows through a dedicated pipeline that connects the Claude CLI process to the frontend UI:</p>
+
+  <div class="diagram-box">
+    <div class="diagram-header">Hook Event Pipeline</div>
+    <div class="diagram-body"><pre><code><span class="d-gold">Claude CLI process</span>
+  <span class="d-dim">└──</span> SessionStart / SubagentStart / Stop hooks fire
+       <span class="d-dim">└──</span> <span class="d-purple">hook.js</span> appends JSON line to hook-events.jsonl
+
+<span class="d-gold">claude_watcher.rs</span> <span class="d-dim">(notify crate)</span>
+  <span class="d-dim">└──</span> Watches ~/.claude/theassociate/ <span class="d-dim">(NonRecursive)</span>
+       <span class="d-dim">└──</span> On change: seeks to persisted offset, reads new lines
+            <span class="d-dim">└──</span> Persists new offset <span class="d-green">BEFORE</span> processing <span class="d-dim">(crash-safe)</span>
+            <span class="d-dim">└──</span> Parses each line as HookEvent
+                 <span class="d-dim">└──</span> app_handle.emit(<span class="d-green">"hook-event"</span>, &hook_event)
+
+<span class="d-gold">useClaudeWatcher</span> <span class="d-dim">(React)</span>
+  <span class="d-dim">└──</span> listen("hook-event", handler)
+       <span class="d-dim">├──</span> SessionStart  → resolveTabSession, markActive(<span class="d-green">true</span>)
+       <span class="d-dim">├──</span> SessionEnd    → markActive(<span class="d-red">false</span>)
+       <span class="d-dim">├──</span> SubagentStart → add to activeSubagents
+       <span class="d-dim">└──</span> SubagentStop  → remove from activeSubagents
+
+<span class="d-gold">UI</span>
+  <span class="d-dim">├──</span> SessionsList: <span class="d-green">green pulsing dot</span> when live, <span class="d-purple">N badge</span> for subagents
+  <span class="d-dim">└──</span> TeamsPanel / InboxPanel: filtered to active session's team</code></pre></div>
+  </div>
+
+  <p>Hooks are written into <code>~/.claude/settings.json</code> by <code>cmd_setup_hooks</code>, which runs automatically on IDE launch. The hook command is a Node.js script that reads stdin and appends the JSON line to <code>hook-events.jsonl</code>. The file watcher tracks a byte offset to read only new lines, persisted across restarts in <code>watcher-state.json</code>.</p>
+
+  <h2>Tech Stack</h2>
+
+  <h3>Frontend</h3>
+  <table>
+    <tr><th>Library</th><th>Version</th><th>Purpose</th></tr>
+    <tr><td>React</td><td>19.x</td><td>UI framework with concurrent features</td></tr>
+    <tr><td>TypeScript</td><td>5.8</td><td>Type safety at scale</td></tr>
+    <tr><td>Vite</td><td>6.x</td><td>Build tool with instant HMR</td></tr>
+    <tr><td>Tailwind v4</td><td>4.x</td><td>CSS-first config with design tokens as CSS variables</td></tr>
+    <tr><td>xterm.js</td><td>5.x</td><td>Terminal emulator with ANSI support</td></tr>
+    <tr><td>Monaco Editor</td><td>4.7</td><td>VS Code's editor for files, plans, and README</td></tr>
+    <tr><td>Zustand</td><td>5.x</td><td>7 stores for synchronous UI state</td></tr>
+    <tr><td>TanStack Query</td><td>5.x</td><td>Async data fetching with caching and invalidation</td></tr>
+    <tr><td>react-resizable-panels</td><td>2.x</td><td>IDE split layout with persistence</td></tr>
+    <tr><td>cmdk</td><td>1.x</td><td>Command palette with fuzzy search</td></tr>
+    <tr><td>lucide-react</td><td>latest</td><td>Tree-shakeable icon set</td></tr>
+  </table>
+
+  <h3>Backend (Rust)</h3>
+  <table>
+    <tr><th>Crate</th><th>Version</th><th>Purpose</th></tr>
+    <tr><td>tauri</td><td>2.x</td><td>WebView2 + Rust backend, ~10MB binary</td></tr>
+    <tr><td>portable-pty</td><td>0.8.x</td><td>Windows ConPTY for real terminal sessions</td></tr>
+    <tr><td>notify</td><td>8.x</td><td>File watching via ReadDirectoryChangesW</td></tr>
+    <tr><td>git2</td><td>0.20.x</td><td>Rust-native libgit2 for git operations</td></tr>
+    <tr><td>keyring</td><td>3.x</td><td>Windows Credential Manager (DPAPI encryption)</td></tr>
+    <tr><td>reqwest</td><td>0.12.x</td><td>Async HTTP for GitHub, Linear, Jira APIs</td></tr>
+    <tr><td>serde</td><td>1.x</td><td>JSON serialization for all data models</td></tr>
+    <tr><td>tokio</td><td>1.x</td><td>Async runtime (via Tauri)</td></tr>
+  </table>
+
+  <h2>Key Architectural Patterns</h2>
+  <ul>
+    <li><strong>Per-project tab isolation</strong> — Tabs are stored in <code>tabsByProject[projectId]</code>, preventing cross-project tab leakage. Active tab is tracked per-project.</li>
+    <li><strong>Never-unmount terminals</strong> — Terminal tabs use <code>display: none/block</code> instead of conditional rendering. PTY processes are never killed by React re-renders.</li>
+    <li><strong>Dual activity bars</strong> — Left ActivityBar controls sidebar views (Sessions, Git, Files, PRs). Right ActivityBar controls right panel views (Context, Teams, Plans, Docs, Notes).</li>
+    <li><strong>Notes as first-class objects</strong> — The <code>pendingNoteRef</code> field in <code>uiStore</code> is the handoff point between Monaco's selection listener and the Notes panel. It carries file path, line range, and quote, then clears after consumption.</li>
+    <li><strong>Dirty tab tracking</strong> — <code>sessionStore.dirtyTabs</code> tracks unsaved changes. Warning dialogs appear before closing tabs with active sessions or unsaved content.</li>
+    <li><strong>Atomic file writes</strong> — Inbox messages and worktree copy configs use a write-to-temp-then-rename pattern to prevent corruption.</li>
+    <li><strong>UTF-8 boundary handling</strong> — The PTY reader maintains a carry buffer for incomplete UTF-8 sequences at chunk boundaries (max 4 bytes).</li>
+    <li><strong>Path encoding consistency</strong> — The encoding scheme (<code>C:\dev\foo</code> &rarr; <code>C--dev-foo</code>) is duplicated in Rust (<code>path_encoding.rs</code>) and TypeScript (<code>lib/utils.ts</code>) and must stay in sync.</li>
+  </ul>
+
+  <a class="back-link" href="index.html">&larr; Back to Documentation</a>
+</div>
+</body>
+</html>
