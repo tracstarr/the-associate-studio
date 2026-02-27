@@ -10,7 +10,7 @@ interface RemoteRunSecretsModalProps {
 }
 
 const SECRET_DEFS = [
-  { name: "CLAUDE_API_KEY", label: "Anthropic API Key" },
+  { name: "CLAUDE_CODE_OAUTH_TOKEN", label: "Claude Code OAuth Token" },
   { name: "JIRA_API_TOKEN", label: "Jira API Token" },
   { name: "JIRA_BASE_URL", label: "Jira Base URL" },
   { name: "JIRA_EMAIL", label: "Jira Email" },
@@ -33,7 +33,7 @@ export function RemoteRunSecretsModal({ cwd, onClose }: RemoteRunSecretsModalPro
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const [fields, setFields] = useState<FieldState>({
-    CLAUDE_API_KEY: "",
+    CLAUDE_CODE_OAUTH_TOKEN: "",
     JIRA_API_TOKEN: jiraApiToken,
     JIRA_BASE_URL: jiraBaseUrl,
     JIRA_EMAIL: jiraEmail,
@@ -41,7 +41,7 @@ export function RemoteRunSecretsModal({ cwd, onClose }: RemoteRunSecretsModalPro
   });
 
   const [saveStates, setSaveStates] = useState<SaveState>({
-    CLAUDE_API_KEY: "idle",
+    CLAUDE_CODE_OAUTH_TOKEN: "idle",
     JIRA_API_TOKEN: "idle",
     JIRA_BASE_URL: "idle",
     JIRA_EMAIL: "idle",
@@ -52,7 +52,7 @@ export function RemoteRunSecretsModal({ cwd, onClose }: RemoteRunSecretsModalPro
   const [saving, setSaving] = useState(false);
 
   const [overwrite, setOverwrite] = useState<OverwriteState>({
-    CLAUDE_API_KEY: false,
+    CLAUDE_CODE_OAUTH_TOKEN: false,
     JIRA_API_TOKEN: false,
     JIRA_BASE_URL: false,
     JIRA_EMAIL: false,
