@@ -65,6 +65,9 @@ jobs:
             echo "$RESPONSE" | python3 -c "import sys,json;d=json.load(sys.stdin);print(d['data']['issue'].get('description') or '')" > /tmp/issue_body.txt
           fi
           python3 -c "import re;body=open('/tmp/issue_body.txt').read();m=re.search('\\*\\*Prompt Start\\*\\*(.*?)\\*\\*Prompt End\\*\\*',body,re.DOTALL);prompt=m.group(1).strip() if m else body.strip();open('/tmp/prompt.txt','w').write(prompt)"
+          echo "prompt<<EOF" >> $GITHUB_OUTPUT
+          cat /tmp/prompt.txt >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Configure git
         run: |
@@ -78,12 +81,12 @@ jobs:
           echo "BRANCH=$BRANCH" >> "$GITHUB_ENV"
 
       - name: Run Claude Code
-        uses: anthropics/claude-code-base-action@beta
+        uses: anthropics/claude-code-action@main
         with:
-          prompt_file: /tmp/prompt.txt
-          allowed_tools: "Bash,View,GlobTool,GrepTool,Write,Edit,BatchTool"
-        env:
-          ANTHROPIC_API_KEY: \${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: \${{ steps.issue.outputs.prompt }}
+          claude_code_oauth_token: \${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: \${{ secrets.GITHUB_TOKEN }}
+          claude_args: "--allowedTools Bash,View,GlobTool,GrepTool,Write,Edit,BatchTool"
 
       - name: Commit and open PR
         env:
