@@ -13,8 +13,9 @@ import { useSessionStore } from "@/stores/sessionStore";
 import { useOutputStore } from "@/stores/outputStore";
 import { useGitAction } from "@/hooks/useGitAction";
 import type { GitFileEntry, FileEntry } from "@/lib/tauri";
-import { createWorktree, setWorktreeCopy, claudeGitAction, listDir, gitPull, gitCreateBranch, checkRemoteRunWorkflow, writeFile } from "@/lib/tauri";
+import { createWorktree, setWorktreeCopy, claudeGitAction, listDir, gitPull, gitCreateBranch, checkRemoteRunWorkflow, checkScheduledWorkflow, writeFile } from "@/lib/tauri";
 import { REMOTE_RUN_YAML_CONTENT } from "@/lib/remoteRunYaml";
+import { SCHEDULED_REMOTE_RUN_YAML_CONTENT } from "@/lib/scheduledRemoteRunYaml";
 import { UntrackedContextMenu } from "./UntrackedContextMenu";
 import { RemoteRunSecretsModal } from "./RemoteRunSecretsModal";
 import { cn } from "@/lib/utils";
@@ -77,6 +78,11 @@ export function GitStatusPanel() {
   const [installMsg, setInstallMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [showSecretsModal, setShowSecretsModal] = useState(false);
 
+  // Scheduled Remote Run workflow state
+  const [scheduledInstalled, setScheduledInstalled] = useState<boolean | null>(null);
+  const [scheduledInstalling, setScheduledInstalling] = useState(false);
+  const [scheduledInstallMsg, setScheduledInstallMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
   // File picker state for Copy on create
   const [showFilePicker, setShowFilePicker] = useState(false);
   const [pickerRootEntries, setPickerRootEntries] = useState<FileEntry[]>([]);
@@ -93,14 +99,19 @@ export function GitStatusPanel() {
     setShowAllWorktrees(false);
   }, [activeProjectDir]);
 
-  // Check whether remote-run.yml is installed whenever the project changes
+  // Check whether remote-run.yml and scheduled-remote-run.yml are installed whenever the project changes
   useEffect(() => {
     setWorkflowInstalled(null);
     setInstallMsg(null);
+    setScheduledInstalled(null);
+    setScheduledInstallMsg(null);
     if (!activeProjectDir) return;
     checkRemoteRunWorkflow(activeProjectDir)
       .then(setWorkflowInstalled)
       .catch(() => setWorkflowInstalled(false));
+    checkScheduledWorkflow(activeProjectDir)
+      .then(setScheduledInstalled)
+      .catch(() => setScheduledInstalled(false));
   }, [activeProjectDir]);
 
   const handleInstallWorkflow = async () => {
@@ -116,6 +127,27 @@ export function GitStatusPanel() {
       setInstallMsg({ ok: false, text: String(e) });
     } finally {
       setInstalling(false);
+    }
+  };
+
+  const handleInstallScheduledWorkflow = async () => {
+    if (!activeProjectDir) return;
+    setScheduledInstalling(true);
+    setScheduledInstallMsg(null);
+    try {
+      // Install remote-run.yml first if not already present (scheduled depends on same secrets)
+      if (!workflowInstalled) {
+        await writeFile(`${activeProjectDir}/.github/workflows/remote-run.yml`, REMOTE_RUN_YAML_CONTENT);
+        setWorkflowInstalled(true);
+      }
+      await writeFile(`${activeProjectDir}/.github/workflows/scheduled-remote-run.yml`, SCHEDULED_REMOTE_RUN_YAML_CONTENT);
+      setScheduledInstalled(true);
+      setScheduledInstallMsg({ ok: true, text: "Installed — commit & push to activate. Add 'scheduled-run' label to issues." });
+      if (!workflowInstalled) setShowSecretsModal(true);
+    } catch (e) {
+      setScheduledInstallMsg({ ok: false, text: String(e) });
+    } finally {
+      setScheduledInstalling(false);
     }
   };
 
@@ -711,6 +743,36 @@ export function GitStatusPanel() {
                   {installMsg.text}
                 </p>
               )}
+
+              {/* Scheduled Remote Run sub-section */}
+              <div className="pt-1.5 border-t border-border-muted mt-1.5">
+                <div className="text-[10px] text-text-muted font-semibold uppercase tracking-wider mb-1">Scheduled</div>
+                {scheduledInstalled === null ? null : scheduledInstalled ? (
+                  <div className="flex items-center gap-1.5 text-[10px] text-status-success">
+                    <CheckCircle size={10} />
+                    Nightly schedule active
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleInstallScheduledWorkflow}
+                    disabled={scheduledInstalling}
+                    className="flex items-center gap-1.5 text-[10px] text-text-muted hover:text-text-secondary transition-colors disabled:opacity-50"
+                  >
+                    {scheduledInstalling ? <Loader2 size={10} className="animate-spin" /> : <Play size={10} />}
+                    Install scheduled-remote-run.yml
+                  </button>
+                )}
+                {scheduledInstallMsg && (
+                  <p className={cn("text-[10px]", scheduledInstallMsg.ok ? "text-status-success" : "text-status-error")}>
+                    {scheduledInstallMsg.text}
+                  </p>
+                )}
+                {scheduledInstalled && (
+                  <p className="text-[10px] text-text-muted mt-0.5">
+                    Runs hourly 10 PM–6 AM UTC for issues labeled <span className="font-mono text-text-secondary">scheduled-run</span>
+                  </p>
+                )}
+              </div>
             </div>
           )}
         </div>
