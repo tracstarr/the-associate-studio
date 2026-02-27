@@ -371,6 +371,16 @@ export function useJiraIssueDetail(enabled: boolean, baseUrl: string, email: str
   });
 }
 
+export function useLinearIssueDetail(hasKey: boolean, identifier: string) {
+  return useQuery({
+    queryKey: ["linear-issue", identifier],
+    queryFn: () => tauri.getLinearIssueDetail(identifier),
+    enabled: hasKey && !!identifier,
+    staleTime: 120_000,
+    retry: false,
+  });
+}
+
 // ---- Workflow Hooks ----
 
 export function useWorkflowFiles(cwd: string | null) {

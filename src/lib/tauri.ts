@@ -537,6 +537,34 @@ export function getJiraIssueDetail(baseUrl: string, email: string, apiToken: str
   return invoke("cmd_get_jira_issue", { baseUrl, email, apiToken, issueKey });
 }
 
+export interface LinearIssueDetail {
+  identifier: string;
+  title: string;
+  description?: string;
+  state: string;
+  author: string;
+  assignee?: string;
+  url: string;
+  created_at: string;
+  labels: string[];
+}
+
+export function getLinearIssueDetail(identifier: string): Promise<LinearIssueDetail> {
+  return invoke("cmd_get_linear_issue", { identifier });
+}
+
+export function updateLinearIssueDescription(identifier: string, description: string): Promise<void> {
+  return invoke("cmd_update_linear_issue_description", { identifier, description });
+}
+
+export function updateGithubIssueDescription(cwd: string, number: number, body: string): Promise<void> {
+  return invoke("cmd_update_github_issue_description", { cwd, number, body });
+}
+
+export function updateJiraIssueDescription(baseUrl: string, email: string, apiToken: string, issueKey: string, description: string): Promise<void> {
+  return invoke("cmd_update_jira_issue_description", { baseUrl, email, apiToken, issueKey, description });
+}
+
 // ---- Hook / Session Tracking Types ----
 
 export interface ActiveSubagent {
