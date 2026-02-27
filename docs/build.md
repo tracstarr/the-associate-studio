@@ -172,7 +172,7 @@ the-associate-studio/
       terminal/         -- TerminalView (xterm.js + PTY)
       sessions/         -- SessionsList, SessionView, TeamsPanel, InboxPanel
       git/              -- GitStatusPanel, GitLogPanel, DiffViewer, BranchContextMenu, UntrackedContextMenu
-      issues/           -- PRListPanel, IssueListPanel
+      issues/           -- PRListPanel, IssueListPanel (uses CreateIssueModal from notes/)
       files/            -- FileBrowserPanel, FileEditorTab, FileTreeNode
       context/          -- ContextPanel, TeamsRightPanel, PlansPanel
       plan/             -- PlanEditorView

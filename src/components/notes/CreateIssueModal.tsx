@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { X, StickyNote, Loader2 } from "lucide-react";
+import { X, CirclePlus, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Note, IssueRef, LinearTeam, JiraProject } from "@/lib/tauri";
+import type { IssueRef, LinearTeam, JiraProject } from "@/lib/tauri";
 import {
   createGithubIssue,
   getLinearTeams,
@@ -14,14 +14,16 @@ import { useSettingsStore } from "@/stores/settingsStore";
 type Provider = "github" | "linear" | "jira";
 
 interface CreateIssueModalProps {
-  note: Note;
+  initialTitle?: string;
+  initialBody?: string;
   activeProjectDir: string | null;
   onCreated: (ref: IssueRef) => void;
   onClose: () => void;
 }
 
 export function CreateIssueModal({
-  note,
+  initialTitle = "",
+  initialBody = "",
   activeProjectDir,
   onCreated,
   onClose,
@@ -40,8 +42,8 @@ export function CreateIssueModal({
   const [activeProvider, setActiveProvider] = useState<Provider | null>(
     availableProviders[0] ?? null
   );
-  const [title, setTitle] = useState(note.title || "Untitled");
-  const [body, setBody] = useState(note.content);
+  const [title, setTitle] = useState(initialTitle || "");
+  const [body, setBody] = useState(initialBody);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -129,9 +131,9 @@ export function CreateIssueModal({
       <div className="bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-lg shadow-xl w-[480px] max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--color-border-default)] shrink-0">
-          <StickyNote size={14} className="text-[var(--color-accent-primary)]" />
+          <CirclePlus size={14} className="text-[var(--color-accent-primary)]" />
           <span className="text-sm font-semibold text-[var(--color-text-primary)]">
-            Create Issue from Note
+            Create Issue
           </span>
           <div className="flex-1" />
           <button
