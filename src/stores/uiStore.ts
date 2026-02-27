@@ -2,7 +2,7 @@ import { create } from "zustand";
 
 export type SidebarView = "sessions" | "git" | "prs" | "issues" | "files";
 export type RightTab = "context" | "teams" | "plans" | "docs" | "notes";
-export type BottomTab = "log" | "output" | "debug";
+export type BottomTab = "git" | "output" | "debug";
 
 export interface PendingNoteRef {
   filePath: string;
@@ -58,7 +58,7 @@ export const useUIStore = create<UIStore>((set) => ({
   bottomPanelOpen: true,
   activeSidebarView: "sessions",
   activeRightTab: "context",
-  activeBottomTab: "log",
+  activeBottomTab: "git",
   commandPaletteOpen: false,
   neuralFieldOpen: false,
   projectDropdownOpen: false,
