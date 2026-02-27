@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useProjectsStore } from "@/stores/projectsStore";
-import { CheckCircle, AlertCircle, Loader, ExternalLink } from "lucide-react";
+import { CheckCircle, AlertCircle, Loader, ExternalLink, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { checkRemoteRunWorkflow, writeFile } from "@/lib/tauri";
 import { REMOTE_RUN_YAML_CONTENT } from "@/lib/remoteRunYaml";
@@ -708,6 +708,21 @@ function RemoteRunSection() {
         </Btn>
       )}
       {msg && <p className="text-[11px] text-text-muted">{msg}</p>}
+      {installed && (
+        <div className="flex gap-2 rounded-md border border-[var(--color-border-muted)] bg-bg-raised p-3">
+          <Info size={13} className="mt-0.5 shrink-0 text-text-muted" />
+          <div className="space-y-1">
+            <p className="text-[11px] text-text-secondary font-medium">Required: enable workflow permissions</p>
+            <p className="text-[11px] text-text-muted leading-relaxed">
+              Go to your repo's <span className="font-mono text-[10px] bg-bg-overlay px-1 rounded">Settings → Actions → General</span> and set:
+            </p>
+            <ul className="text-[11px] text-text-muted space-y-0.5 list-none pl-0">
+              <li>• <span className="text-text-secondary">Read and write permissions</span></li>
+              <li>• <span className="text-text-secondary">Allow GitHub Actions to create and approve pull requests</span> ✓</li>
+            </ul>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
