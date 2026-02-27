@@ -69,6 +69,7 @@ export function WorkflowsPanel() {
     refetch: refetchFiles,
   } = useWorkflowFiles(activeProjectDir);
 
+  // Poll runs every 3s to catch new runs and status updates for active (queued/in_progress) workflows
   const {
     data: runs,
     isLoading: runsLoading,
@@ -76,7 +77,8 @@ export function WorkflowsPanel() {
     refetch: refetchRuns,
   } = useWorkflowRuns(
     activeProjectDir,
-    selectedWorkflow?.filename
+    selectedWorkflow?.filename,
+    3_000
   );
 
   const handleWorkflowClick = useCallback((wf: WorkflowFile) => {

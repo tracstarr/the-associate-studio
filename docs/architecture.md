@@ -273,7 +273,19 @@ The right ActivityBar controls which right panel view is shown:
 | Diff | `DiffViewer` | Diff for selected file from git panel |
 | PRs | `PRListPanel` | Pull requests (shared component) |
 | Issues | `IssueListPanel` | GitHub issues |
+| Workflows | `WorkflowsPanel` | GitHub Actions workflow files + run list with auto-polling |
 | Output | `OutputPanel` | Git action output + system messages |
+
+### Workflow polling
+
+The workflows panel auto-refreshes to keep run statuses current:
+
+| Context | Interval | What refreshes |
+|---------|----------|----------------|
+| Workflows bottom tab visible | 3 s | Run list (catches new runs + status changes for queued/in-progress runs) |
+| Workflow run open in main tab & run is active (queued/in_progress) | 1 s | Run detail (jobs, status) + logs |
+
+Polling stops automatically when the workflows tab is unmounted (conditionally rendered in `BottomPanel`) or when a run enters a terminal state (completed/failed). Uses React Query `refetchInterval`.
 
 ## Hook event pipeline
 
