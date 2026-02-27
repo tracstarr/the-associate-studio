@@ -659,6 +659,33 @@ function NotificationsSection() {
   );
 }
 
+// ── File display section ──────────────────────────────────────────────────────
+
+function FileDisplaySection() {
+  const { showHiddenFilesByDefault, setShowHiddenFilesByDefault } = useSettingsStore();
+  return (
+    <div className="space-y-3">
+      <SectionLabel>File Browser</SectionLabel>
+      <div>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showHiddenFilesByDefault}
+            onChange={(e) => setShowHiddenFilesByDefault(e.target.checked)}
+            className="rounded-md"
+          />
+          <span className="text-xs font-medium text-text-secondary">
+            Show hidden files by default
+          </span>
+        </label>
+        <p className="text-[11px] text-text-muted mt-1 ml-5">
+          When enabled, hidden files (dotfiles) are visible in the file browser for new projects. Per-project overrides are saved automatically.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ── Remote Run section ────────────────────────────────────────────────────────
 
 function RemoteRunSection() {
@@ -888,6 +915,8 @@ export function SettingsTab() {
             <LiveDangerouslySection />
             <div className="border-t border-border-muted" />
             <NotificationsSection />
+            <div className="border-t border-border-muted" />
+            <FileDisplaySection />
           </div>
         </section>
       </div>

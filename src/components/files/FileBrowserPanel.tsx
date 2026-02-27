@@ -3,7 +3,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Search, RefreshCw, Eye, EyeOff } from "lucide-react";
 import { useProjectsStore } from "@/stores/projectsStore";
 import { useSessionStore } from "@/stores/sessionStore";
-import { listDir, getWorktreeCopy, setWorktreeCopy, type FileEntry } from "@/lib/tauri";
+import { useSettingsStore } from "@/stores/settingsStore";
+import { listDir, getWorktreeCopy, setWorktreeCopy, getProjectSettings, setProjectSettings, type FileEntry } from "@/lib/tauri";
 import { FileTreeNode } from "./FileTreeNode";
 
 export function FileBrowserPanel() {
@@ -13,6 +14,7 @@ export function FileBrowserPanel() {
   const activeProjectId = useProjectsStore((s) => s.activeProjectId);
   const openTab = useSessionStore((s) => s.openTab);
   const queryClient = useQueryClient();
+  const showHiddenFilesByDefault = useSettingsStore((s) => s.showHiddenFilesByDefault);
 
   const [rootEntries, setRootEntries] = useState<FileEntry[]>([]);
   const [expandedDirs, setExpandedDirs] = useState<Set<string>>(new Set());
@@ -38,13 +40,20 @@ export function FileBrowserPanel() {
     setExpandedDirs(new Set());
     setDirContents({});
     setFilter("");
-    loadRoot();
+    if (!activeProject?.path) return;
+    getProjectSettings(activeProject.path).then((s) => {
+      setShowHidden(s.showHiddenFiles ?? showHiddenFilesByDefault);
+    }).catch(() => {
+      setShowHidden(showHiddenFilesByDefault);
+    });
   }, [activeProject?.path]);
 
+  // Call loadRoot whenever it changes (i.e., when showHidden or activeProject.path changes)
   useEffect(() => {
     setDirContents({});
     loadRoot();
-  }, [showHidden]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadRoot]);
 
   const handleToggle = async (path: string) => {
     setExpandedDirs((prev) => {
@@ -148,7 +157,14 @@ export function FileBrowserPanel() {
           className="flex-1 bg-transparent text-xs text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] outline-none"
         />
         <button
-          onClick={() => setShowHidden((v) => !v)}
+          onClick={async () => {
+            const next = !showHidden;
+            setShowHidden(next);
+            if (activeProject?.path) {
+              const current = await getProjectSettings(activeProject.path);
+              await setProjectSettings(activeProject.path, { ...current, showHiddenFiles: next });
+            }
+          }}
           title={showHidden ? "Hide hidden files" : "Show hidden files"}
           className={`transition-all duration-200 rounded-md p-0.5 hover:bg-[var(--color-bg-raised)] ${showHidden ? "text-[var(--color-accent)]" : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"}`}
         >

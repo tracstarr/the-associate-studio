@@ -11,6 +11,7 @@ use crate::data::projects::{discover_orphaned_projects, discover_projects, Proje
 #[serde(rename_all = "camelCase")]
 pub struct ProjectSettings {
     pub docs_folder: Option<String>,
+    pub show_hidden_files: Option<bool>,   // None = use global default
 }
 
 fn get_home_dir_str() -> Result<String, String> {
