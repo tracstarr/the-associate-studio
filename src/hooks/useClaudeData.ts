@@ -371,6 +371,48 @@ export function useJiraIssueDetail(enabled: boolean, baseUrl: string, email: str
   });
 }
 
+// ---- Workflow Hooks ----
+
+export function useWorkflowFiles(cwd: string | null) {
+  return useQuery({
+    queryKey: ["workflow-files", cwd],
+    queryFn: () => tauri.listWorkflowFiles(cwd!),
+    enabled: !!cwd,
+    staleTime: 60_000,
+    retry: false,
+  });
+}
+
+export function useWorkflowRuns(cwd: string | null, workflow?: string) {
+  return useQuery({
+    queryKey: ["workflow-runs", cwd, workflow],
+    queryFn: () => tauri.listWorkflowRuns(cwd!, workflow),
+    enabled: !!cwd,
+    staleTime: 30_000,
+    retry: false,
+  });
+}
+
+export function useWorkflowRunDetail(cwd: string | null, runId: number) {
+  return useQuery({
+    queryKey: ["workflow-run-detail", cwd, runId],
+    queryFn: () => tauri.getWorkflowRunDetail(cwd!, runId),
+    enabled: !!cwd && runId > 0,
+    staleTime: 30_000,
+    retry: false,
+  });
+}
+
+export function useWorkflowRunLogs(cwd: string | null, runId: number) {
+  return useQuery({
+    queryKey: ["workflow-run-logs", cwd, runId],
+    queryFn: () => tauri.getWorkflowRunLogs(cwd!, runId),
+    enabled: !!cwd && runId > 0,
+    staleTime: 60_000,
+    retry: false,
+  });
+}
+
 // ---- Extension Hooks ----
 
 export function useExtensions(projectDir: string | null) {

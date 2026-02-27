@@ -15,3 +15,4 @@ pub mod summaries;
 pub mod tasks;
 pub mod teams;
 pub mod todos;
+pub mod workflows;

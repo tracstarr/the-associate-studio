@@ -4,7 +4,7 @@ import { useNotificationStore } from "./notificationStore";
 
 export interface SessionTab {
   id: string;
-  type?: "terminal" | "plan" | "readme" | "settings" | "diff" | "session-view" | "file" | "summary" | "pr-detail" | "extension" | "issue-detail";
+  type?: "terminal" | "plan" | "readme" | "settings" | "diff" | "session-view" | "file" | "summary" | "pr-detail" | "extension" | "issue-detail" | "workflow-run";
   projectDir: string;
   sessionId?: string;
   title: string;
@@ -26,6 +26,8 @@ export interface SessionTab {
   remoteRunUrl?: string; // URL to the workflow run on GitHub
   remoteRunStatus?: "queued" | "in_progress" | "completed";
   remoteRunConclusion?: "success" | "failure" | "cancelled" | null;
+  workflowRunId?: number; // only for type === "workflow-run"
+  workflowRunUrl?: string; // external URL for the workflow run
 }
 
 interface SessionStore {
