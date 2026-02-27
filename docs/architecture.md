@@ -194,6 +194,32 @@ User triggers git action (fetch, pull, rebase, etc.) in GitStatusPanel
   -> On error: logs error message to outputStore
 ```
 
+### Remote Run — issue to PR
+```
+User opens issue detail tab (GitHub / Jira / Linear)
+  -> useRemoteRun hook checks workflow exists (cmd_check_remote_run_workflow)
+  -> User clicks "Remote Run" button
+  -> triggerRemoteRun(cwd, issueNumber, issueType)
+     -> Rust: gh workflow run remote-run.yml --field issue_number=X --field issue_type=Y
+     -> Retries up to 3x (2s apart) to resolve run ID from gh run list
+     -> Returns RemoteRunResult { runId, runUrl }
+  -> sessionStore: tab.remoteRunId + tab.remoteRunUrl set
+  -> Status badge renders: Queued
+  -> Poll every 15s: getRemoteRunStatus(cwd, runId)
+     -> Rust: gh run view {id} --json status,conclusion,url
+     -> Returns WorkflowRunStatus { status, conclusion, url }
+  -> sessionStore: tab.remoteRunStatus + tab.remoteRunConclusion updated
+  -> Badge updates: In Progress -> Passed | Failed | Cancelled
+  -> Clicking badge opens GitHub Actions run URL in browser
+
+GitHub Actions (remote-run.yml):
+  -> Fetch issue from GitHub / Jira REST API / Linear GraphQL
+  -> Extract prompt between **Prompt Start** / **Prompt End** markers (or use full body)
+  -> Create branch: remote-run/{sanitized-issue-id}
+  -> Run anthropics/claude-code-action@main with extracted prompt
+  -> If changes produced: commit + force-push + gh pr create
+```
+
 ### Notifications
 ```
 TerminalView detects question pattern in PTY output
@@ -334,6 +360,7 @@ Summaries can be loaded via `cmd_load_summaries(project_dir, session_id)` and re
 | `git` | `cmd_git_status`, `cmd_git_diff`, `cmd_git_branches`, `cmd_git_current_branch`, `cmd_git_log`, `cmd_git_remote_branches`, `cmd_create_worktree`, `cmd_list_worktrees`, `cmd_get_worktree_copy`, `cmd_set_worktree_copy`, `cmd_claude_git_action`, `cmd_git_fetch`, `cmd_git_pull`, `cmd_git_create_branch`, `cmd_git_add`, `cmd_git_ignore`, `cmd_git_rebase` |
 | `pty` | `pty_spawn`, `pty_resize`, `pty_write`, `pty_kill`, `pty_list` |
 | `issues` | `cmd_list_prs`, `cmd_list_issues`, `cmd_list_linear_issues` |
+| `remote_run` | `cmd_check_remote_run_workflow`, `cmd_trigger_remote_run`, `cmd_get_remote_run_status`, `cmd_list_repo_secrets`, `cmd_set_repo_secret` |
 | `summaries` | `cmd_load_summaries`, `cmd_read_summary` |
 | `integrations` | `cmd_load_integration_secrets`, `cmd_github_auth_status`, `cmd_github_device_flow_start`, `cmd_github_device_flow_poll`, `cmd_github_set_token`, `cmd_github_logout`, `cmd_linear_verify_key`, `cmd_linear_logout`, `cmd_jira_verify_token`, `cmd_jira_logout` |
 | `hooks` | `cmd_setup_hooks`, `cmd_remove_hooks`, `cmd_get_active_sessions`, `cmd_hooks_configured` |
