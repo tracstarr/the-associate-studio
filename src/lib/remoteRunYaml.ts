@@ -66,10 +66,10 @@ jobs:
           fi
           python3 -c "import re;body=open('/tmp/issue_body.txt').read();m=re.search('\\*\\*Prompt Start\\*\\*(.*?)\\*\\*Prompt End\\*\\*',body,re.DOTALL);prompt=m.group(1).strip() if m else body.strip();open('/tmp/prompt.txt','w').write(prompt)"
           DELIMITER=$(openssl rand -hex 16)
-          echo "prompt<<${DELIMITER}" >> $GITHUB_OUTPUT
+          echo "prompt<<\${DELIMITER}" >> $GITHUB_OUTPUT
           cat /tmp/prompt.txt >> $GITHUB_OUTPUT
           printf "\\n" >> $GITHUB_OUTPUT
-          echo "${DELIMITER}" >> $GITHUB_OUTPUT
+          echo "\${DELIMITER}" >> $GITHUB_OUTPUT
 
       - name: Configure git
         run: |
