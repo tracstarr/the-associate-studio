@@ -73,9 +73,12 @@ Project directories are encoded to directory names by these rules:
 1. Replace `:\` with `--` (Windows drive letter)
 2. Replace remaining `\` with `-`
 3. Replace `/` with `-` (if present)
+4. Replace `.` with `-`
+5. Replace `_` with `-`
 
 Example: C:\dev\profile-server → C--dev-profile-server
 Example: C:\Users\Keith\projects\my-app → C--Users-Keith-projects-my-app
+Example: C:\dev\branch\keith\apex_3.11.0 → C--dev-branch-keith-apex-3-11-0
 ```
 
 **Go (from claudeteam):**
@@ -655,14 +658,18 @@ fn encode_project_path(path: &Path) -> String {
     let s = path.to_string_lossy().to_string();
     let s = s.replace('/', "\\");           // Normalize slashes
     let s = s.replace(":\\", "--");         // Drive letter
-    s.replace('\\', "-")                    // Path separators
+    let s = s.replace('\\', "-");           // Path separators
+    let s = s.replace('.', "-");            // Dots
+    let s = s.replace('_', "-");            // Underscores
+    s.trim_end_matches('-').to_string()
 }
 ```
 
 **Examples**:
 - `C:\dev\ide` → `C--dev-ide`
 - `C:\Users\Keith\projects\my-app` → `C--Users-Keith-projects-my-app`
-- `C:\dev\profile-server\.worktrees\aero-planning` → `C--dev-profile-server-.worktrees-aero-planning`
+- `C:\dev\profile-server\.worktrees\aero-planning` → `C--dev-profile-server--worktrees-aero-planning`
+- `C:\dev\branch\keith\apex_3.11.0` → `C--dev-branch-keith-apex-3-11-0`
 
 **Reverse Mapping** (session directory → path):
 
@@ -701,11 +708,11 @@ This allows reconstructing the original path.
 
 **Issue**: Different systems encode paths differently.
 
-**Rust (Associate)**: `C:\dev\project` → `C--dev-project` (precise: only `:\` becomes `--`)
+**Rust (Associate / Claude CLI actual)**: `C:\dev\project` → `C--dev-project`; also replaces `.` and `_` with `-`
 
-**Go (Claudeteam)**: `C:\dev\project` → `C--dev-project` (replaces `:` everywhere)
+**Go (Claudeteam)**: `C:\dev\project` → `C--dev-project` (replaces `\`, `/`, `:`, `.` — not `_`)
 
-**Resolution**: For IDE, use Rust approach (more conservative). When looking up projects, try exact match first, then prefix matching.
+**Resolution**: Match Claude CLI behavior exactly: replace path separators, `.`, and `_` all with `-`. Paths with version numbers like `apex_3.11.0` encode to `apex-3-11-0`. When looking up projects, try exact match first, then prefix matching.
 
 ### 2. Optional Fields
 
