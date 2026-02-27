@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useSettingsStore } from "@/stores/settingsStore";
+import { useProjectsStore } from "@/stores/projectsStore";
 import { CheckCircle, AlertCircle, Loader, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { checkRemoteRunWorkflow, writeFile } from "@/lib/tauri";
+import { REMOTE_RUN_YAML_CONTENT } from "@/lib/remoteRunYaml";
 
 const FONT_FAMILIES = [
   { label: "JetBrains Mono", value: "'JetBrains Mono', monospace" },
@@ -656,6 +659,59 @@ function NotificationsSection() {
   );
 }
 
+// ── Remote Run section ────────────────────────────────────────────────────────
+
+function RemoteRunSection() {
+  const activeProjectId = useProjectsStore((s) => s.activeProjectId);
+  const projects = useProjectsStore((s) => s.projects);
+  const cwd = projects.find((p) => p.id === activeProjectId)?.path ?? null;
+
+  const [installed, setInstalled] = useState<boolean | null>(null);
+  const [installing, setInstalling] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!cwd) { setInstalled(null); return; }
+    checkRemoteRunWorkflow(cwd).then(setInstalled).catch(() => setInstalled(false));
+  }, [cwd]);
+
+  const handleInstall = async () => {
+    if (!cwd) return;
+    setInstalling(true);
+    try {
+      await writeFile(`${cwd}/.github/workflows/remote-run.yml`, REMOTE_RUN_YAML_CONTENT);
+      setInstalled(true);
+      setMsg("Installed! Commit and push the file to activate.");
+    } catch (e) {
+      setMsg(String(e));
+    } finally {
+      setInstalling(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <SectionLabel>Remote Run</SectionLabel>
+      <p className="text-[11px] text-text-muted">
+        Install a GitHub Actions workflow that runs Claude Code on issue prompts and opens a PR.
+      </p>
+      {!cwd ? (
+        <p className="text-[11px] text-text-muted italic">No active project selected.</p>
+      ) : installed === null ? null : installed ? (
+        <div className="flex items-center gap-2">
+          <CheckCircle size={12} className="text-status-success" />
+          <span className="text-[11px] text-status-success">Workflow installed in active project.</span>
+        </div>
+      ) : (
+        <Btn onClick={handleInstall} loading={installing} disabled={!cwd || installing}>
+          Install remote-run.yml
+        </Btn>
+      )}
+      {msg && <p className="text-[11px] text-text-muted">{msg}</p>}
+    </div>
+  );
+}
+
 // ── Sticky section header ─────────────────────────────────────────────────────
 
 function SectionHeader({ children }: { children: React.ReactNode }) {
@@ -804,6 +860,8 @@ export function SettingsTab() {
             <LinearSection />
             <div className="border-t border-border-muted" />
             <JiraSection />
+            <div className="border-t border-border-muted" />
+            <RemoteRunSection />
           </div>
         </section>
 

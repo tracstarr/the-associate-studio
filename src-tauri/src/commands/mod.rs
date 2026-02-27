@@ -9,6 +9,7 @@ pub mod notes;
 pub mod plans;
 pub mod projects;
 pub mod pty;
+pub mod remote_run;
 pub mod sessions;
 pub mod summaries;
 pub mod tasks;

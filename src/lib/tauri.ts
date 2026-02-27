@@ -695,3 +695,25 @@ export interface ClaudeExtension {
 export function loadExtensions(projectDir: string): Promise<ClaudeExtension[]> {
   return invoke("cmd_load_extensions", { projectDir });
 }
+
+// ---- Remote Run ----
+
+export function checkRemoteRunWorkflow(cwd: string): Promise<boolean> {
+  return invoke("cmd_check_remote_run_workflow", { cwd });
+}
+
+export function triggerRemoteRun(
+  cwd: string,
+  issueNumber: string,
+  issueType: "github" | "jira" | "linear"
+): Promise<string> {
+  return invoke("cmd_trigger_remote_run", { cwd, issueNumber, issueType });
+}
+
+export function listRepoSecrets(cwd: string): Promise<string[]> {
+  return invoke("cmd_list_repo_secrets", { cwd });
+}
+
+export function setRepoSecret(cwd: string, name: string, value: string): Promise<void> {
+  return invoke("cmd_set_repo_secret", { cwd, name, value });
+}

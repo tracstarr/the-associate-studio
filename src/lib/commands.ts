@@ -2,6 +2,8 @@ import { useSessionStore } from "../stores/sessionStore";
 import { useUIStore } from "../stores/uiStore";
 import { useSettingsStore } from "../stores/settingsStore";
 import { useProjectsStore } from "../stores/projectsStore";
+import { writeFile } from "./tauri";
+import { REMOTE_RUN_YAML_CONTENT } from "./remoteRunYaml";
 
 export interface Command {
   id: string;
@@ -225,6 +227,18 @@ export function buildCommands(): Command[] {
     },
 
     // -- Project --
+    {
+      id: "project.install-remote-run",
+      label: "Install Remote Run Workflow",
+      description: "Adds .github/workflows/remote-run.yml to the active project",
+      category: "Project",
+      action: async () => {
+        const { activeProjectId, projects } = useProjectsStore.getState();
+        const cwd = projects.find((p) => p.id === activeProjectId)?.path;
+        if (!cwd) return;
+        await writeFile(`${cwd}/.github/workflows/remote-run.yml`, REMOTE_RUN_YAML_CONTENT);
+      },
+    },
     {
       id: "project.next",
       label: "Next Project",

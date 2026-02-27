@@ -1,9 +1,96 @@
-import { ExternalLink, RefreshCw, User, Tag, AlertCircle, MessageSquare } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ExternalLink, RefreshCw, User, Tag, AlertCircle, MessageSquare, Play } from "lucide-react";
 import { useJiraIssueDetail, useIssues, useLinearIssues } from "@/hooks/useClaudeData";
 import { useSettingsStore } from "@/stores/settingsStore";
 import type { SessionTab } from "@/stores/sessionStore";
 import type { Issue } from "@/lib/tauri";
+import { checkRemoteRunWorkflow, triggerRemoteRun } from "@/lib/tauri";
 import { cn } from "@/lib/utils";
+
+// ---- Remote Run hook + controls ----
+
+function useRemoteRun(
+  cwd: string | null,
+  issueNumber: string,
+  issueType: "github" | "jira" | "linear"
+) {
+  const [workflowExists, setWorkflowExists] = useState<boolean | null>(null);
+  const [running, setRunning] = useState(false);
+  const [message, setMessage] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+
+  useEffect(() => {
+    if (!cwd) return;
+    checkRemoteRunWorkflow(cwd).then(setWorkflowExists).catch(() => setWorkflowExists(false));
+  }, [cwd]);
+
+  const trigger = async () => {
+    if (!cwd || !issueNumber) return;
+    setRunning(true);
+    setMessage(null);
+    try {
+      const result = await triggerRemoteRun(cwd, issueNumber, issueType);
+      setMessage({ kind: "success", text: result || "Workflow triggered." });
+    } catch (e) {
+      setMessage({ kind: "error", text: String(e) });
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  return { workflowExists, running, message, trigger };
+}
+
+function RemoteRunControls({
+  cwd,
+  issueNumber,
+  issueType,
+}: {
+  cwd: string | null;
+  issueNumber: string;
+  issueType: "github" | "jira" | "linear";
+}) {
+  const { workflowExists, running, message, trigger } = useRemoteRun(
+    cwd,
+    issueNumber,
+    issueType
+  );
+
+  if (workflowExists === null) return null;
+
+  const isPushError =
+    message?.kind === "error" && message.text.includes("Commit and push");
+
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        onClick={workflowExists ? trigger : undefined}
+        disabled={running || !workflowExists}
+        className="flex items-center gap-1 px-2 py-0.5 text-[11px] border border-[var(--color-accent-primary)]/50 rounded text-[var(--color-accent-primary)] hover:bg-[var(--color-accent-primary)]/10 transition-colors disabled:opacity-40"
+        title={workflowExists ? "Trigger GitHub Actions remote run for this issue" : "Install workflow via the Git pane first"}
+      >
+        <Play size={10} />
+        {running ? "Running…" : "Remote Run"}
+      </button>
+      {message && (
+        <span
+          className={cn(
+            "text-[10px] max-w-[200px] truncate",
+            isPushError
+              ? "text-[var(--color-status-warning)]"
+              : message.kind === "success"
+              ? "text-[var(--color-status-success)]"
+              : "text-[var(--color-status-error)]"
+          )}
+          title={message.text}
+        >
+          {message.text}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ---- Main view ----
 
 interface IssueDetailViewProps {
   tab: SessionTab;
@@ -68,13 +155,20 @@ function JiraIssueDetailView({ tab }: { tab: SessionTab }) {
             <ExternalLink size={11} />
             {data.url}
           </a>
-          <button
-            onClick={() => refetch()}
-            className="text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors"
-            title="Refresh"
-          >
-            <RefreshCw size={12} />
-          </button>
+          <div className="flex items-center gap-2">
+            <RemoteRunControls
+              cwd={tab.projectDir || null}
+              issueNumber={tab.issueKey ?? ""}
+              issueType="jira"
+            />
+            <button
+              onClick={() => refetch()}
+              className="text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors"
+              title="Refresh"
+            >
+              <RefreshCw size={12} />
+            </button>
+          </div>
         </div>
         <div className="flex-1 min-w-0">
           <h1 className="text-sm font-semibold text-[var(--color-text-primary)] leading-tight">
@@ -196,15 +290,22 @@ function GitHubIssueDetailView({ tab }: { tab: SessionTab }) {
             <ExternalLink size={11} />
             {issue.url}
           </a>
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 98 96"
-            fill="currentColor"
-            className="text-[var(--color-text-muted)] shrink-0"
-          >
-            <path d="M48.854 0C21.839 0 0 22 0 49.217c0 21.756 13.993 40.172 33.405 46.69 2.427.49 3.316-1.059 3.316-2.362 0-1.141-.08-5.052-.08-9.127-13.59 2.934-16.42-5.867-16.42-5.867-2.184-5.704-5.42-7.17-5.42-7.17-4.448-3.015.324-3.015.324-3.015 4.934.326 7.523 5.052 7.523 5.052 4.367 7.496 11.404 5.378 14.235 4.074.404-3.178 1.699-5.378 3.074-6.6-10.839-1.141-22.243-5.378-22.243-24.283 0-5.378 1.94-9.778 5.014-13.2-.485-1.222-2.184-6.275.486-13.038 0 0 4.125-1.304 13.426 5.052a46.97 46.97 0 0 1 12.214-1.63c4.125 0 8.33.571 12.213 1.63 9.302-6.356 13.427-5.052 13.427-5.052 2.67 6.763.97 11.816.485 13.038 3.155 3.422 5.015 7.822 5.015 13.2 0 18.905-11.404 23.06-22.324 24.283 1.78 1.548 3.316 4.481 3.316 9.126 0 6.6-.08 11.897-.08 13.526 0 1.304.89 2.853 3.316 2.364 19.412-6.52 33.405-24.935 33.405-46.691C97.707 22 75.788 0 48.854 0z" />
-          </svg>
+          <div className="flex items-center gap-2">
+            <RemoteRunControls
+              cwd={tab.projectDir || null}
+              issueNumber={issue.number.toString()}
+              issueType="github"
+            />
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 98 96"
+              fill="currentColor"
+              className="text-[var(--color-text-muted)] shrink-0"
+            >
+              <path d="M48.854 0C21.839 0 0 22 0 49.217c0 21.756 13.993 40.172 33.405 46.69 2.427.49 3.316-1.059 3.316-2.362 0-1.141-.08-5.052-.08-9.127-13.59 2.934-16.42-5.867-16.42-5.867-2.184-5.704-5.42-7.17-5.42-7.17-4.448-3.015.324-3.015.324-3.015 4.934.326 7.523 5.052 7.523 5.052 4.367 7.496 11.404 5.378 14.235 4.074.404-3.178 1.699-5.378 3.074-6.6-10.839-1.141-22.243-5.378-22.243-24.283 0-5.378 1.94-9.778 5.014-13.2-.485-1.222-2.184-6.275.486-13.038 0 0 4.125-1.304 13.426 5.052a46.97 46.97 0 0 1 12.214-1.63c4.125 0 8.33.571 12.213 1.63 9.302-6.356 13.427-5.052 13.427-5.052 2.67 6.763.97 11.816.485 13.038 3.155 3.422 5.015 7.822 5.015 13.2 0 18.905-11.404 23.06-22.324 24.283 1.78 1.548 3.316 4.481 3.316 9.126 0 6.6-.08 11.897-.08 13.526 0 1.304.89 2.853 3.316 2.364 19.412-6.52 33.405-24.935 33.405-46.691C97.707 22 75.788 0 48.854 0z" />
+            </svg>
+          </div>
         </div>
         <div className="flex-1 min-w-0">
           <h1 className="text-sm font-semibold text-[var(--color-text-primary)] leading-tight">
@@ -291,11 +392,18 @@ function LinearIssueDetailView({ tab }: { tab: SessionTab }) {
           ) : (
             <span />
           )}
-          <span title="Linear" className="text-indigo-400 shrink-0">
-            <svg width="12" height="12" viewBox="0 0 100 100" fill="currentColor">
-              <path d="M1.22541 61.5228c-.2225-.9485.90748-1.5459 1.59638-.857l37.3249 37.3249c.6889.6889.0915 1.8189-.857 1.5964C20.0516 95.1512 5.1488 80.2483 1.22541 61.5228zM.00189135 46.8891c-.01764375.3792.08825.7558.32148 1.0661l52.0956 52.0956c.3103.2332.6869.3391 1.0661.3215C29.7011 98.0867 1.99222 70.3778.00189135 46.8891zM4.69889 29.2076 70.7918 95.3005c.3401.3401.4168.8341.2372 1.2627C64.4903 99.8302 57.4747 101 50.2222 101c-.8864 0-1.7682-.0213-2.6456-.0633L3.43284 56.8311c-.04211-.8774-.06329-1.7592-.06329-2.6456 0-7.2525 1.16983-14.268 3.32905-20.983zM7.96879 19.4655c-.92861.931-.72523 2.4998.43883 3.1583l69.6078 69.6078c.6585 1.164 2.2273 1.3674 3.1583.4388L7.96879 19.4655zM14.3976 12.5045 87.4949 85.6018c1.0683.8928 2.625.8141 3.4317-.1896L14.5872 9.07281c-1.0037.80665-1.0824 2.36335-.1896 3.43169zM22.8194 7.06997 92.9296 77.1802c.8928 1.0684.8141 2.6251-.1896 3.4317L19.3877 7.25958c1.0684-.89279 2.6251-.81403 3.4317.19039zM33.1677 3.35664 96.6428 66.8317c.6585 1.164.4551 2.7328-.4388 3.1583L29.0094 2.90948c.9485-.22253 2.4598.00965 4.1583.44716zM46.8891.00189C70.3778 1.99222 98.0867 29.7011 99.8215 53.1628c.0176.3792-.0883.7558-.3215 1.0661L45.8227.32337c-.3103-.2332-.6869-.3391-1.0661-.3215.3775-.00131.7551-.00131 1.1325 0z" />
-            </svg>
-          </span>
+          <div className="flex items-center gap-2">
+            <RemoteRunControls
+              cwd={tab.projectDir || null}
+              issueNumber={tab.issueKey ?? ""}
+              issueType="linear"
+            />
+            <span title="Linear" className="text-indigo-400 shrink-0">
+              <svg width="12" height="12" viewBox="0 0 100 100" fill="currentColor">
+                <path d="M1.22541 61.5228c-.2225-.9485.90748-1.5459 1.59638-.857l37.3249 37.3249c.6889.6889.0915 1.8189-.857 1.5964C20.0516 95.1512 5.1488 80.2483 1.22541 61.5228zM.00189135 46.8891c-.01764375.3792.08825.7558.32148 1.0661l52.0956 52.0956c.3103.2332.6869.3391 1.0661.3215C29.7011 98.0867 1.99222 70.3778.00189135 46.8891zM4.69889 29.2076 70.7918 95.3005c.3401.3401.4168.8341.2372 1.2627C64.4903 99.8302 57.4747 101 50.2222 101c-.8864 0-1.7682-.0213-2.6456-.0633L3.43284 56.8311c-.04211-.8774-.06329-1.7592-.06329-2.6456 0-7.2525 1.16983-14.268 3.32905-20.983zM7.96879 19.4655c-.92861.931-.72523 2.4998.43883 3.1583l69.6078 69.6078c.6585 1.164 2.2273 1.3674 3.1583.4388L7.96879 19.4655zM14.3976 12.5045 87.4949 85.6018c1.0683.8928 2.625.8141 3.4317-.1896L14.5872 9.07281c-1.0037.80665-1.0824 2.36335-.1896 3.43169zM22.8194 7.06997 92.9296 77.1802c.8928 1.0684.8141 2.6251-.1896 3.4317L19.3877 7.25958c1.0684-.89279 2.6251-.81403 3.4317.19039zM33.1677 3.35664 96.6428 66.8317c.6585 1.164.4551 2.7328-.4388 3.1583L29.0094 2.90948c.9485-.22253 2.4598.00965 4.1583.44716zM46.8891.00189C70.3778 1.99222 98.0867 29.7011 99.8215 53.1628c.0176.3792-.0883.7558-.3215 1.0661L45.8227.32337c-.3103-.2332-.6869-.3391-1.0661-.3215.3775-.00131.7551-.00131 1.1325 0z" />
+              </svg>
+            </span>
+          </div>
         </div>
         <div className="flex-1 min-w-0">
           <h1 className="text-sm font-semibold text-[var(--color-text-primary)] leading-tight">
