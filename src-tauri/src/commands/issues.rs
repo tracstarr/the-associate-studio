@@ -967,6 +967,12 @@ pub async fn cmd_get_linear_issue(
         None => return Err("Linear API key not configured".into()),
     };
 
+    // Parse identifier like "ENG-123" into team key "ENG" and number 123
+    let (team_key, issue_number) = identifier
+        .rsplit_once('-')
+        .and_then(|(prefix, num)| num.parse::<f64>().ok().map(|n| (prefix, n)))
+        .ok_or_else(|| format!("Invalid Linear identifier format: {}", identifier))?;
+
     let gql_query = r#"
         query IssueByIdentifier($filter: IssueFilter) {
           issues(first: 1, filter: $filter) {
@@ -984,7 +990,8 @@ pub async fn cmd_get_linear_issue(
 
     let variables = serde_json::json!({
         "filter": {
-            "identifier": { "eq": identifier }
+            "team": { "key": { "eq": team_key } },
+            "number": { "eq": issue_number }
         }
     });
 
@@ -1058,10 +1065,15 @@ pub async fn cmd_update_linear_issue_description(
         None => return Err("Linear API key not configured".into()),
     };
 
-    // First, look up the issue's internal ID from identifier
+    // Parse identifier like "ENG-123" into team key + number, then look up internal ID
+    let (team_key, issue_number) = identifier
+        .rsplit_once('-')
+        .and_then(|(prefix, num)| num.parse::<f64>().ok().map(|n| (prefix, n)))
+        .ok_or_else(|| format!("Invalid Linear identifier format: {}", identifier))?;
+
     let id_query = serde_json::json!({
         "query": r#"query($filter: IssueFilter) { issues(first: 1, filter: $filter) { nodes { id } } }"#,
-        "variables": { "filter": { "identifier": { "eq": identifier } } }
+        "variables": { "filter": { "team": { "key": { "eq": team_key } }, "number": { "eq": issue_number } } }
     });
 
     let client = reqwest::Client::new();
