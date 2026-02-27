@@ -7,12 +7,12 @@ import { OutputPanel } from "@/components/layout/OutputPanel";
 import { DebugPanel } from "@/components/debug/DebugPanel";
 
 const BASE_TABS: { id: BottomTab; label: string }[] = [
-  { id: "log", label: "Git" },
+  { id: "git", label: "Git" },
   { id: "output", label: "Output" },
 ];
 
 const tabPlaceholders: Record<BottomTab, string> = {
-  log: "Select a project to view git log.",
+  git: "Select a project to view git log.",
   output: "No output.",
   debug: "No debug entries.",
 };
@@ -52,7 +52,7 @@ function BottomPanelComponent() {
       </div>
 
       {/* Content */}
-      {activeTab === "log" ? (
+      {activeTab === "git" ? (
         <div className="flex-1 overflow-hidden">
           <GitLogPanel />
         </div>
