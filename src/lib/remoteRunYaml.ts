@@ -81,7 +81,7 @@ jobs:
         uses: anthropics/claude-code-base-action@beta
         with:
           prompt_file: /tmp/prompt.txt
-          anthropic_api_key: \${{ secrets.CLAUDE_API_KEY }}
+          anthropic_api_key: \${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           allowed_tools: "Bash,View,GlobTool,GrepTool,Write,Edit,BatchTool"
 
       - name: Commit and open PR
