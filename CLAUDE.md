@@ -136,7 +136,7 @@ npm run tauri build      # release build
 4. **PTY uses portable-pty** — real ConPTY, not piped stdio → [`docs/terminal.md`](docs/terminal.md)
 5. **Secrets in Windows Credential Manager** — never in settings.json → [`docs/security.md`](docs/security.md)
 6. **PATH required for Rust builds** — must set MSYS2 MinGW path → [`docs/build.md`](docs/build.md)
-7. **pathToProjectId encoding** — `C:\dev\ide` becomes `C--dev-ide`; duplicated in `projectsStore.ts` and `lib/utils.ts` — must stay in sync with Rust `data/path_encoding.rs`
+7. **pathToProjectId encoding** — `C:\dev\ide` → `C--dev-ide`; `C:\dev\apex_3.11.0` → `C--dev-apex-3-11-0`; path separators, `.`, and `_` all become `-`; `lib/utils.ts` must stay in sync with Rust `data/path_encoding.rs`
 8. **Hook events via file watcher** — `hook-events.jsonl` is append-only; watcher tracks file offset to read only new lines
 9. **Claude watcher auto-starts** — `lib.rs` calls `start_claude_watcher()` in `.setup()`; also auto-installs hooks via `cmd_setup_hooks()`
 

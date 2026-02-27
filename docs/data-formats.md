@@ -7,13 +7,16 @@ All Claude data lives under `~/.claude/`. The Rust backend reads it directly —
 Claude encodes project paths as directory names under `~/.claude/projects/`:
 
 ```
-C:\dev\foo   ->   C--dev-foo
+C:\dev\foo        ->  C--dev-foo
+C:\dev\apex_3.11.0  ->  C--dev-apex-3-11-0
 ```
 
 Rules:
 - Forward slash `/` is first normalized to `\`
 - `:\` -> `--`
 - Remaining `\` -> `-`
+- `.` -> `-`
+- `_` -> `-`
 
 Implementation: `src-tauri/src/data/path_encoding.rs`
 
