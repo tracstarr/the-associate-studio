@@ -83,6 +83,9 @@ pub async fn cmd_write_file(path: String, content: String) -> Result<(), String>
             return Err("Invalid path: '..' components are not allowed".to_string());
         }
     }
+    if let Some(parent) = p.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    }
     std::fs::write(&p, content).map_err(|e| e.to_string())
 }
 

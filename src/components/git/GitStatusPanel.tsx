@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import {
   GitBranch, GitFork, RefreshCw, ChevronRight, ChevronDown,
   Loader2, AlertTriangle, X, GitCommitHorizontal, Upload, GitPullRequest, FolderSearch,
-  GitMerge, Plus,
+  GitMerge, Plus, Play, CheckCircle,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGitStatus, useGitBranches, useGitCurrentBranch, useWorktrees, useWorktreeCopy } from "@/hooks/useClaudeData";
@@ -13,8 +13,10 @@ import { useSessionStore } from "@/stores/sessionStore";
 import { useOutputStore } from "@/stores/outputStore";
 import { useGitAction } from "@/hooks/useGitAction";
 import type { GitFileEntry, FileEntry } from "@/lib/tauri";
-import { createWorktree, setWorktreeCopy, claudeGitAction, listDir, gitPull, gitCreateBranch } from "@/lib/tauri";
+import { createWorktree, setWorktreeCopy, claudeGitAction, listDir, gitPull, gitCreateBranch, checkRemoteRunWorkflow, writeFile } from "@/lib/tauri";
+import { REMOTE_RUN_YAML_CONTENT } from "@/lib/remoteRunYaml";
 import { UntrackedContextMenu } from "./UntrackedContextMenu";
+import { RemoteRunSecretsModal } from "./RemoteRunSecretsModal";
 import { cn } from "@/lib/utils";
 import { FileTreeNode } from "@/components/files/FileTreeNode";
 
@@ -68,6 +70,13 @@ export function GitStatusPanel() {
   const [gitActionLoading, setGitActionLoading] = useState<string | null>(null);
   const [gitActionResult, setGitActionResult] = useState<{ ok: boolean; msg: string } | null>(null);
 
+  // Remote Run workflow state
+  const [remoteRunOpen, setRemoteRunOpen] = useState(false);
+  const [workflowInstalled, setWorkflowInstalled] = useState<boolean | null>(null);
+  const [installing, setInstalling] = useState(false);
+  const [installMsg, setInstallMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [showSecretsModal, setShowSecretsModal] = useState(false);
+
   // File picker state for Copy on create
   const [showFilePicker, setShowFilePicker] = useState(false);
   const [pickerRootEntries, setPickerRootEntries] = useState<FileEntry[]>([]);
@@ -83,6 +92,32 @@ export function GitStatusPanel() {
     setPickerDirContents({});
     setShowAllWorktrees(false);
   }, [activeProjectDir]);
+
+  // Check whether remote-run.yml is installed whenever the project changes
+  useEffect(() => {
+    setWorkflowInstalled(null);
+    setInstallMsg(null);
+    if (!activeProjectDir) return;
+    checkRemoteRunWorkflow(activeProjectDir)
+      .then(setWorkflowInstalled)
+      .catch(() => setWorkflowInstalled(false));
+  }, [activeProjectDir]);
+
+  const handleInstallWorkflow = async () => {
+    if (!activeProjectDir) return;
+    setInstalling(true);
+    setInstallMsg(null);
+    try {
+      await writeFile(`${activeProjectDir}/.github/workflows/remote-run.yml`, REMOTE_RUN_YAML_CONTENT);
+      setWorkflowInstalled(true);
+      setInstallMsg({ ok: true, text: "Installed — commit & push to activate." });
+      setShowSecretsModal(true);
+    } catch (e) {
+      setInstallMsg({ ok: false, text: String(e) });
+    } finally {
+      setInstalling(false);
+    }
+  };
 
   const { data: gitStatus, isLoading, refetch } = useGitStatus(activeProjectDir ?? "");
   const { data: branches } = useGitBranches(activeProjectDir ?? "");
@@ -634,6 +669,52 @@ export function GitStatusPanel() {
           )}
         </div>
 
+        {/* ── Remote Run ── */}
+        <div className="border-b border-border-muted">
+          <button
+            onClick={() => setRemoteRunOpen((o) => !o)}
+            className="flex items-center gap-1 w-full px-3 py-1.5 text-[10px] font-semibold tracking-wider text-text-muted hover:text-text-secondary uppercase"
+          >
+            {remoteRunOpen ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
+            Remote Run
+            {workflowInstalled && (
+              <CheckCircle size={10} className="ml-auto text-status-success" />
+            )}
+          </button>
+          {remoteRunOpen && (
+            <div className="pb-2 px-4 space-y-1.5">
+              {workflowInstalled === null ? null : workflowInstalled ? (
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 text-[10px] text-status-success">
+                    <CheckCircle size={10} />
+                    Workflow installed
+                  </div>
+                  <button
+                    onClick={() => setShowSecretsModal(true)}
+                    className="text-[10px] text-text-muted hover:text-text-secondary transition-colors"
+                  >
+                    Set secrets
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={handleInstallWorkflow}
+                  disabled={installing}
+                  className="flex items-center gap-1.5 text-[10px] text-text-muted hover:text-text-secondary transition-colors disabled:opacity-50"
+                >
+                  {installing ? <Loader2 size={10} className="animate-spin" /> : <Play size={10} />}
+                  Install remote-run.yml
+                </button>
+              )}
+              {installMsg && (
+                <p className={cn("text-[10px]", installMsg.ok ? "text-status-success" : "text-status-error")}>
+                  {installMsg.text}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* ── Changed files ── */}
         {totalChanges === 0 ? (
           <div className="p-3 text-xs text-text-muted text-center">
@@ -704,6 +785,12 @@ export function GitStatusPanel() {
           file={fileContextMenu.file}
           section={fileContextMenu.section}
           onClose={() => setFileContextMenu(null)}
+        />
+      )}
+      {showSecretsModal && activeProjectDir && (
+        <RemoteRunSecretsModal
+          cwd={activeProjectDir}
+          onClose={() => setShowSecretsModal(false)}
         />
       )}
     </div>
