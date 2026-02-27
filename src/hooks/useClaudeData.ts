@@ -725,6 +725,18 @@ export function useClaudeWatcher() {
       })
     );
 
+    // Git branch changed — invalidate all git-related queries
+    unlisteners.push(
+      listen<{ cwd: string; branch: string }>("git-branch-changed", ({ payload }) => {
+        debugLog("Hooks", "GitBranchChanged", { cwd: payload.cwd, branch: payload.branch }, "info");
+        queryClient.invalidateQueries({ queryKey: ["git-current-branch"] });
+        queryClient.invalidateQueries({ queryKey: ["git-branches"] });
+        queryClient.invalidateQueries({ queryKey: ["git-status"] });
+        queryClient.invalidateQueries({ queryKey: ["git-log"] });
+        queryClient.invalidateQueries({ queryKey: ["git-remote-branches"] });
+      })
+    );
+
     // Session completion summary saved
     unlisteners.push(
       listen<{ session_id: string; project_path: string; project_dir: string; filename: string; preview: string }>(
@@ -767,4 +779,24 @@ export function useClaudeWatcher() {
       });
     };
   }, [queryClient]); // eslint-disable-line react-hooks/exhaustive-deps
+}
+
+/**
+ * Watches the `.git/HEAD` file for the active project directory.
+ * When the project changes, a new file watcher is started on the backend.
+ * Branch changes are detected automatically and all git queries are invalidated
+ * via the `git-branch-changed` event handled in `useClaudeWatcher`.
+ */
+export function useGitBranchWatcher() {
+  const activeProjectId = useProjectsStore((s) => s.activeProjectId);
+  const projects = useProjectsStore((s) => s.projects);
+
+  useEffect(() => {
+    const project = projects.find((p) => p.id === activeProjectId);
+    if (!project?.path) return;
+
+    tauri.watchGitHead(project.path).catch((err) => {
+      debugLog("Hooks", "watchGitHead failed", { error: String(err) }, "warn");
+    });
+  }, [activeProjectId, projects]);
 }

@@ -184,6 +184,25 @@ useGlobalNotes() + useProjectNotes() run in MainAreaComponent
      -> Clicking dot: setRightTab("notes"), opens right panel if closed
 ```
 
+### Git branch change detection
+```
+Active project changes (projectsStore)
+  -> useGitBranchWatcher() calls watchGitHead(project.path)
+  -> Rust: cmd_watch_git_head(cwd)
+     -> git2::Repository::discover(cwd) resolves actual .git dir (handles worktrees)
+     -> notify watcher starts on .git/ directory (NonRecursive)
+     -> Background thread: reads HEAD on every fs event, debounces 100ms
+        -> If branch changed: app_handle.emit("git-branch-changed", { cwd, branch })
+  -> Previous watcher (if any) is dropped via GitWatcherState managed state
+
+useClaudeWatcher (React)
+  -> listen("git-branch-changed", handler)
+     -> Invalidates TanStack Query keys:
+        git-current-branch, git-branches, git-status, git-log, git-remote-branches
+     -> All UI components (TitleBar branch chip, StatusBar, GitStatusPanel, GitLogPanel)
+        re-render automatically via React Query refetch
+```
+
 ### Git actions -> Output panel
 ```
 User triggers git action (fetch, pull, rebase, etc.) in GitStatusPanel
@@ -357,7 +376,7 @@ Summaries can be loaded via `cmd_load_summaries(project_dir, session_id)` and re
 | `todos` | `cmd_load_todos` |
 | `plans` | `cmd_load_plans`, `cmd_read_plan`, `cmd_save_plan` |
 | `notes` | `cmd_load_global_notes`, `cmd_load_project_notes`, `cmd_save_note`, `cmd_delete_note` |
-| `git` | `cmd_git_status`, `cmd_git_diff`, `cmd_git_branches`, `cmd_git_current_branch`, `cmd_git_log`, `cmd_git_remote_branches`, `cmd_create_worktree`, `cmd_list_worktrees`, `cmd_get_worktree_copy`, `cmd_set_worktree_copy`, `cmd_claude_git_action`, `cmd_git_fetch`, `cmd_git_pull`, `cmd_git_create_branch`, `cmd_git_add`, `cmd_git_ignore`, `cmd_git_rebase` |
+| `git` | `cmd_git_status`, `cmd_git_diff`, `cmd_git_branches`, `cmd_git_current_branch`, `cmd_git_log`, `cmd_git_remote_branches`, `cmd_create_worktree`, `cmd_list_worktrees`, `cmd_get_worktree_copy`, `cmd_set_worktree_copy`, `cmd_claude_git_action`, `cmd_git_fetch`, `cmd_git_pull`, `cmd_git_create_branch`, `cmd_git_add`, `cmd_git_ignore`, `cmd_git_rebase`, `cmd_watch_git_head` |
 | `pty` | `pty_spawn`, `pty_resize`, `pty_write`, `pty_kill`, `pty_list` |
 | `issues` | `cmd_list_prs`, `cmd_list_issues`, `cmd_list_linear_issues` |
 | `remote_run` | `cmd_check_remote_run_workflow`, `cmd_trigger_remote_run`, `cmd_get_remote_run_status`, `cmd_list_repo_secrets`, `cmd_set_repo_secret` |

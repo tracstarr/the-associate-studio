@@ -28,6 +28,7 @@ pub fn run() {
         .manage(PtyState(std::sync::Arc::new(std::sync::Mutex::new(
             std::collections::HashMap::new(),
         ))))
+        .manage(watcher::git_watcher::GitWatcherState::new())
         .setup(|app| {
             // Create a Start Menu shortcut with AUMID so Windows toast notifications
             // appear as "The Associate Studio" rather than PowerShell.
@@ -86,6 +87,7 @@ pub fn run() {
             commands::git::cmd_git_ignore,
             commands::git::cmd_git_exclude,
             commands::git::cmd_git_rebase,
+            commands::git::cmd_watch_git_head,
             commands::pty::pty_spawn,
             commands::pty::pty_resize,
             commands::pty::pty_write,
