@@ -27,6 +27,16 @@ pub async fn cmd_check_remote_run_workflow(cwd: String) -> Result<bool, String> 
     Ok(path.exists())
 }
 
+/// Returns true if .github/workflows/scheduled-remote-run.yml exists in the project.
+#[tauri::command]
+pub async fn cmd_check_scheduled_workflow(cwd: String) -> Result<bool, String> {
+    let path = PathBuf::from(&cwd)
+        .join(".github")
+        .join("workflows")
+        .join("scheduled-remote-run.yml");
+    Ok(path.exists())
+}
+
 /// Runs `gh workflow run remote-run.yml` with the given issue inputs, then resolves the run ID.
 #[tauri::command]
 pub async fn cmd_trigger_remote_run(

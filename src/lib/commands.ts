@@ -4,6 +4,7 @@ import { useSettingsStore } from "../stores/settingsStore";
 import { useProjectsStore } from "../stores/projectsStore";
 import { writeFile } from "./tauri";
 import { REMOTE_RUN_YAML_CONTENT } from "./remoteRunYaml";
+import { SCHEDULED_REMOTE_RUN_YAML_CONTENT } from "./scheduledRemoteRunYaml";
 
 export interface Command {
   id: string;
@@ -237,6 +238,18 @@ export function buildCommands(): Command[] {
         const cwd = projects.find((p) => p.id === activeProjectId)?.path;
         if (!cwd) return;
         await writeFile(`${cwd}/.github/workflows/remote-run.yml`, REMOTE_RUN_YAML_CONTENT);
+      },
+    },
+    {
+      id: "project.install-scheduled-remote-run",
+      label: "Install Scheduled Remote Run Workflow",
+      description: "Adds .github/workflows/scheduled-remote-run.yml — runs hourly overnight for labeled issues",
+      category: "Project",
+      action: async () => {
+        const { activeProjectId, projects } = useProjectsStore.getState();
+        const cwd = projects.find((p) => p.id === activeProjectId)?.path;
+        if (!cwd) return;
+        await writeFile(`${cwd}/.github/workflows/scheduled-remote-run.yml`, SCHEDULED_REMOTE_RUN_YAML_CONTENT);
       },
     },
     {

@@ -844,6 +844,10 @@ export function checkRemoteRunWorkflow(cwd: string): Promise<boolean> {
   return invoke("cmd_check_remote_run_workflow", { cwd });
 }
 
+export function checkScheduledWorkflow(cwd: string): Promise<boolean> {
+  return invoke("cmd_check_scheduled_workflow", { cwd });
+}
+
 export function triggerRemoteRun(
   cwd: string,
   issueNumber: string,
