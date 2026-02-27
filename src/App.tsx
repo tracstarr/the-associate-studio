@@ -8,6 +8,7 @@ import { useKeyBindings } from "./hooks/useKeyBindings";
 import { useClaudeWatcher } from "./hooks/useClaudeData";
 import { useSettingsStore } from "./stores/settingsStore";
 import { useProjectsStore } from "./stores/projectsStore";
+import { useIssueFilterStore } from "./stores/issueFilterStore";
 import { useEffect, Component, type ReactNode } from "react";
 import { NeuralFieldOverlay } from "./components/dashboard/NeuralFieldOverlay";
 
@@ -48,11 +49,13 @@ function IDEShell() {
   const loadFromDisk = useSettingsStore((s) => s.loadFromDisk);
   const loadProjects = useProjectsStore((s) => s.loadProjects);
   const loadRecentFromDisk = useProjectsStore((s) => s.loadRecentFromDisk);
+  const loadIssueFilters = useIssueFilterStore((s) => s.loadFromDisk);
   useEffect(() => {
     loadFromDisk();
     loadProjects();
     loadRecentFromDisk();
-  }, [loadFromDisk, loadProjects, loadRecentFromDisk]);
+    loadIssueFilters();
+  }, [loadFromDisk, loadProjects, loadRecentFromDisk, loadIssueFilters]);
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-bg-base text-text-primary">
       <TitleBar />
