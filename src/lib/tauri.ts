@@ -859,3 +859,9 @@ export function listRepoSecrets(cwd: string): Promise<string[]> {
 export function setRepoSecret(cwd: string, name: string, value: string): Promise<void> {
   return invoke("cmd_set_repo_secret", { cwd, name, value });
 }
+
+// ---- App Info ----
+
+export function getAppVersion(): Promise<string> {
+  return invoke("cmd_get_app_version");
+}

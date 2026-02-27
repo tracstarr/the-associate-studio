@@ -1,3 +1,4 @@
+pub mod app_info;
 pub mod claude_config;
 pub mod files;
 pub mod git;

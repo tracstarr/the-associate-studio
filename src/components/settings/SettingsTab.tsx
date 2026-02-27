@@ -2,9 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useProjectsStore } from "@/stores/projectsStore";
-import { CheckCircle, AlertCircle, Loader, ExternalLink, Info } from "lucide-react";
+import { CheckCircle, AlertCircle, Loader, ExternalLink, Info, ArrowUpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { checkRemoteRunWorkflow, writeFile } from "@/lib/tauri";
+import { checkRemoteRunWorkflow, writeFile, getAppVersion } from "@/lib/tauri";
 import { REMOTE_RUN_YAML_CONTENT } from "@/lib/remoteRunYaml";
 
 const FONT_FAMILIES = [
@@ -754,6 +754,122 @@ function RemoteRunSection() {
   );
 }
 
+// ── About section ─────────────────────────────────────────────────────────────
+
+const GITHUB_REPO = "tracstarr/the-associate-studio";
+
+type UpdateStatus = "idle" | "checking" | "up-to-date" | "update-available";
+
+function compareSemver(a: string, b: string): number {
+  const pa = a.split(".").map(Number);
+  const pb = b.split(".").map(Number);
+  for (let i = 0; i < 3; i++) {
+    const diff = (pa[i] ?? 0) - (pb[i] ?? 0);
+    if (diff !== 0) return diff;
+  }
+  return 0;
+}
+
+function AboutSection() {
+  const [version, setVersion] = useState<string>("…");
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus>("idle");
+  const [latestVersion, setLatestVersion] = useState<string | null>(null);
+  const [releaseUrl, setReleaseUrl] = useState<string | null>(null);
+
+  const checkForUpdates = async (silent = false) => {
+    if (!silent) setUpdateStatus("checking");
+    try {
+      const res = await fetch(
+        `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`,
+        { headers: { Accept: "application/vnd.github+json" } }
+      );
+      if (!res.ok) {
+        if (!silent) setUpdateStatus("idle");
+        return;
+      }
+      const data = await res.json() as { tag_name: string; html_url: string };
+      const latest = data.tag_name.replace(/^v/, "");
+      setLatestVersion(latest);
+      setReleaseUrl(data.html_url);
+
+      const current = await getAppVersion().catch(() => version);
+      if (compareSemver(latest, current) > 0) {
+        setUpdateStatus("update-available");
+      } else {
+        if (!silent) setUpdateStatus("up-to-date");
+      }
+    } catch {
+      if (!silent) setUpdateStatus("idle");
+    }
+  };
+
+  useEffect(() => {
+    getAppVersion().then(setVersion).catch(() => setVersion("unknown"));
+  }, []);
+
+  // Auto-check on mount (silently — only surface if update found)
+  useEffect(() => {
+    checkForUpdates(true);
+  }, []);
+
+  return (
+    <div className="space-y-4">
+      {/* Info rows */}
+      <div className="space-y-2 text-xs">
+        <div className="flex items-center gap-3">
+          <span className="w-24 text-text-muted">App</span>
+          <span className="text-text-secondary">The Associate Studio</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="w-24 text-text-muted">Version</span>
+          <span className="font-mono text-text-secondary">{version}</span>
+        </div>
+      </div>
+
+      {/* Update controls */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <Btn
+          onClick={() => checkForUpdates(false)}
+          loading={updateStatus === "checking"}
+          disabled={updateStatus === "checking"}
+        >
+          Check for updates
+        </Btn>
+
+        {updateStatus === "up-to-date" && (
+          <span className="flex items-center gap-1.5 text-[11px] text-status-success">
+            <CheckCircle size={11} /> Up to date
+          </span>
+        )}
+
+        {updateStatus === "update-available" && latestVersion && releaseUrl && (
+          <a
+            href={releaseUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-1.5 text-[11px] text-accent-primary hover:underline"
+          >
+            <ArrowUpCircle size={11} />
+            v{latestVersion} available
+            <ExternalLink size={9} />
+          </a>
+        )}
+      </div>
+
+      {/* GitHub link */}
+      <a
+        href={`https://github.com/${GITHUB_REPO}`}
+        target="_blank"
+        rel="noreferrer"
+        className="inline-flex items-center gap-1 text-[11px] text-text-muted hover:text-text-secondary transition-colors"
+      >
+        View on GitHub
+        <ExternalLink size={9} />
+      </a>
+    </div>
+  );
+}
+
 // ── Sticky section header ─────────────────────────────────────────────────────
 
 function SectionHeader({ children }: { children: React.ReactNode }) {
@@ -918,6 +1034,12 @@ export function SettingsTab() {
             <div className="border-t border-border-muted" />
             <FileDisplaySection />
           </div>
+        </section>
+
+        {/* ── About ──────────────────────────────────────────────── */}
+        <section>
+          <SectionHeader>About</SectionHeader>
+          <AboutSection />
         </section>
       </div>
     </div>

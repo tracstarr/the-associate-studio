@@ -1,13 +1,14 @@
 {
   "name": "the-associate-studio",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.4.3",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "version:bump": "node scripts/bump-version.js"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
