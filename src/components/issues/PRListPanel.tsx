@@ -7,7 +7,7 @@ import {
 import { usePRs } from "@/hooks/useClaudeData";
 import { useProjectsStore } from "@/stores/projectsStore";
 import { useSessionStore } from "@/stores/sessionStore";
-import { useIssueFilterStore } from "@/stores/issueFilterStore";
+import { useIssueFilterStore, DEFAULT_ISSUE_FILTERS } from "@/stores/issueFilterStore";
 import type { SessionTab } from "@/stores/sessionStore";
 import type { PullRequest } from "@/lib/tauri";
 import { pathToProjectId, cn } from "@/lib/utils";
@@ -19,11 +19,10 @@ export function PRListPanel() {
   const activeProjectId = useProjectsStore((s) => s.activeProjectId);
   const openTab = useSessionStore((s) => s.openTab);
 
-  // Persisted PR state filter
-  const getFilters = useIssueFilterStore((s) => s.getFilters);
-  const setFilters = useIssueFilterStore((s) => s.setFilters);
+  // Persisted PR state filter — select reactive slice by project ID
   const projectId = activeProjectId ?? "__none__";
-  const state = getFilters(projectId).prState;
+  const state = (useIssueFilterStore((s) => s.filters[projectId]) ?? DEFAULT_ISSUE_FILTERS).prState;
+  const setFilters = useIssueFilterStore((s) => s.setFilters);
   const setState = useCallback(
     (s: "open" | "closed" | "all") => setFilters(projectId, { prState: s }),
     [projectId, setFilters],

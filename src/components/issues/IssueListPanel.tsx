@@ -10,7 +10,7 @@ import {
 import { useProjectsStore } from "@/stores/projectsStore";
 import { useSessionStore } from "@/stores/sessionStore";
 import { useSettingsStore } from "@/stores/settingsStore";
-import { useIssueFilterStore } from "@/stores/issueFilterStore";
+import { useIssueFilterStore, DEFAULT_ISSUE_FILTERS } from "@/stores/issueFilterStore";
 import type { Issue, AssigneeOption } from "@/lib/tauri";
 import { cn, pathToProjectId } from "@/lib/utils";
 
@@ -178,11 +178,10 @@ export function IssueListPanel() {
   const jiraApiToken = useSettingsStore((s) => s.jiraApiToken);
   const hasJira = !!(jiraBaseUrl && jiraEmail && jiraApiToken);
 
-  // Persisted filter state from store
-  const getFilters = useIssueFilterStore((s) => s.getFilters);
-  const setFilters = useIssueFilterStore((s) => s.setFilters);
+  // Persisted filter state from store — select reactive slice by project ID
   const projectId = activeProjectId ?? "__none__";
-  const saved = getFilters(projectId);
+  const saved = useIssueFilterStore((s) => s.filters[projectId]) ?? DEFAULT_ISSUE_FILTERS;
+  const setFilters = useIssueFilterStore((s) => s.setFilters);
 
   const state = saved.state;
   const ghAssignees = useMemo(() => new Set(saved.ghAssignees), [saved.ghAssignees]);

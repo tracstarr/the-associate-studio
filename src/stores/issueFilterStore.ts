@@ -12,7 +12,7 @@ export interface ProjectIssueFilters {
   prState: "open" | "closed" | "all";
 }
 
-const DEFAULT_FILTERS: ProjectIssueFilters = {
+export const DEFAULT_ISSUE_FILTERS: ProjectIssueFilters = {
   state: "open",
   ghAssignees: [],
   linearAssignees: [],
@@ -25,9 +25,6 @@ const DEFAULT_FILTERS: ProjectIssueFilters = {
 interface IssueFilterStore {
   /** Per-project filter state, keyed by project ID. */
   filters: Record<string, ProjectIssueFilters>;
-
-  /** Get filters for a project (returns defaults if none saved). */
-  getFilters: (projectId: string) => ProjectIssueFilters;
 
   /** Patch one or more filter fields for a project and persist. */
   setFilters: (projectId: string, patch: Partial<ProjectIssueFilters>) => void;
@@ -49,18 +46,12 @@ function persistFilters(filters: Record<string, ProjectIssueFilters>) {
   }, 200);
 }
 
-export const useIssueFilterStore = create<IssueFilterStore>((set, get) => ({
+export const useIssueFilterStore = create<IssueFilterStore>((set) => ({
   filters: {},
-
-  getFilters: (projectId) => {
-    const saved = get().filters[projectId];
-    if (!saved) return { ...DEFAULT_FILTERS };
-    return { ...DEFAULT_FILTERS, ...saved };
-  },
 
   setFilters: (projectId, patch) => {
     set((s) => {
-      const prev = s.filters[projectId] ?? { ...DEFAULT_FILTERS };
+      const prev = s.filters[projectId] ?? { ...DEFAULT_ISSUE_FILTERS };
       const next = { ...prev, ...patch };
       const filters = { ...s.filters, [projectId]: next };
       persistFilters(filters);
