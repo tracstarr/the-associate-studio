@@ -13,8 +13,8 @@ interface ActivityItem {
 
 const topItems: ActivityItem[] = [
   { id: "sessions", icon: FolderOpen, label: "Projects & Sessions" },
+  { id: "files", icon: FolderTree, label: "File Browser" },
   { id: "git", icon: GitBranch, label: "Git" },
-  { id: "files", icon: FolderTree, label: "Files" },
   { id: "prs", icon: GitPullRequest, label: "Pull Requests" },
   { id: "issues", icon: CircleDot, label: "Issues" },
 ];

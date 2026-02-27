@@ -9,8 +9,8 @@ import { WorkflowsPanel } from "@/components/workflows/WorkflowsPanel";
 
 const BASE_TABS: { id: BottomTab; label: string }[] = [
   { id: "git", label: "Git" },
-  { id: "output", label: "Output" },
   { id: "workflows", label: "Workflows" },
+  { id: "output", label: "Output" },
 ];
 
 const tabPlaceholders: Record<BottomTab, string> = {
@@ -37,6 +37,7 @@ function BottomPanelComponent() {
           <button
             key={tab.id}
             onClick={() => setTab(tab.id)}
+            title={tab.label}
             className={cn(
               "px-4 py-1.5 text-xs rounded-lg transition-all duration-200 flex items-center",
               activeTab === tab.id
