@@ -3,87 +3,178 @@ import { ExternalLink, RefreshCw, User, Tag, AlertCircle, MessageSquare, Play } 
 import { useJiraIssueDetail, useIssues, useLinearIssues } from "@/hooks/useClaudeData";
 import { useSettingsStore } from "@/stores/settingsStore";
 import type { SessionTab } from "@/stores/sessionStore";
+import { useSessionStore } from "@/stores/sessionStore";
 import type { Issue } from "@/lib/tauri";
-import { checkRemoteRunWorkflow, triggerRemoteRun } from "@/lib/tauri";
+import { checkRemoteRunWorkflow, triggerRemoteRun, getRemoteRunStatus } from "@/lib/tauri";
 import { cn } from "@/lib/utils";
 
 // ---- Remote Run hook + controls ----
 
 function useRemoteRun(
-  cwd: string | null,
+  tab: SessionTab,
   issueNumber: string,
   issueType: "github" | "jira" | "linear"
 ) {
+  const cwd = tab.projectDir || null;
+  const updateTabRunInfo = useSessionStore((s) => s.updateTabRunInfo);
+
   const [workflowExists, setWorkflowExists] = useState<boolean | null>(null);
-  const [running, setRunning] = useState(false);
-  const [message, setMessage] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+  const [triggering, setTriggering] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Persistent state lives in the tab
+  const runId = tab.remoteRunId ?? null;
+  const runStatus = tab.remoteRunStatus ?? null;
+  const runConclusion = tab.remoteRunConclusion ?? null;
+  const runUrl = tab.remoteRunUrl ?? null;
 
   useEffect(() => {
     if (!cwd) return;
     checkRemoteRunWorkflow(cwd).then(setWorkflowExists).catch(() => setWorkflowExists(false));
   }, [cwd]);
 
+  // Poll for status updates while the run is not completed
+  useEffect(() => {
+    if (!cwd || !runId || runStatus === "completed") return;
+    let cancelled = false;
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    const poll = () => {
+      timeoutId = setTimeout(async () => {
+        if (cancelled) return;
+        try {
+          const result = await getRemoteRunStatus(cwd, runId);
+          if (!cancelled) {
+            updateTabRunInfo(tab.id, {
+              remoteRunStatus: result.status,
+              remoteRunConclusion: result.conclusion,
+              remoteRunUrl: result.url,
+            });
+            if (result.status !== "completed") {
+              poll();
+            }
+          }
+        } catch {
+          if (!cancelled) poll();
+        }
+      }, 15000);
+    };
+
+    poll();
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, [cwd, runId, runStatus]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const trigger = async () => {
     if (!cwd || !issueNumber) return;
-    setRunning(true);
-    setMessage(null);
+    setTriggering(true);
+    setError(null);
     try {
       const result = await triggerRemoteRun(cwd, issueNumber, issueType);
-      setMessage({ kind: "success", text: result || "Workflow triggered." });
+      updateTabRunInfo(tab.id, {
+        remoteRunId: result.runId,
+        remoteRunUrl: result.runUrl,
+        remoteRunStatus: "queued",
+        remoteRunConclusion: null,
+      });
     } catch (e) {
-      setMessage({ kind: "error", text: String(e) });
+      setError(String(e));
     } finally {
-      setRunning(false);
+      setTriggering(false);
     }
   };
 
-  return { workflowExists, running, message, trigger };
+  return { workflowExists, triggering, error, runStatus, runConclusion, runUrl, runId, trigger };
 }
 
 function RemoteRunControls({
-  cwd,
+  tab,
   issueNumber,
   issueType,
 }: {
-  cwd: string | null;
+  tab: SessionTab;
   issueNumber: string;
   issueType: "github" | "jira" | "linear";
 }) {
-  const { workflowExists, running, message, trigger } = useRemoteRun(
-    cwd,
-    issueNumber,
-    issueType
-  );
+  const { workflowExists, triggering, error, runStatus, runConclusion, runUrl, runId, trigger } =
+    useRemoteRun(tab, issueNumber, issueType);
 
   if (workflowExists === null) return null;
 
-  const isPushError =
-    message?.kind === "error" && message.text.includes("Commit and push");
+  const badge = runId
+    ? (() => {
+        if (runStatus === "completed") {
+          if (runConclusion === "success") {
+            return {
+              label: "Passed",
+              className:
+                "text-[var(--color-status-success)] border-[var(--color-status-success)]/50",
+            };
+          }
+          if (runConclusion === "failure") {
+            return {
+              label: "Failed",
+              className:
+                "text-[var(--color-status-error)] border-[var(--color-status-error)]/50",
+            };
+          }
+          return {
+            label: "Cancelled",
+            className: "text-[var(--color-text-muted)] border-[var(--color-border-default)]",
+          };
+        }
+        if (runStatus === "in_progress") {
+          return {
+            label: "In Progress",
+            className:
+              "text-[var(--color-status-warning)] border-[var(--color-status-warning)]/50",
+          };
+        }
+        return {
+          label: "Queued",
+          className:
+            "text-[var(--color-status-warning)] border-[var(--color-status-warning)]/50",
+        };
+      })()
+    : null;
 
   return (
     <div className="flex items-center gap-2">
       <button
         onClick={workflowExists ? trigger : undefined}
-        disabled={running || !workflowExists}
+        disabled={triggering || !workflowExists}
         className="flex items-center gap-1 px-2 py-0.5 text-[11px] border border-[var(--color-accent-primary)]/50 rounded text-[var(--color-accent-primary)] hover:bg-[var(--color-accent-primary)]/10 transition-colors disabled:opacity-40"
-        title={workflowExists ? "Trigger GitHub Actions remote run for this issue" : "Install workflow via the Git pane first"}
+        title={
+          workflowExists
+            ? "Trigger GitHub Actions remote run for this issue"
+            : "Install workflow via the Git pane first"
+        }
       >
         <Play size={10} />
-        {running ? "Running…" : "Remote Run"}
+        {triggering ? "Triggering…" : "Remote Run"}
       </button>
-      {message && (
-        <span
+      {badge && runUrl && (
+        <a
+          href={runUrl}
+          target="_blank"
+          rel="noopener noreferrer"
           className={cn(
-            "text-[10px] max-w-[200px] truncate",
-            isPushError
-              ? "text-[var(--color-status-warning)]"
-              : message.kind === "success"
-              ? "text-[var(--color-status-success)]"
-              : "text-[var(--color-status-error)]"
+            "text-[10px] px-1.5 py-0.5 border rounded hover:opacity-80 transition-opacity",
+            badge.className
           )}
-          title={message.text}
         >
-          {message.text}
+          {badge.label}
+        </a>
+      )}
+      {error && (
+        <span
+          className="text-[10px] max-w-[200px] truncate text-[var(--color-status-error)]"
+          title={error}
+        >
+          {error}
         </span>
       )}
     </div>
@@ -157,7 +248,7 @@ function JiraIssueDetailView({ tab }: { tab: SessionTab }) {
           </a>
           <div className="flex items-center gap-2">
             <RemoteRunControls
-              cwd={tab.projectDir || null}
+              tab={tab}
               issueNumber={tab.issueKey ?? ""}
               issueType="jira"
             />
@@ -292,7 +383,7 @@ function GitHubIssueDetailView({ tab }: { tab: SessionTab }) {
           </a>
           <div className="flex items-center gap-2">
             <RemoteRunControls
-              cwd={tab.projectDir || null}
+              tab={tab}
               issueNumber={issue.number.toString()}
               issueType="github"
             />
@@ -394,7 +485,7 @@ function LinearIssueDetailView({ tab }: { tab: SessionTab }) {
           )}
           <div className="flex items-center gap-2">
             <RemoteRunControls
-              cwd={tab.projectDir || null}
+              tab={tab}
               issueNumber={tab.issueKey ?? ""}
               issueType="linear"
             />

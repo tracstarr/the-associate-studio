@@ -143,6 +143,7 @@ pub fn run() {
             commands::notes::cmd_delete_note,
             commands::remote_run::cmd_check_remote_run_workflow,
             commands::remote_run::cmd_trigger_remote_run,
+            commands::remote_run::cmd_get_remote_run_status,
             commands::remote_run::cmd_list_repo_secrets,
             commands::remote_run::cmd_set_repo_secret,
         ])

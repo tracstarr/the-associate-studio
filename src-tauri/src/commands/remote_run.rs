@@ -2,6 +2,21 @@ use std::path::PathBuf;
 use crate::utils::silent_command;
 use serde_json;
 
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RemoteRunResult {
+    pub run_id: u64,
+    pub run_url: String,
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkflowRunStatus {
+    pub status: String,             // "queued" | "in_progress" | "completed"
+    pub conclusion: Option<String>, // "success" | "failure" | "cancelled" | null
+    pub url: String,
+}
+
 /// Returns true if .github/workflows/remote-run.yml exists in the project.
 #[tauri::command]
 pub async fn cmd_check_remote_run_workflow(cwd: String) -> Result<bool, String> {
@@ -12,13 +27,13 @@ pub async fn cmd_check_remote_run_workflow(cwd: String) -> Result<bool, String> 
     Ok(path.exists())
 }
 
-/// Runs `gh workflow run remote-run.yml` with the given issue inputs.
+/// Runs `gh workflow run remote-run.yml` with the given issue inputs, then resolves the run ID.
 #[tauri::command]
 pub async fn cmd_trigger_remote_run(
     cwd: String,
     issue_number: String,
     issue_type: String,
-) -> Result<String, String> {
+) -> Result<RemoteRunResult, String> {
     if !matches!(issue_type.as_str(), "github" | "jira" | "linear") {
         return Err(format!("Invalid issue_type: {}", issue_type));
     }
@@ -56,17 +71,109 @@ pub async fn cmd_trigger_remote_run(
     let err = String::from_utf8_lossy(&output.stderr).to_string();
     let combined = format!("{}{}", out, err).trim().to_string();
 
-    if output.status.success() {
-        Ok(if combined.is_empty() {
-            "Workflow triggered.".into()
+    if !output.status.success() {
+        if combined.contains("could not find any workflows") {
+            return Err("Workflow not found on remote. Commit and push .github/workflows/remote-run.yml first.".into());
         } else {
-            combined
-        })
-    } else if combined.contains("could not find any workflows") {
-        Err("Workflow not found on remote. Commit and push .github/workflows/remote-run.yml first.".into())
-    } else {
-        Err(combined)
+            return Err(combined);
+        }
     }
+
+    // Workflow triggered — retry up to 3 times (2s apart) to resolve the run ID.
+    let mut last_run: Option<RemoteRunResult> = None;
+    for _ in 0..3 {
+        tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+        let dir2 = PathBuf::from(&cwd);
+        let list_output = tokio::task::spawn_blocking(move || {
+            silent_command("gh")
+                .args([
+                    "run",
+                    "list",
+                    "--workflow=remote-run.yml",
+                    "--limit=5",
+                    "--json",
+                    "databaseId,status,conclusion,url,createdAt",
+                ])
+                .current_dir(&dir2)
+                .output()
+        })
+        .await
+        .map_err(|e| format!("Task error: {}", e))?
+        .map_err(|e| format!("Failed to run gh: {}", e))?;
+
+        if list_output.status.success() {
+            let json: serde_json::Value = serde_json::from_slice(&list_output.stdout)
+                .unwrap_or(serde_json::Value::Array(vec![]));
+            if let Some(arr) = json.as_array() {
+                if !arr.is_empty() {
+                    // Pick entry with max createdAt (ISO 8601 sorts lexicographically)
+                    let best = arr.iter().max_by_key(|v| {
+                        v.get("createdAt").and_then(|c| c.as_str()).unwrap_or("")
+                    });
+                    if let Some(run) = best {
+                        let run_id = run.get("databaseId").and_then(|id| id.as_u64());
+                        let run_url = run
+                            .get("url")
+                            .and_then(|u| u.as_str())
+                            .map(|s| s.to_string());
+                        if let (Some(id), Some(url)) = (run_id, run_url) {
+                            last_run = Some(RemoteRunResult { run_id: id, run_url: url });
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    match last_run {
+        Some(result) => Ok(result),
+        None => Err("Workflow triggered but could not resolve run ID.".into()),
+    }
+}
+
+/// Returns the current status of a workflow run by ID.
+#[tauri::command]
+pub async fn cmd_get_remote_run_status(
+    cwd: String,
+    run_id: u64,
+) -> Result<WorkflowRunStatus, String> {
+    let dir = PathBuf::from(&cwd);
+    let run_id_str = run_id.to_string();
+    let output = tokio::task::spawn_blocking(move || {
+        silent_command("gh")
+            .args(["run", "view", &run_id_str, "--json", "status,conclusion,url"])
+            .current_dir(&dir)
+            .output()
+    })
+    .await
+    .map_err(|e| format!("Task error: {}", e))?
+    .map_err(|e| format!("Failed to run gh: {}", e))?;
+
+    if !output.status.success() {
+        let err = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        return Err(err);
+    }
+
+    let json: serde_json::Value = serde_json::from_slice(&output.stdout)
+        .map_err(|e| format!("Parse error: {}", e))?;
+
+    let status = json
+        .get("status")
+        .and_then(|s| s.as_str())
+        .unwrap_or("")
+        .to_string();
+    let conclusion = json
+        .get("conclusion")
+        .and_then(|c| c.as_str())
+        .map(|s| s.to_string());
+    let url = json
+        .get("url")
+        .and_then(|u| u.as_str())
+        .unwrap_or("")
+        .to_string();
+
+    Ok(WorkflowRunStatus { status, conclusion, url })
 }
 
 /// Returns the list of secret names already set on the repo (values are never exposed by GitHub).

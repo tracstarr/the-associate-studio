@@ -22,6 +22,10 @@ export interface SessionTab {
   issueKey?: string; // Jira key "PROJ-123", GitHub "#42", Linear identifier; for type === "issue-detail"
   issueSource?: "github" | "linear" | "jira"; // source system; for type === "issue-detail"
   issueUrl?: string; // direct link to open externally; for type === "issue-detail"
+  remoteRunId?: number; // GitHub Actions run ID after triggering Remote Run
+  remoteRunUrl?: string; // URL to the workflow run on GitHub
+  remoteRunStatus?: "queued" | "in_progress" | "completed";
+  remoteRunConclusion?: "success" | "failure" | "cancelled" | null;
 }
 
 interface SessionStore {
@@ -50,6 +54,7 @@ interface SessionStore {
   // Scan-all variants (watcher doesn't know projectId easily)
   resolveTabSession: (tabId: string, realSessionId: string) => void;
   renameTab: (tabId: string, title: string) => void;
+  updateTabRunInfo: (tabId: string, info: Partial<Pick<SessionTab, "remoteRunId" | "remoteRunUrl" | "remoteRunStatus" | "remoteRunConclusion">>) => void;
 
   // Global state (keyed by session ID, not project)
   setSubagents: (sessionId: string, subagents: ActiveSubagent[]) => void;
@@ -202,6 +207,15 @@ export const useSessionStore = create<SessionStore>((set) => ({
       const updated: Record<string, SessionTab[]> = {};
       for (const [pid, tabs] of Object.entries(s.tabsByProject)) {
         updated[pid] = tabs.map((t) => (t.id === tabId ? { ...t, title } : t));
+      }
+      return { tabsByProject: updated };
+    }),
+
+  updateTabRunInfo: (tabId, info) =>
+    set((s) => {
+      const updated: Record<string, SessionTab[]> = {};
+      for (const [pid, tabs] of Object.entries(s.tabsByProject)) {
+        updated[pid] = tabs.map((t) => (t.id === tabId ? { ...t, ...info } : t));
       }
       return { tabsByProject: updated };
     }),

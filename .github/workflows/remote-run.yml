@@ -31,9 +31,6 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Claude Code CLI
-        run: npm install -g @anthropic-ai/claude-code
-
       - name: Fetch issue and extract prompt
         id: issue
         env:
@@ -78,9 +75,11 @@ jobs:
           echo "BRANCH=$BRANCH" >> "$GITHUB_ENV"
 
       - name: Run Claude Code
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
-        run: claude --dangerously-skip-permissions -p "$(cat /tmp/prompt.txt)"
+        uses: anthropics/claude-code-base-action@beta
+        with:
+          prompt_file: /tmp/prompt.txt
+          anthropic_api_key: ${{ secrets.CLAUDE_API_KEY }}
+          allowed_tools: "Bash,View,GlobTool,GrepTool,Write,Edit,BatchTool"
 
       - name: Commit and open PR
         env:

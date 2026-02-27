@@ -698,6 +698,19 @@ export function loadExtensions(projectDir: string): Promise<ClaudeExtension[]> {
 
 // ---- Remote Run ----
 
+export interface RemoteRunResult {
+  runId: number;
+  runUrl: string;
+}
+
+export type WorkflowRunConclusionType = "success" | "failure" | "cancelled" | null;
+
+export interface WorkflowRunStatusResult {
+  status: "queued" | "in_progress" | "completed";
+  conclusion: WorkflowRunConclusionType;
+  url: string;
+}
+
 export function checkRemoteRunWorkflow(cwd: string): Promise<boolean> {
   return invoke("cmd_check_remote_run_workflow", { cwd });
 }
@@ -706,8 +719,12 @@ export function triggerRemoteRun(
   cwd: string,
   issueNumber: string,
   issueType: "github" | "jira" | "linear"
-): Promise<string> {
+): Promise<RemoteRunResult> {
   return invoke("cmd_trigger_remote_run", { cwd, issueNumber, issueType });
+}
+
+export function getRemoteRunStatus(cwd: string, runId: number): Promise<WorkflowRunStatusResult> {
+  return invoke("cmd_get_remote_run_status", { cwd, runId });
 }
 
 export function listRepoSecrets(cwd: string): Promise<string[]> {
