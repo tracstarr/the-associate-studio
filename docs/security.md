@@ -88,6 +88,50 @@ Custom Tauri commands (PTY, integrations, git) are not gated by capabilities —
 - `transparent: false`
 - `resizable: true`
 
+## Remote Run — GitHub Actions secrets
+
+The Remote Run feature manages secrets stored in **GitHub repository Actions secrets**, not in the Windows Credential Manager. These secrets are needed by the CI workflow (Claude OAuth token, Jira/Linear credentials).
+
+### Secret transmission
+
+`cmd_set_repo_secret` passes the secret value exclusively via **stdin** to `gh secret set`:
+
+```rust
+let mut child = silent_command("gh")
+    .args(["secret", "set", &name])   // value NOT in args
+    .stdin(Stdio::piped())
+    .spawn()?;
+if let Some(mut stdin) = child.stdin.take() {
+    let _ = stdin.write_all(value.as_bytes());
+}
+```
+
+This prevents the secret from appearing in the process list, shell history, or any logging that captures command arguments.
+
+### Secret name validation
+
+`cmd_set_repo_secret` rejects any `name` that is not purely alphanumeric + underscores. This prevents shell-injection-style attacks where a crafted name could manipulate the `gh` command.
+
+`cmd_trigger_remote_run` validates `issue_number` (alphanumeric + `-_`) and `issue_type` (allowlist of `"github" | "jira" | "linear"`) before passing them to the shell.
+
+### Secret visibility
+
+`cmd_list_repo_secrets` uses `gh secret list --json name` — GitHub's API returns **names only**. Secret values are never retrievable through any GitHub API. The modal therefore can only confirm "this secret exists", not show or compare values.
+
+### What is stored where
+
+| Item | Storage |
+|------|---------|
+| `CLAUDE_CODE_OAUTH_TOKEN` | GitHub repo secret (CI only) |
+| `JIRA_API_TOKEN` | GitHub repo secret (CI only) |
+| `JIRA_BASE_URL`, `JIRA_EMAIL` | GitHub repo secret (CI only) |
+| `LINEAR_API_KEY` | GitHub repo secret (CI only) |
+| Local Jira/Linear credentials | Windows Credential Manager (IDE use) |
+
+The IDE's local Jira/Linear credentials in Windows Credential Manager are separate from the CI secrets. The modal only pre-fills fields from the local keyring for convenience; local credentials are never automatically pushed to GitHub.
+
+---
+
 ## What is NOT protected
 
 - Terminal output (xterm.js scrollback buffer) — includes any secrets the user types or that Claude outputs

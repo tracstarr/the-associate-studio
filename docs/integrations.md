@@ -222,6 +222,49 @@ On startup, `cmd_load_integration_secrets` reads all three keys at once and retu
 
 ---
 
+## Remote Run — GitHub Actions secrets
+
+The Remote Run feature requires secrets to be set in the GitHub repository's **Settings → Secrets and variables → Actions**. The IDE provides a **Remote Run Secrets** modal (opened automatically after workflow installation, or from the Git sidebar) to configure them from inside the IDE.
+
+### How secrets are set
+
+`cmd_set_repo_secret` pipes the secret value to `gh secret set {name}` via **stdin**. The value never appears as a command-line argument, preventing exposure in the process list.
+
+```rust
+// src-tauri/src/commands/remote_run.rs
+let mut child = silent_command("gh")
+    .args(["secret", "set", &name])
+    .stdin(Stdio::piped())
+    .spawn()?;
+if let Some(mut stdin) = child.stdin.take() {
+    let _ = stdin.write_all(value.as_bytes());
+}
+```
+
+`cmd_list_repo_secrets` returns secret **names only** via `gh secret list --json name`. GitHub never exposes secret values through its API.
+
+### Required secrets
+
+| Secret | Integration |
+|--------|-------------|
+| `CLAUDE_CODE_OAUTH_TOKEN` | Always required |
+| `JIRA_API_TOKEN` | Jira issues |
+| `JIRA_BASE_URL` | Jira issues |
+| `JIRA_EMAIL` | Jira issues |
+| `LINEAR_API_KEY` | Linear issues |
+
+`GITHUB_TOKEN` is provided automatically by GitHub Actions — no setup needed.
+
+### Modal behaviour
+
+The `RemoteRunSecretsModal` component:
+- Loads existing secret names from `cmd_list_repo_secrets` on open
+- Shows "Already set" for any secret already present; default is to skip those unless the user checks "Overwrite"
+- Pre-fills Jira/Linear fields from local `settingsStore` credentials when available
+- Sets secrets individually and shows per-secret success/error feedback
+
+---
+
 ## Adding a new integration
 
 1. Add auth commands to `src-tauri/src/commands/integrations.rs`
