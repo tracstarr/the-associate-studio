@@ -291,7 +291,7 @@ The right ActivityBar controls which right panel view is shown:
 | Log | `GitLogPanel` | Git commit log |
 | Diff | `DiffViewer` | Diff for selected file from git panel |
 | PRs | `PRListPanel` | Pull requests (shared component) |
-| Issues | `IssueListPanel` | GitHub issues |
+| Issues | `IssueListPanel` | GitHub, Linear, and Jira issues; includes "New" button to create issues via `CreateIssueModal` |
 | Workflows | `WorkflowsPanel` | GitHub Actions workflow files + run list with auto-polling |
 | Output | `OutputPanel` | Git action output + system messages |
 

@@ -279,7 +279,8 @@ export function NoteEditor({ note, onBack, onSave, onDelete }: NoteEditorProps) 
       {/* Create issue modal */}
       {showCreateModal && (
         <CreateIssueModal
-          note={note}
+          initialTitle={note.title}
+          initialBody={note.content}
           activeProjectDir={activeProject?.path ?? null}
           onCreated={handleIssueCreated}
           onClose={() => setShowCreateModal(false)}

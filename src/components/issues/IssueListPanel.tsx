@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
-import { CircleDot, CheckCircle2, Github, ChevronDown, X } from "lucide-react";
+import { CircleDot, CheckCircle2, Github, ChevronDown, X, Plus } from "lucide-react";
 import {
   useIssues, useLinearIssues, useJiraIssues,
   useGithubLabels, useGithubAssignees,
@@ -11,8 +11,9 @@ import { useProjectsStore } from "@/stores/projectsStore";
 import { useSessionStore } from "@/stores/sessionStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useIssueFilterStore, DEFAULT_ISSUE_FILTERS } from "@/stores/issueFilterStore";
-import type { Issue, AssigneeOption } from "@/lib/tauri";
+import type { Issue, AssigneeOption, IssueRef } from "@/lib/tauri";
 import { cn, pathToProjectId } from "@/lib/utils";
+import { CreateIssueModal } from "@/components/notes/CreateIssueModal";
 
 // ─── FilterDropdown ───────────────────────────────────────────────────────────
 
@@ -333,11 +334,34 @@ export function IssueListPanel() {
     });
   }
 
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
   function refetch() {
     ghRefetch();
     linearRefetch();
     jiraRefetch();
   }
+
+  const handleIssueCreated = (ref: IssueRef) => {
+    // Open the newly created issue in a detail tab
+    if (activeProjectDir) {
+      const pid = pathToProjectId(activeProjectDir);
+      openTab(
+        {
+          id: `issue:${ref.provider}:${ref.key}`,
+          type: "issue-detail",
+          title: ref.key,
+          projectDir: activeProjectDir,
+          issueKey: ref.key,
+          issueSource: ref.provider as "github" | "linear" | "jira",
+          issueUrl: ref.url,
+        },
+        pid
+      );
+    }
+    setShowCreateModal(false);
+    refetch();
+  };
 
   const openIssueTab = (issue: Issue) => {
     if (!activeProjectDir) return;
@@ -384,12 +408,22 @@ export function IssueListPanel() {
             {s}
           </button>
         ))}
-        <button
-          onClick={refetch}
-          className="ml-auto text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
-        >
-          ↻
-        </button>
+        <div className="ml-auto flex items-center gap-1">
+          <button
+            onClick={() => setShowCreateModal(true)}
+            title="New issue"
+            className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-raised)] transition-all duration-200"
+          >
+            <Plus size={10} />
+            New
+          </button>
+          <button
+            onClick={refetch}
+            className="text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
+          >
+            ↻
+          </button>
+        </div>
       </div>
 
       {/* Row 2: provider toggles + filters */}
@@ -487,6 +521,14 @@ export function IssueListPanel() {
           />
         ))}
       </div>
+
+      {showCreateModal && (
+        <CreateIssueModal
+          activeProjectDir={activeProjectDir}
+          onCreated={handleIssueCreated}
+          onClose={() => setShowCreateModal(false)}
+        />
+      )}
     </div>
   );
 }

@@ -117,7 +117,7 @@ npm run tauri build      # release build
 | Terminal | `components/terminal/` | xterm.js PTY terminal for Claude CLI sessions |
 | Sessions | `components/sessions/` | Session list sidebar, session transcript viewer |
 | Git | `components/git/` | Sidebar git status, bottom panel git log/diff, branch management |
-| PRs & Issues | `components/issues/` | GitHub PR list, issue list (bottom panel tabs) |
+| PRs & Issues | `components/issues/` | GitHub PR list, issue list + create issue (bottom panel tabs) |
 | Dashboard | `components/dashboard/` | NeuralFieldOverlay — mission control overlay (Ctrl+Shift+Space) |
 | Projects | `components/projects/` | Project switcher dropdown, project management |
 | Context | `components/context/` | Right panel context viewer (CLAUDE.md, memory files) |
@@ -127,7 +127,7 @@ npm run tauri build      # release build
 | Debug | `components/debug/` | Dev-only debug panel (Ctrl+Shift+D) |
 | Files | `components/files/` | File browser sidebar view; `FileEditorTab` has Monaco selection → "Add to note" button |
 | README | `components/readme/` | README viewer/editor tab |
-| Notes | `components/notes/` | `NotesPanel` (orchestrator), `NotesList` (scoped list), `NoteEditor` (markdown editor + file refs) |
+| Notes | `components/notes/` | `NotesPanel` (orchestrator), `NotesList` (scoped list), `NoteEditor` (markdown editor + file refs), `CreateIssueModal` (shared issue creation dialog) |
 
 ## Critical gotchas (details in docs)
 

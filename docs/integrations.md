@@ -37,7 +37,14 @@ Both auth methods configure the `gh` CLI tool. After authentication, all `gh` CL
 // Used in issues.rs for PR/Issue listing
 Command::new("gh").args(["pr", "list", "--json", "..."])
 Command::new("gh").args(["issue", "list", "--json", "..."])
+
+// Issue creation
+Command::new("gh").args(["issue", "create", "--title", "...", "--body", "...", "--json", "number,url,title"])
 ```
+
+### Issue creation
+
+`cmd_create_github_issue(cwd, title, body)` runs `gh issue create` in the project working directory. Returns an `IssueRef` with `provider: "github"` and `key` set to the issue number. Available from both the Notes editor ("+ Create issue") and the Issues tab ("+ New" button) via the shared `CreateIssueModal` component.
 
 ### Token storage
 
@@ -95,6 +102,10 @@ Returns up to 50 issues ordered by `updatedAt`. Each issue is mapped to the shar
 
 The Issues panel (`IssueListPanel`) merges GitHub and Linear issues into a single list, distinguished by the `source` field. Linear issues are only fetched when a Linear API key is configured (checked via `hasKey` in the TanStack Query cache key).
 
+### Issue creation
+
+`cmd_create_linear_issue(title, body, team_id)` sends a GraphQL `issueCreate` mutation. The `CreateIssueModal` fetches available teams via `cmd_get_linear_teams` to populate a team selector. Returns an `IssueRef` with `provider: "linear"` and `key` set to the Linear identifier (e.g., `ENG-123`).
+
 ### Usage
 
 The Linear API key is available in-memory for the Issues panel (`IssueListPanel`) to query Linear issues. Implementation in `src-tauri/src/commands/issues.rs`.
@@ -132,6 +143,10 @@ If the response includes a `displayName`, credentials are valid.
 ### Logout
 
 `cmd_jira_logout` deletes the keyring entry.
+
+### Issue creation
+
+`cmd_create_jira_issue(base_url, email, api_token, title, body, project_key, issue_type)` creates an issue via the Jira REST API (`POST /rest/api/3/issue`). The `CreateIssueModal` fetches available projects via `cmd_get_jira_projects` and offers issue type selection (Task, Story, Bug, Subtask). Returns an `IssueRef` with `provider: "jira"` and `key` set to the Jira issue key (e.g., `PROJ-123`).
 
 ### Why not Jira OAuth?
 
