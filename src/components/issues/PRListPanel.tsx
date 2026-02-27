@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback } from "react";
 import {
   GitPullRequest,
   GitMerge,
@@ -7,6 +7,7 @@ import {
 import { usePRs } from "@/hooks/useClaudeData";
 import { useProjectsStore } from "@/stores/projectsStore";
 import { useSessionStore } from "@/stores/sessionStore";
+import { useIssueFilterStore } from "@/stores/issueFilterStore";
 import type { SessionTab } from "@/stores/sessionStore";
 import type { PullRequest } from "@/lib/tauri";
 import { pathToProjectId, cn } from "@/lib/utils";
@@ -15,8 +16,18 @@ export function PRListPanel() {
   const activeProjectDir = useProjectsStore((s) =>
     s.projects.find((p) => p.id === s.activeProjectId)?.path ?? null
   );
+  const activeProjectId = useProjectsStore((s) => s.activeProjectId);
   const openTab = useSessionStore((s) => s.openTab);
-  const [state, setState] = useState<"open" | "closed" | "all">("open");
+
+  // Persisted PR state filter
+  const getFilters = useIssueFilterStore((s) => s.getFilters);
+  const setFilters = useIssueFilterStore((s) => s.setFilters);
+  const projectId = activeProjectId ?? "__none__";
+  const state = getFilters(projectId).prState;
+  const setState = useCallback(
+    (s: "open" | "closed" | "all") => setFilters(projectId, { prState: s }),
+    [projectId, setFilters],
+  );
   const { data: prs, isLoading, error, refetch } = usePRs(activeProjectDir, state);
 
   const openPRDetailTab = (pr: PullRequest) => {
