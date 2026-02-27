@@ -393,33 +393,36 @@ export function useWorkflowFiles(cwd: string | null) {
   });
 }
 
-export function useWorkflowRuns(cwd: string | null, workflow?: string) {
+export function useWorkflowRuns(cwd: string | null, workflow?: string, refetchInterval?: number | false) {
   return useQuery({
     queryKey: ["workflow-runs", cwd, workflow],
     queryFn: () => tauri.listWorkflowRuns(cwd!, workflow),
     enabled: !!cwd,
     staleTime: 30_000,
     retry: false,
+    refetchInterval: refetchInterval || false,
   });
 }
 
-export function useWorkflowRunDetail(cwd: string | null, runId: number) {
+export function useWorkflowRunDetail(cwd: string | null, runId: number, refetchInterval?: number | false) {
   return useQuery({
     queryKey: ["workflow-run-detail", cwd, runId],
     queryFn: () => tauri.getWorkflowRunDetail(cwd!, runId),
     enabled: !!cwd && runId > 0,
     staleTime: 30_000,
     retry: false,
+    refetchInterval: refetchInterval || false,
   });
 }
 
-export function useWorkflowRunLogs(cwd: string | null, runId: number) {
+export function useWorkflowRunLogs(cwd: string | null, runId: number, refetchInterval?: number | false) {
   return useQuery({
     queryKey: ["workflow-run-logs", cwd, runId],
     queryFn: () => tauri.getWorkflowRunLogs(cwd!, runId),
     enabled: !!cwd && runId > 0,
     staleTime: 60_000,
     retry: false,
+    refetchInterval: refetchInterval || false,
   });
 }
 

@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { ExternalLink, RefreshCw } from "lucide-react";
 import { useWorkflowRunDetail, useWorkflowRunLogs } from "@/hooks/useClaudeData";
 import { useProjectsStore } from "@/stores/projectsStore";
@@ -66,8 +67,18 @@ export function WorkflowRunView({ tab }: { tab: SessionTab }) {
   const runId = tab.workflowRunId ?? 0;
   const runUrl = tab.workflowRunUrl;
 
-  const { data: detail, isLoading: detailLoading, refetch: refetchDetail } = useWorkflowRunDetail(activeProjectDir, runId);
-  const { data: logs, isLoading: logsLoading, refetch: refetchLogs } = useWorkflowRunLogs(activeProjectDir, runId);
+  // Poll every 1s when the run is active (queued/in_progress), stop when terminal
+  const [pollInterval, setPollInterval] = useState<number | false>(false);
+
+  const { data: detail, isLoading: detailLoading, refetch: refetchDetail } = useWorkflowRunDetail(activeProjectDir, runId, pollInterval);
+  const { data: logs, isLoading: logsLoading, refetch: refetchLogs } = useWorkflowRunLogs(activeProjectDir, runId, pollInterval);
+
+  useEffect(() => {
+    if (detail) {
+      const isActive = detail.status === "queued" || detail.status === "in_progress";
+      setPollInterval(isActive ? 1_000 : false);
+    }
+  }, [detail?.status]);
 
   const handleRefresh = () => {
     refetchDetail();
