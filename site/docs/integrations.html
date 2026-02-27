@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Integrations — The Associate Studio</title>
+<style>
+  :root {
+    --bg-base: #0F0F14;
+    --bg-surface: #181820;
+    --bg-raised: #22222C;
+    --bg-code: #1A1A24;
+    --gold: #D4A853;
+    --gold-dim: #B8933F;
+    --gold-glow: rgba(212,168,83,0.15);
+    --text-primary: #F5F5F8;
+    --text-secondary: #B0B0C0;
+    --text-muted: #7A7A92;
+    --border: #2A2A38;
+    --purple: #BC8CFF;
+    --green: #4ACA62;
+    --red: #F85149;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Inter", -apple-system, system-ui, sans-serif;
+    background: var(--bg-base);
+    color: var(--text-primary);
+    line-height: 1.7;
+    padding: 0;
+  }
+  .doc-container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 60px 32px;
+  }
+  .breadcrumb {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 40px;
+  }
+  .breadcrumb a {
+    color: var(--gold);
+    text-decoration: none;
+  }
+  .breadcrumb a:hover { text-decoration: underline; }
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+  }
+  h1 span { color: var(--gold); }
+  .subtitle {
+    font-size: 1.15rem;
+    color: var(--text-secondary);
+    margin-bottom: 48px;
+  }
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 48px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--gold);
+    margin: 32px 0 12px;
+  }
+  p { margin: 0 0 16px; color: var(--text-secondary); }
+  ul, ol {
+    margin: 0 0 20px 24px;
+    color: var(--text-secondary);
+  }
+  li { margin-bottom: 8px; }
+  li strong { color: var(--text-primary); }
+  code {
+    font-family: "Cascadia Code", "JetBrains Mono", "Fira Code", monospace;
+    background: var(--bg-code);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 0.88em;
+    color: var(--gold);
+    border: 1px solid var(--border);
+  }
+  pre {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    overflow-x: auto;
+    margin: 0 0 24px;
+    font-size: 0.88rem;
+    line-height: 1.6;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    border: none;
+    color: var(--text-secondary);
+  }
+  .step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: var(--gold);
+    color: var(--bg-base);
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 0.85rem;
+    margin-right: 10px;
+    flex-shrink: 0;
+  }
+  .step {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    padding: 20px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .step-content { flex: 1; }
+  .step-content h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+  .step-content p { margin-bottom: 8px; }
+  .callout {
+    background: var(--gold-glow);
+    border-left: 3px solid var(--gold);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 24px 0;
+  }
+  .callout p { color: var(--text-primary); margin: 0; }
+  .callout strong { color: var(--gold); }
+  .callout-warn {
+    background: rgba(248,81,73,0.08);
+    border-left-color: var(--red);
+  }
+  .callout-warn strong { color: var(--red); }
+  .callout-green {
+    background: rgba(74,202,98,0.08);
+    border-left-color: var(--green);
+  }
+  .callout-green strong { color: var(--green); }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 24px;
+  }
+  th {
+    text-align: left;
+    padding: 10px 14px;
+    background: var(--bg-surface);
+    color: var(--gold);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+  }
+  a { color: var(--gold); }
+  .back-link {
+    display: inline-block;
+    margin-top: 48px;
+    padding: 10px 24px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--gold);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .back-link:hover { background: var(--bg-raised); }
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    vertical-align: middle;
+  }
+  .badge-recommended {
+    background: rgba(74,202,98,0.15);
+    color: var(--green);
+    border: 1px solid rgba(74,202,98,0.3);
+  }
+  .badge-alternative {
+    background: rgba(176,176,192,0.1);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+  .method-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .method-card h4 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+  }
+  .hook-event {
+    display: inline-block;
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 4px 10px;
+    margin: 3px 4px 3px 0;
+    font-family: "Cascadia Code", "JetBrains Mono", "Fira Code", monospace;
+    font-size: 0.82rem;
+    color: var(--purple);
+  }
+</style>
+</head>
+<body>
+<div class="doc-container">
+  <div class="breadcrumb"><a href="../index.html">Home</a> / <a href="index.html">Docs</a> / Integrations</div>
+
+  <h1><span>Integrations</span></h1>
+  <p class="subtitle">Connect GitHub, Linear, and Jira for a unified development workflow.</p>
+
+  <p>The Associate Studio pulls data from your existing tools and surfaces it alongside your Claude sessions. All integrations are optional — the IDE works fine without any of them — but connecting even one transforms the sidebar and bottom panel into a real-time project dashboard.</p>
+
+  <table>
+    <tr><th>Integration</th><th>Auth Method</th><th>What It Enables</th></tr>
+    <tr><td><strong>GitHub</strong></td><td>OAuth Device Flow or PAT</td><td>PR listing, issue tracking, gh CLI</td></tr>
+    <tr><td><strong>Linear</strong></td><td>API key</td><td>Issue listing with status/team/assignee filters</td></tr>
+    <tr><td><strong>Jira</strong></td><td>API token + email</td><td>Issue listing</td></tr>
+    <tr><td><strong>Claude CLI Hooks</strong></td><td>Auto-configured</td><td>Live session tracking, subagent indicators</td></tr>
+  </table>
+
+  <!-- ────────────────────────────────────────────────────────────── -->
+  <h2>GitHub Integration</h2>
+
+  <p>GitHub is the most full-featured integration. Once connected, the sidebar's PR view shows open pull requests, the Issues tab lists repository issues, and the <code>gh</code> CLI becomes available inside Claude sessions for branch creation, PR submission, and review workflows.</p>
+
+  <p>There are two ways to authenticate. The OAuth Device Flow is recommended because it grants scoped access and can be revoked from your GitHub settings at any time. A Personal Access Token works just as well if you prefer simplicity or are behind a corporate proxy that blocks the device flow.</p>
+
+  <h3>Method 1: OAuth Device Flow <span class="badge badge-recommended">Recommended</span></h3>
+
+  <div class="method-card">
+    <h4>Prerequisites</h4>
+    <p>You need a GitHub OAuth App with the Device Flow enabled. This is a one-time setup — the same app can be shared across your team.</p>
+
+    <div class="step">
+      <span class="step-number">1</span>
+      <div class="step-content">
+        <h4>Create a GitHub OAuth App</h4>
+        <p>Go to <a href="https://github.com/settings/developers" target="_blank">github.com/settings/developers</a> and click <strong>New OAuth App</strong>. Fill in any name and homepage URL. The callback URL doesn't matter for the device flow — use <code>http://localhost</code>.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <span class="step-number">2</span>
+      <div class="step-content">
+        <h4>Enable Device Flow</h4>
+        <p>On the app's settings page, check the <strong>"Enable Device Flow"</strong> checkbox and save. Without this, the device code request will fail with a 404.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <span class="step-number">3</span>
+      <div class="step-content">
+        <h4>Copy the Client ID</h4>
+        <p>Copy the <strong>Client ID</strong> (not the Client Secret — that isn't needed for device flow). Paste it into The Associate Studio's Settings panel under <strong>GitHub &rarr; Client ID</strong>.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <span class="step-number">4</span>
+      <div class="step-content">
+        <h4>Start the flow</h4>
+        <p>Click <strong>"Start Device Flow"</strong> in the Settings panel. The app requests a device code from GitHub with <code>repo</code> and <code>read:org</code> scopes. A user code appears on screen (e.g., <code>ABCD-1234</code>), and your browser opens to <a href="https://github.com/login/device" target="_blank">github.com/login/device</a>.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <span class="step-number">5</span>
+      <div class="step-content">
+        <h4>Enter the code on GitHub</h4>
+        <p>Type the user code into the GitHub verification page and authorize the app. Back in The Associate Studio, polling completes automatically — the token is exchanged, stored in Windows Credential Manager, and the <code>gh</code> CLI is configured via <code>gh auth login --with-token</code>.</p>
+      </div>
+    </div>
+  </div>
+
+  <h3>Method 2: Personal Access Token <span class="badge badge-alternative">Alternative</span></h3>
+
+  <div class="method-card">
+    <h4>Quick setup for users who prefer a classic PAT</h4>
+
+    <ol>
+      <li>Go to <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a> and create a new token (classic or fine-grained).</li>
+      <li>Select at minimum the <code>repo</code> and <code>read:org</code> scopes. Without <code>repo</code>, PR and issue data won't load.</li>
+      <li>Copy the token and paste it into Settings &rarr; GitHub &rarr; Personal Access Token.</li>
+      <li>Click <strong>Save</strong>. The token is stored in Windows Credential Manager and piped to <code>gh auth login --with-token</code>.</li>
+    </ol>
+  </div>
+
+  <div class="callout">
+    <p><strong>What gets stored:</strong> The access token is saved under the service name <code>the-associate-studio</code> with the key <code>github-token</code> in Windows Credential Manager. It is never written to <code>settings.json</code> or any file on disk.</p>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────────────── -->
+  <h2>Linear Integration</h2>
+
+  <p>Linear integration brings your team's issues into the sidebar so you can reference them while working with Claude. Authentication uses a personal API key — no OAuth redirect dance required.</p>
+
+  <h3>Setup</h3>
+
+  <ol>
+    <li>Go to <a href="https://linear.app/settings/api" target="_blank">linear.app/settings/api</a> and create a new personal API key.</li>
+    <li>Paste the key into Settings &rarr; Linear &rarr; API Key.</li>
+    <li>Click <strong>Verify</strong>. The app makes a GraphQL request to <code>https://api.linear.app/graphql</code> with the query <code>{ viewer { name } }</code>. If the response includes your name, the key is valid and gets stored in Windows Credential Manager.</li>
+  </ol>
+
+  <h3>What it enables</h3>
+
+  <p>Once connected, the Issues sidebar view lists your Linear issues with filtering by:</p>
+  <ul>
+    <li><strong>Status</strong> — Backlog, Todo, In Progress, Done, Cancelled</li>
+    <li><strong>Team</strong> — filter by Linear team</li>
+    <li><strong>Assignee</strong> — show only your issues or all team issues</li>
+  </ul>
+
+  <p>The API returns up to 50 issues per request. Issues display their identifier (e.g., <code>ENG-142</code>), title, status, and assignee.</p>
+
+  <div class="callout">
+    <p><strong>Note:</strong> Linear's API key acts as a bearer token. It's sent in the <code>Authorization</code> header directly (not as <code>Bearer &lt;token&gt;</code> — Linear accepts both formats). The key is stored under <code>linear-api-key</code> in Windows Credential Manager.</p>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────────────── -->
+  <h2>Jira Integration</h2>
+
+  <p>Jira integration supports Jira Cloud instances. It uses API token authentication with Basic Auth, which is the simplest reliable method for a desktop app.</p>
+
+  <h3>Setup</h3>
+
+  <ol>
+    <li>Go to <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank">Atlassian API Tokens</a> and create a new token.</li>
+    <li>In Settings &rarr; Jira, enter three fields:
+      <ul>
+        <li><strong>Base URL</strong> — your Jira Cloud URL, e.g. <code>https://yourcompany.atlassian.net</code></li>
+        <li><strong>Email</strong> — the email address associated with your Atlassian account</li>
+        <li><strong>API Token</strong> — the token you just created</li>
+      </ul>
+    </li>
+    <li>Click <strong>Verify</strong>. The app sends a GET request to <code>{base_url}/rest/api/3/myself</code> using Basic Auth (base64-encoded <code>email:token</code>). If the response includes your display name, the connection is confirmed.</li>
+  </ol>
+
+  <h3>Why not OAuth?</h3>
+
+  <p>Jira's OAuth 2.0 (3LO) flow requires a redirect URI and a local HTTP server to catch the callback. For a native desktop app that doesn't run a web server, this adds significant complexity. Basic Auth with API tokens is the officially documented approach for server and desktop applications, and it works without any additional infrastructure.</p>
+
+  <div class="callout">
+    <p><strong>Storage split:</strong> The API token goes into Windows Credential Manager (key: <code>jira-api-token</code>). The base URL and email are non-sensitive metadata and are stored in <code>settings.json</code>.</p>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────────────── -->
+  <h2>Claude CLI Hooks</h2>
+
+  <p>Unlike the integrations above, Claude CLI hooks are configured automatically when The Associate Studio launches. There is nothing to set up manually. The hooks allow the IDE to track Claude session lifecycle events in real time.</p>
+
+  <h3>How it works</h3>
+
+  <p>On first launch, the app writes a small Node.js script to <code>~/.claude/theassociate/hook.js</code> and registers it in Claude's <code>~/.claude/settings.json</code> under the <code>hooks</code> key. When Claude CLI fires a hook event, it pipes the event JSON to stdin of the hook command. The script reads stdin and appends the JSON line to <code>~/.claude/theassociate/hook-events.jsonl</code>.</p>
+
+  <h3>Tracked events</h3>
+
+  <p>Five hook events are registered:</p>
+
+  <div style="margin: 16px 0 24px;">
+    <span class="hook-event">SessionStart</span>
+    <span class="hook-event">SessionEnd</span>
+    <span class="hook-event">SubagentStart</span>
+    <span class="hook-event">SubagentStop</span>
+    <span class="hook-event">Stop</span>
+  </div>
+
+  <p>These events let the IDE show:</p>
+  <ul>
+    <li><strong>Live session indicators</strong> — a green dot next to sessions that are currently running</li>
+    <li><strong>Subagent tracking</strong> — when Claude spawns subagents (e.g., for tool use), the UI reflects it</li>
+    <li><strong>Session duration</strong> — start/end timestamps enable elapsed time display</li>
+  </ul>
+
+  <h3>The hook script</h3>
+
+  <p>The <code>hook.js</code> file is intentionally minimal — it reads stdin to completion, then appends the line to the JSONL file:</p>
+
+  <pre><code>'use strict';
+var d = '';
+process.stdin.on('data', function(c) { d += c; });
+process.stdin.on('end', function() {
+  var line = d.trim();
+  if (!line) return;
+  var path = require('path');
+  var fs = require('fs');
+  var home = process.env.USERPROFILE || process.env.HOME || '';
+  var out = path.join(home, '.claude', 'theassociate', 'hook-events.jsonl');
+  fs.appendFileSync(out, line + '\n');
+});</code></pre>
+
+  <h3>File watcher</h3>
+
+  <p>The Rust backend watches <code>~/.claude/theassociate/hook-events.jsonl</code> for changes. When new lines appear, it parses them and emits Tauri events that the React frontend consumes to update session state. The watcher tracks its file offset so it only reads newly appended lines, not the entire file on every change.</p>
+
+  <p>The JSONL file is automatically truncated to the last 1,000 lines when it grows beyond that limit, preventing unbounded disk usage.</p>
+
+  <h3>Removing hooks</h3>
+
+  <p>Hooks can be removed cleanly from the Settings panel. The removal process strips the hook entries from <code>~/.claude/settings.json</code> without affecting any other hooks you may have configured. The <code>~/.claude/theassociate/</code> directory is left in place (it contains your hook event history), but you can delete it manually if you want a completely clean slate.</p>
+
+  <!-- ────────────────────────────────────────────────────────────── -->
+  <h2>Security Note</h2>
+
+  <p>Every secret — GitHub tokens, Linear API keys, Jira API tokens — is stored in <strong>Windows Credential Manager</strong> under the service name <code>the-associate-studio</code>. This is the same credential store used by Git Credential Manager, VS Code, and other desktop applications on Windows.</p>
+
+  <table>
+    <tr><th>Secret</th><th>Credential Key</th><th>Storage</th></tr>
+    <tr><td>GitHub access token</td><td><code>github-token</code></td><td>Windows Credential Manager</td></tr>
+    <tr><td>Linear API key</td><td><code>linear-api-key</code></td><td>Windows Credential Manager</td></tr>
+    <tr><td>Jira API token</td><td><code>jira-api-token</code></td><td>Windows Credential Manager</td></tr>
+    <tr><td>Jira base URL</td><td>N/A</td><td><code>settings.json</code> (not sensitive)</td></tr>
+    <tr><td>Jira email</td><td>N/A</td><td><code>settings.json</code> (not sensitive)</td></tr>
+  </table>
+
+  <p>Windows Credential Manager encrypts stored credentials using DPAPI (Data Protection API), which ties encryption to your Windows user account. Credentials are accessible only to processes running under your user profile. They are never written to <code>settings.json</code>, log files, or any other plaintext location.</p>
+
+  <div class="callout callout-warn">
+    <p><strong>Important:</strong> If you export or share your <code>settings.json</code> file, it will not contain any tokens or API keys. Integration secrets must be re-entered on each machine.</p>
+  </div>
+
+  <a class="back-link" href="index.html">&larr; Back to Documentation</a>
+</div>
+</body>
+</html>

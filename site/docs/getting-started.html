@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Getting Started — The Associate Studio</title>
+<style>
+  :root {
+    --bg-base: #0F0F14;
+    --bg-surface: #181820;
+    --bg-raised: #22222C;
+    --bg-code: #1A1A24;
+    --gold: #D4A853;
+    --gold-dim: #B8933F;
+    --gold-glow: rgba(212,168,83,0.15);
+    --text-primary: #F5F5F8;
+    --text-secondary: #B0B0C0;
+    --text-muted: #7A7A92;
+    --border: #2A2A38;
+    --purple: #BC8CFF;
+    --green: #4ACA62;
+    --red: #F85149;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Inter", -apple-system, system-ui, sans-serif;
+    background: var(--bg-base);
+    color: var(--text-primary);
+    line-height: 1.7;
+    padding: 0;
+  }
+  .doc-container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 60px 32px;
+  }
+  .breadcrumb {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 40px;
+  }
+  .breadcrumb a {
+    color: var(--gold);
+    text-decoration: none;
+  }
+  .breadcrumb a:hover { text-decoration: underline; }
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+  }
+  h1 span { color: var(--gold); }
+  .subtitle {
+    font-size: 1.15rem;
+    color: var(--text-secondary);
+    margin-bottom: 48px;
+  }
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 48px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--gold);
+    margin: 32px 0 12px;
+  }
+  p { margin: 0 0 16px; color: var(--text-secondary); }
+  ul, ol {
+    margin: 0 0 20px 24px;
+    color: var(--text-secondary);
+  }
+  li { margin-bottom: 8px; }
+  li strong { color: var(--text-primary); }
+  code {
+    font-family: "Cascadia Code", "JetBrains Mono", "Fira Code", monospace;
+    background: var(--bg-code);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 0.88em;
+    color: var(--gold);
+    border: 1px solid var(--border);
+  }
+  pre {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    overflow-x: auto;
+    margin: 0 0 24px;
+    font-size: 0.88rem;
+    line-height: 1.6;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    border: none;
+    color: var(--text-secondary);
+  }
+  .step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: var(--gold);
+    color: var(--bg-base);
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 0.85rem;
+    margin-right: 10px;
+    flex-shrink: 0;
+  }
+  .step {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    padding: 20px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .step-content { flex: 1; }
+  .step-content h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+  .step-content p { margin-bottom: 8px; }
+  .callout {
+    background: var(--gold-glow);
+    border-left: 3px solid var(--gold);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 24px 0;
+  }
+  .callout p { color: var(--text-primary); margin: 0; }
+  .callout strong { color: var(--gold); }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 24px;
+  }
+  th {
+    text-align: left;
+    padding: 10px 14px;
+    background: var(--bg-surface);
+    color: var(--gold);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+  }
+  a { color: var(--gold); }
+  .back-link {
+    display: inline-block;
+    margin-top: 48px;
+    padding: 10px 24px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--gold);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .back-link:hover { background: var(--bg-raised); }
+</style>
+</head>
+<body>
+<div class="doc-container">
+  <div class="breadcrumb"><a href="../index.html">Home</a> / <a href="index.html">Docs</a> / Getting Started</div>
+
+  <h1>Getting <span>Started</span></h1>
+  <p class="subtitle">Everything you need to install and run The Associate Studio on your Windows machine.</p>
+
+  <h2>Prerequisites</h2>
+  <p>The Associate Studio is a native Windows desktop application. You'll need the following before running it:</p>
+
+  <table>
+    <tr><th>Requirement</th><th>Version</th><th>Purpose</th></tr>
+    <tr><td><strong>Windows</strong></td><td>10 or 11 (x64)</td><td>Operating system</td></tr>
+    <tr><td><strong>Node.js</strong></td><td>20.x+</td><td>Frontend build tooling</td></tr>
+    <tr><td><strong>Rust</strong></td><td>1.83+</td><td>Backend compilation</td></tr>
+    <tr><td><strong>MSYS2 + MinGW</strong></td><td>Latest</td><td>C compiler for native dependencies</td></tr>
+    <tr><td><strong>Claude Code CLI</strong></td><td>Latest</td><td>The AI engine that powers sessions</td></tr>
+    <tr><td><strong>gh CLI</strong></td><td>Latest (optional)</td><td>GitHub PR and issue integration</td></tr>
+  </table>
+
+  <h2>Installation</h2>
+
+  <div class="step">
+    <span class="step-number">1</span>
+    <div class="step-content">
+      <h4>Install the Rust Toolchain</h4>
+      <p>Install rustup and configure the GNU target (no Visual Studio required):</p>
+      <pre><code>winget install Rustlang.Rustup
+rustup toolchain install stable-x86_64-pc-windows-gnu
+rustup default stable-x86_64-pc-windows-gnu</code></pre>
+    </div>
+  </div>
+
+  <div class="step">
+    <span class="step-number">2</span>
+    <div class="step-content">
+      <h4>Install MSYS2 and MinGW GCC</h4>
+      <p>This provides the C compiler needed for native Rust dependencies like libgit2:</p>
+      <pre><code>winget install MSYS2.MSYS2
+# Then open MSYS2 shell and run:
+pacman -S mingw-w64-x86_64-gcc</code></pre>
+    </div>
+  </div>
+
+  <div class="step">
+    <span class="step-number">3</span>
+    <div class="step-content">
+      <h4>Clone and Install Dependencies</h4>
+      <pre><code>git clone &lt;repo-url&gt; the-associate-studio
+cd the-associate-studio
+npm install</code></pre>
+    </div>
+  </div>
+
+  <div class="step">
+    <span class="step-number">4</span>
+    <div class="step-content">
+      <h4>Set Your PATH</h4>
+      <p>This must be done in every terminal session before building:</p>
+      <pre><code>export PATH="/c/msys64/mingw64/bin:$HOME/.cargo/bin:$PATH"
+export PKG_CONFIG_PATH="/c/msys64/mingw64/lib/pkgconfig"</code></pre>
+    </div>
+  </div>
+
+  <div class="step">
+    <span class="step-number">5</span>
+    <div class="step-content">
+      <h4>Run in Development Mode</h4>
+      <pre><code>npm run tauri dev</code></pre>
+      <p>This starts the Vite dev server with hot module replacement for the frontend and compiles the Rust backend. First build takes 4–6 minutes; subsequent builds are 15–30 seconds.</p>
+    </div>
+  </div>
+
+  <div class="callout">
+    <p><strong>Tip:</strong> For frontend-only development, run <code>npm run dev</code> to get a browser preview at <code>http://localhost:1420</code> without compiling Rust.</p>
+  </div>
+
+  <h2>Building for Release</h2>
+  <pre><code>npm run tauri build
+# Outputs: src-tauri/target/release/bundle/</code></pre>
+  <p>This produces a standalone <code>.exe</code> plus an NSIS installer. The release binary is approximately 10MB — far smaller than an equivalent Electron application.</p>
+
+  <h2>First Launch</h2>
+  <p>When The Associate Studio starts for the first time, it automatically:</p>
+  <ul>
+    <li>Installs Claude CLI hooks for live session tracking (fully reversible)</li>
+    <li>Creates the <code>~/.claude/theassociate/</code> directory for hook event storage</li>
+    <li>Starts watching <code>~/.claude/</code> for real-time data updates</li>
+  </ul>
+  <p>No manual configuration is required. Open a project folder and start a new Claude session to begin.</p>
+
+  <h2>Next Steps</h2>
+  <ul>
+    <li><a href="features.html">Explore all features</a></li>
+    <li><a href="integrations.html">Set up GitHub, Linear, and Jira integrations</a></li>
+    <li><a href="keyboard-shortcuts.html">Learn the keyboard shortcuts</a></li>
+    <li><a href="architecture.html">Understand the architecture</a></li>
+  </ul>
+
+  <a class="back-link" href="index.html">&larr; Back to Documentation</a>
+</div>
+</body>
+</html>

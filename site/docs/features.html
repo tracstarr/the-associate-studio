@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Features — The Associate Studio</title>
+<style>
+  :root {
+    --bg-base: #0F0F14;
+    --bg-surface: #181820;
+    --bg-raised: #22222C;
+    --bg-code: #1A1A24;
+    --gold: #D4A853;
+    --gold-dim: #B8933F;
+    --gold-glow: rgba(212,168,83,0.15);
+    --text-primary: #F5F5F8;
+    --text-secondary: #B0B0C0;
+    --text-muted: #7A7A92;
+    --border: #2A2A38;
+    --purple: #BC8CFF;
+    --green: #4ACA62;
+    --red: #F85149;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Inter", -apple-system, system-ui, sans-serif;
+    background: var(--bg-base);
+    color: var(--text-primary);
+    line-height: 1.7;
+    padding: 0;
+  }
+  .doc-container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 60px 32px;
+  }
+  .breadcrumb {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 40px;
+  }
+  .breadcrumb a {
+    color: var(--gold);
+    text-decoration: none;
+  }
+  .breadcrumb a:hover { text-decoration: underline; }
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+  }
+  h1 span { color: var(--gold); }
+  .subtitle {
+    font-size: 1.15rem;
+    color: var(--text-secondary);
+    margin-bottom: 48px;
+  }
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 48px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--gold);
+    margin: 32px 0 12px;
+  }
+  p { margin: 0 0 16px; color: var(--text-secondary); }
+  ul, ol {
+    margin: 0 0 20px 24px;
+    color: var(--text-secondary);
+  }
+  li { margin-bottom: 8px; }
+  li strong { color: var(--text-primary); }
+  code {
+    font-family: "Cascadia Code", "JetBrains Mono", "Fira Code", monospace;
+    background: var(--bg-code);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 0.88em;
+    color: var(--gold);
+    border: 1px solid var(--border);
+  }
+  pre {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    overflow-x: auto;
+    margin: 0 0 24px;
+    font-size: 0.88rem;
+    line-height: 1.6;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    border: none;
+    color: var(--text-secondary);
+  }
+  .step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: var(--gold);
+    color: var(--bg-base);
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 0.85rem;
+    margin-right: 10px;
+    flex-shrink: 0;
+  }
+  .step {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    padding: 20px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .step-content { flex: 1; }
+  .step-content h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+  .step-content p { margin-bottom: 8px; }
+  .callout {
+    background: var(--gold-glow);
+    border-left: 3px solid var(--gold);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 24px 0;
+  }
+  .callout p { color: var(--text-primary); margin: 0; }
+  .callout strong { color: var(--gold); }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 24px;
+  }
+  th {
+    text-align: left;
+    padding: 10px 14px;
+    background: var(--bg-surface);
+    color: var(--gold);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+  }
+  a { color: var(--gold); }
+  .back-link {
+    display: inline-block;
+    margin-top: 48px;
+    padding: 10px 24px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--gold);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .back-link:hover { background: var(--bg-raised); }
+</style>
+</head>
+<body>
+<div class="doc-container">
+  <div class="breadcrumb"><a href="../index.html">Home</a> / <a href="index.html">Docs</a> / Features</div>
+
+  <h1>Feature <span>Reference</span></h1>
+  <p class="subtitle">A thorough guide to everything The Associate Studio can do &mdash; from terminal sessions and git operations to agent orchestration and the Neural Field dashboard.</p>
+
+
+  <!-- ────────────────────────────────────────────────────────────────────── -->
+  <h2>Claude CLI Sessions</h2>
+
+  <p>Sessions are the heart of The Associate Studio. Every Claude conversation runs inside a real Windows ConPTY terminal, backed by the <code>portable-pty</code> crate, so you get the exact same behavior as running <code>claude</code> on the command line. There is no output scraping, no fake shell emulation, and no translation layer between you and the CLI. What the terminal renders is what ConPTY produces, character by character.</p>
+
+  <p>You can open as many sessions as your machine will handle. Each one appears as a tab in the main editor area, rendered by xterm.js. The critical design choice here is that switching tabs never kills a session. Inactive terminals are hidden with CSS (<code>display: none</code>) rather than unmounted from the React tree. This means a long-running Claude conversation keeps working in the background while you read diffs in another tab or browse your project files in a third.</p>
+
+  <h3>Live session detection</h3>
+  <p>The Associate Studio installs lightweight CLI hooks into <code>~/.claude/theassociate/</code> that fire when Claude sessions start, stop, or spawn subagents. A file watcher on the backend reads these hook events from an append-only <code>hook-events.jsonl</code> file, tracking byte offsets so it only processes new lines. The result is real-time session awareness without polling the process table.</p>
+
+  <p>Active sessions show a green pulsing dot next to their tab title. When a session spawns subagents (for example, during parallel tool use), you see a count badge on the tab. Completed sessions transition to an idle state and eventually show a completion indicator.</p>
+
+  <h3>Resume and fork</h3>
+  <p>When you open a past session from the session list, it appears as a read-only transcript viewer. From there, you can resume it (<kbd>Ctrl+R</kbd>) to pick up where you left off in a live terminal. You can also fork a session, which starts a new Claude conversation using the <code>--fork-session</code> flag to branch from an earlier point in the conversation history.</p>
+
+  <h3>Plan auto-detection</h3>
+  <p>The watcher monitors terminal output for references to plan files. When Claude creates or updates a plan in <code>~/.claude/plans/</code>, the studio automatically detects it and links the plan to the originating session tab. You can click through to open the plan in the right panel editor without leaving your terminal.</p>
+
+  <h3>Question notifications</h3>
+  <p>When Claude asks you a question in a session that is not currently focused, the notification system fires. A bell icon appears with an unread badge, and clicking it jumps directly to the session that needs your attention. This is especially useful when running multiple sessions in parallel &mdash; you can let three agents work simultaneously and get notified the moment any of them needs human input.</p>
+
+
+  <!-- ────────────────────────────────────────────────────────────────────── -->
+  <h2>Multi-Project Workspace</h2>
+
+  <p>The Associate Studio is designed for people who work across multiple codebases simultaneously. The sidebar contains a project dropdown that lists every project you have added. Switch between them and the entire workspace pivots: different tabs, different git status, different session history. Each project is identified internally by encoding its filesystem path (for example, <code>C:\dev\my-project</code> becomes <code>C--dev-my-project</code>), which keeps per-project data cleanly separated in both local storage and the <code>~/.claude/projects/</code> directory.</p>
+
+  <h3>Per-project tab isolation</h3>
+  <p>Tabs are scoped to the active project. When you switch from Project A to Project B, Project A's tabs disappear from the tab bar and Project B's tabs take their place. Nothing is closed or destroyed &mdash; the tabs (and their underlying terminals) are simply associated with a different project ID. Switch back and everything is exactly where you left it.</p>
+
+  <h3>Adding projects</h3>
+  <p>Click the add button in the project dropdown and a native Windows folder picker dialog opens. Select any directory and it becomes a project in the workspace. You can also run <code>claude --init</code> on a project through the command palette to initialize its <code>CLAUDE.md</code> and configuration files.</p>
+
+  <h3>Project cycling</h3>
+  <p>For fast switching, use <kbd>Ctrl+Shift+Right</kbd> and <kbd>Ctrl+Shift+Left</kbd> to cycle through your projects without opening the dropdown. This is the kind of shortcut that pays for itself when you are bouncing between a frontend repo, a backend repo, and an infrastructure repo over the course of a single afternoon.</p>
+
+
+  <!-- ────────────────────────────────────────────────────────────────────── -->
+  <h2>Git Integration</h2>
+
+  <p>Git support in The Associate Studio is split across two locations in the UI. The sidebar shows a compact status panel with staged, unstaged, and untracked files. The bottom panel provides a richer view with a full commit log, branch tree visualization, and inline diff viewer. Together they cover the common operations without needing to drop to a terminal for routine work.</p>
+
+  <h3>Status panel</h3>
+  <p>The sidebar git view groups files by state: staged changes, modified but unstaged files, and untracked files. Each file entry shows its status letter (M, A, D, R, etc.) and can be clicked to open an inline diff. The status refreshes automatically when the file watcher detects changes in the working tree.</p>
+
+  <h3>Diff viewer</h3>
+  <p>Selecting a file opens a side-by-side diff view as a tab. Both staged and unstaged diffs are supported &mdash; you choose which to view from the status panel. The diff renderer highlights additions, deletions, and modifications at the line level.</p>
+
+  <h3>Git log</h3>
+  <p>The bottom panel's Git tab displays the commit history as a scrollable log with branch indicators. Each entry shows the commit hash, author, date, and message. This is especially useful for understanding what Claude sessions have committed and when.</p>
+
+  <h3>Branch management</h3>
+  <p>Create, checkout, and delete branches directly from the UI. The branch list shows both local and remote tracking branches. Switching branches updates the git status panel immediately.</p>
+
+  <h3>Worktree support</h3>
+  <p>Git worktrees let you check out multiple branches of the same repository into separate directories simultaneously. The Associate Studio exposes this through dedicated UI for creating new worktrees, listing existing ones, switching the active worktree, and copying files into a new worktree. This is a power-user feature that works particularly well with multi-agent workflows where different Claude sessions work on different branches.</p>
+
+  <h3>Remote operations</h3>
+  <p>Fetch, pull, and rebase operations run asynchronously and log their output to the Output panel at the bottom of the window. The output includes timestamps and the full git command that was executed, so you always have an audit trail. All git operations are powered by a combination of libgit2 (via the <code>git2</code> Rust crate) and direct git CLI invocation for operations that libgit2 does not fully support.</p>
+
+
+  <!-- ────────────────────────────────────────────────────────────────────── -->
+  <h2>Pull Requests &amp; Issues</h2>
+
+  <p>The Associate Studio pulls together pull requests and issues from three different sources &mdash; GitHub, Linear, and Jira &mdash; into a single unified panel. Rather than switching between browser tabs for each service, you can triage and review directly within the IDE.</p>
+
+  <h3>GitHub pull requests</h3>
+  <p>The PR list shows all pull requests for the current repository with filtering by state (open, closed, merged). Each PR entry displays its title, number, author, and status checks. Clicking a PR opens a detail view that includes the description, review comments, and inline code comments. This is backed by the <code>gh</code> CLI, which handles authentication and API calls.</p>
+
+  <h3>GitHub issues</h3>
+  <p>Issues from the current repository are listed with filtering by label and assignee. Each issue shows its title, number, labels, and current state. You can open an issue to view its full description and comment thread.</p>
+
+  <h3>Linear issues</h3>
+  <p>If you have configured a Linear API key in Settings, Linear issues appear alongside GitHub data. Filters are available for status, team, and assignee. Linear's richer status model (backlog, todo, in progress, done, canceled) is fully represented.</p>
+
+  <h3>Jira issues</h3>
+  <p>Jira integration works through an API token and your Jira instance URL. Issues can be filtered by project, status, and assignee. The integration supports Jira Cloud instances and displays issue keys (like <code>PROJ-123</code>), summaries, and status.</p>
+
+  <div class="callout">
+    <p><strong>All in one place:</strong> The bottom panel provides tabs for PRs, GitHub issues, Linear issues, and Jira issues. You do not need to open a browser to check whether a PR has been reviewed or an issue has been assigned.</p>
+  </div>
+
+
+  <!-- ────────────────────────────────────────────────────────────────────── -->
+  <h2>File Browser &amp; Editor</h2>
+
+  <p>The sidebar includes a full file tree browser that mirrors the directory structure of your active project. Directories load their contents lazily &mdash; only when you expand a folder does the backend read its entries. This keeps the initial load fast even for large monorepos with thousands of files.</p>
+
+  <h3>Monaco editor</h3>
+  <p>Clicking a file in the tree opens it in a Monaco editor tab. Monaco is the same editor engine that powers VS Code, so you get syntax highlighting for over 20 languages, bracket matching, minimap navigation, find-and-replace, and multi-cursor editing out of the box. The editor integrates with the session store's dirty-state tracking: unsaved changes are marked with a dot on the tab, and you are warned before closing a modified file.</p>
+
+  <h3>External change detection</h3>
+  <p>When a Claude session or an external tool modifies a file that you have open, the editor detects the change and reloads the content. This keeps your view current without manual refreshing, which matters a great deal when Claude is actively writing code in one tab while you are reading the same file in another.</p>
+
+
+  <!-- ────────────────────────────────────────────────────────────────────── -->
+  <h2>Notes System</h2>
+
+  <p>Notes in The Associate Studio are markdown documents that live alongside your Claude data. They come in two scopes: global notes stored in <code>~/.claude/notes/</code> that are available across all projects, and per-project notes stored in <code>~/.claude/projects/{encoded-path}/notes/</code> that only appear when the corresponding project is active.</p>
+
+  <h3>Code snippet capture</h3>
+  <p>The notes system integrates directly with the Monaco editor. When you select a range of code in any open file, an "Add to note" button appears. Clicking it captures the selection as a file reference &mdash; storing the file path, line range, and the code content itself. These references are embedded in the note's markdown and rendered as anchored code blocks with their source file attribution.</p>
+
+  <h3>Organization</h3>
+  <p>The Notes panel in the right sidebar lists all notes for the current scope. Each note has a title, creation date, and preview of its content. Notes can be created, edited in a markdown editor, and deleted. File tabs that have associated note references show an indicator, so you can tell at a glance which files you have annotated.</p>
+
+  <p>This feature is designed for the workflow of studying a codebase with Claude: you ask Claude questions, read the files it references, and capture the important parts in notes for later reference. The line-anchored snippets mean your notes stay useful even as the code evolves, because you can always trace back to the original source location.</p>
+
+
+  <!-- ────────────────────────────────────────────────────────────────────── -->
+  <h2>Teams &amp; Agents</h2>
+
+  <p>The teams system supports Claude's multi-agent orchestration. When you run Claude with team configurations (stored in <code>~/.claude/teams/</code>), The Associate Studio visualizes the team structure, agent roles, and their current status in the right panel.</p>
+
+  <h3>Team viewer</h3>
+  <p>Each team configuration is parsed from its JSON file and displayed with its member agents, their roles, and their designated responsibilities. The viewer updates in real time as the file watcher detects changes to team files.</p>
+
+  <h3>Inbox messaging</h3>
+  <p>Agents within a team communicate through inbox messages stored in <code>~/.claude/inboxes/</code>. The Associate Studio displays these messages and lets you send new ones, providing visibility into what agents are telling each other during collaborative tasks.</p>
+
+  <h3>Task tracking</h3>
+  <p>Tasks from <code>~/.claude/tasks/</code> are loaded and displayed with their blocking and blocked-by dependencies. This lets you see at a glance which tasks are waiting on others to complete and where the critical path lies in a multi-agent workflow.</p>
+
+  <h3>Subagent tracking</h3>
+  <p>When a Claude session spawns subagents (child processes for parallel tool execution), the session store tracks each one with its session ID and role. The tab bar shows a badge with the subagent count, and the session list provides details about what each subagent is working on. This tracking is powered by the same hook event system that detects session starts and stops.</p>
+
+
+  <!-- ────────────────────────────────────────────────────────────────────── -->
+  <h2>Plans &amp; Context</h2>
+
+  <p>Plans are markdown files that Claude creates during complex tasks, stored in <code>~/.claude/plans/</code>. The Associate Studio gives them first-class treatment with a dedicated editor and automatic linking to the sessions that created them.</p>
+
+  <h3>Plan editor</h3>
+  <p>The right panel has a Plans tab that lists all plan files for the current project. Opening a plan gives you a Monaco-powered markdown editor where you can read Claude's plan, make edits, and save changes. A preview mode renders the markdown so you can read it as formatted text rather than raw markup.</p>
+
+  <h3>Session-plan linking</h3>
+  <p>When the file watcher detects that a session created or referenced a plan file, it stores a link between the plan's filename and the originating session tab. This means you can navigate from a plan back to the session that produced it, and from a session's output directly to its associated plan.</p>
+
+  <h3>Context panel</h3>
+  <p>The right panel's Context tab shows the project's <code>CLAUDE.md</code> file and any memory files that Claude uses for persistent context. This is useful for understanding what instructions Claude is operating under for the current project, and for editing those instructions without leaving the IDE. The context panel also includes a documentation browser that auto-detects common documentation directories (<code>docs/</code>, <code>doc/</code>, etc.) in the project root.</p>
+
+  <h3>Session completion summaries</h3>
+  <p>When a Claude session finishes its work, it may produce a completion summary. These summaries are stored as separate files and can be opened as dedicated tabs. They provide a concise record of what the session accomplished, which is valuable for reviewing multi-session workflows after the fact.</p>
+
+
+  <!-- ────────────────────────────────────────────────────────────────────── -->
+  <h2>Neural Field Dashboard</h2>
+
+  <p>The Neural Field is a fullscreen overlay that visualizes your entire workspace as an animated node graph. Open it with <kbd>Ctrl+Shift+Space</kbd> and the IDE fades away, replaced by a dark canvas where sessions, teams, and agents are represented as glowing nodes connected by edges.</p>
+
+  <h3>Physics-based layout</h3>
+  <p>Nodes are positioned using a physics simulation with repulsion forces, spring connections, and damping. Active sessions pulse gently. Teams cluster together. The graph settles into a stable layout within a few seconds and adjusts dynamically as sessions start, stop, or spawn subagents. The rendering is done on an HTML5 canvas element for performance &mdash; even with dozens of nodes, the animation stays smooth.</p>
+
+  <h3>HUD counters</h3>
+  <p>The top-right corner of the overlay displays three counters in a monospaced readout: total sessions, total teams, and total agents. Active counts glow gold; zero counts are dimmed. These update in real time as the underlying data changes.</p>
+
+  <h3>Hover and click interaction</h3>
+  <p>Hovering over a node displays a readout with the node's name and type. Clicking a session node closes the overlay and navigates directly to that session's tab. Clicking a team node switches to the Teams view in the right panel. The overlay closes on <kbd>Escape</kbd> or by pressing <kbd>Ctrl+Shift+Space</kbd> again.</p>
+
+  <p>The Neural Field exists for situational awareness. When you have half a dozen Claude sessions running across three projects with subagents and team coordination, a flat tab bar stops being useful. The spatial visualization lets you see the entire picture at once and jump to wherever you need to be.</p>
+
+
+  <!-- ────────────────────────────────────────────────────────────────────── -->
+  <h2>Command Palette</h2>
+
+  <p>Press <kbd>Ctrl+P</kbd> from anywhere in the application to open the command palette. It provides fuzzy-matched access to over 25 commands organized into four categories:</p>
+
+  <table>
+    <tr><th>Category</th><th>Commands</th></tr>
+    <tr>
+      <td><strong>View</strong></td>
+      <td>Toggle sidebar, right panel, bottom panel. Switch sidebar views (Sessions, Git, PRs, Issues, Files). Switch right panel tabs (Context, Teams, Plans, Notes). Switch bottom panel tabs (Git, Output, PRs, Issues). Toggle Neural Field.</td>
+    </tr>
+    <tr>
+      <td><strong>Session</strong></td>
+      <td>New Claude session, close current tab, resume session, next tab, previous tab.</td>
+    </tr>
+    <tr>
+      <td><strong>Project</strong></td>
+      <td>Next project, previous project.</td>
+    </tr>
+    <tr>
+      <td><strong>Settings</strong></td>
+      <td>Open settings, increase font size, decrease font size, reset font size.</td>
+    </tr>
+  </table>
+
+  <p>The palette filters results as you type, matching against both the command label and its description. This is the fastest way to reach any part of the UI without memorizing every keyboard shortcut. The palette always intercepts <kbd>Ctrl+P</kbd>, even when focus is inside a terminal, so it serves as a reliable escape hatch to the rest of the application.</p>
+
+
+  <!-- ────────────────────────────────────────────────────────────────────── -->
+  <h2>Notifications</h2>
+
+  <p>The notification system serves two purposes: alerting you when Claude asks a question in a background session, and notifying you when sessions complete.</p>
+
+  <h3>Question notifications</h3>
+  <p>When a Claude session that is not currently focused outputs a question (detected by the hook event system), a notification is created and associated with that session's tab. The notification store tracks read and unread state per tab. An unread badge appears on the bell icon in the status bar, showing the total count of pending questions across all sessions.</p>
+
+  <h3>Completion notifications</h3>
+  <p>When a session finishes its work, the system can produce a native Windows notification (if enabled in settings) so you are alerted even when the application is minimized or behind other windows.</p>
+
+  <h3>Navigation</h3>
+  <p>Clicking a notification in the dropdown jumps directly to the session tab that triggered it and marks it as read. The badge count decrements accordingly. This interaction is designed to feel like a messaging app: you see the count, you click, you land in the right place, and the count clears.</p>
+
+
+  <!-- ────────────────────────────────────────────────────────────────────── -->
+  <h2>Settings &amp; Integrations</h2>
+
+  <p>Open settings with <kbd>Ctrl+,</kbd> or through the command palette. The settings panel is organized into sections covering appearance, integrations, and behavior.</p>
+
+  <h3>Appearance</h3>
+  <ul>
+    <li><strong>Font size</strong> &mdash; adjustable from 8px to 24px, with keyboard shortcuts (<kbd>Ctrl+=</kbd>, <kbd>Ctrl+-</kbd>, <kbd>Ctrl+0</kbd> to reset to 13px)</li>
+    <li><strong>Font family</strong> &mdash; configurable for both the UI and the terminal</li>
+  </ul>
+
+  <h3>GitHub integration</h3>
+  <p>Two authentication methods are supported. The OAuth device flow walks you through GitHub's browser-based authorization: the app displays a code, you enter it on github.com, and the token is stored securely. Alternatively, you can paste a Personal Access Token directly. Both methods store the token in Windows Credential Manager, never in a plain file.</p>
+
+  <h3>Linear integration</h3>
+  <p>Enter a Linear API key in settings to enable issue tracking. The key is stored in Windows Credential Manager and used for all Linear API requests.</p>
+
+  <h3>Jira integration</h3>
+  <p>Provide your Jira instance URL, email, and API token. The token is stored in Windows Credential Manager. Once configured, Jira issues appear in the bottom panel alongside GitHub and Linear data.</p>
+
+  <h3>Session hooks</h3>
+  <p>The settings panel includes controls for managing Claude CLI hooks. Hooks are installed automatically on first launch, but you can remove and reinstall them from settings if needed. The hooks are small shell scripts that write lifecycle events to <code>~/.claude/theassociate/hook-events.jsonl</code>.</p>
+
+  <h3>Behavior toggles</h3>
+  <ul>
+    <li><strong>Startup files</strong> &mdash; configure which files or scripts to load when a project opens</li>
+    <li><strong>Native notifications</strong> &mdash; enable or disable Windows toast notifications for session events</li>
+  </ul>
+
+
+  <!-- ────────────────────────────────────────────────────────────────────── -->
+  <h2>Security</h2>
+
+  <p>The Associate Studio handles API tokens for GitHub, Linear, and Jira. Every one of these secrets is stored in Windows Credential Manager using the <code>keyring</code> crate on the Rust side. No token ever touches <code>settings.json</code> or any other plain-text file on disk.</p>
+
+  <h3>DPAPI encryption</h3>
+  <p>Windows Credential Manager encrypts stored credentials using the Data Protection API (DPAPI), which ties decryption to the currently logged-in Windows user. This means your tokens are not accessible to other users on the same machine, and they are not recoverable from a disk image without your Windows login credentials.</p>
+
+  <h3>Path traversal protection</h3>
+  <p>All file operations on the Rust backend validate and sanitize paths before accessing the filesystem. Operations are restricted to the project directory and the <code>~/.claude/</code> data directory. Attempts to escape these boundaries via <code>..</code> segments or other traversal techniques are rejected.</p>
+
+  <h3>Symlink safety</h3>
+  <p>When deleting team configurations or other data files, the backend checks for symlinks to prevent a malicious symlink from causing deletion of files outside the expected directory. This is a defense-in-depth measure against symlink attacks.</p>
+
+  <h3>Nested Claude isolation</h3>
+  <p>When The Associate Studio spawns a <code>claude</code> process in a PTY, it strips the <code>CLAUDECODE</code> environment variable from the child process's environment. This prevents Claude from detecting that it is running inside another Claude-related tool, which would otherwise alter its behavior. The environment is carefully constructed to give the spawned CLI a clean context.</p>
+
+
+  <!-- ────────────────────────────────────────────────────────────────────── -->
+
+  <h2>Keyboard Shortcuts Reference</h2>
+
+  <p>Every frequently used action has a keyboard shortcut. Here is the complete list:</p>
+
+  <table>
+    <tr><th>Shortcut</th><th>Action</th></tr>
+    <tr><td><code>Ctrl+P</code></td><td>Open command palette</td></tr>
+    <tr><td><code>Ctrl+N</code></td><td>New Claude session</td></tr>
+    <tr><td><code>Ctrl+W</code></td><td>Close current tab</td></tr>
+    <tr><td><code>Ctrl+R</code></td><td>Resume session (from transcript view)</td></tr>
+    <tr><td><code>Ctrl+Tab</code></td><td>Next tab</td></tr>
+    <tr><td><code>Ctrl+Shift+Tab</code></td><td>Previous tab</td></tr>
+    <tr><td><code>Ctrl+B</code></td><td>Toggle sidebar</td></tr>
+    <tr><td><code>Ctrl+Shift+B</code></td><td>Toggle right panel</td></tr>
+    <tr><td><code>Ctrl+J</code></td><td>Toggle bottom panel</td></tr>
+    <tr><td><code>Ctrl+1</code></td><td>Sidebar: Projects &amp; Sessions</td></tr>
+    <tr><td><code>Ctrl+2</code></td><td>Sidebar: Git</td></tr>
+    <tr><td><code>Ctrl+3</code></td><td>Sidebar: Pull Requests</td></tr>
+    <tr><td><code>Ctrl+Shift+G</code></td><td>Bottom panel: Git</td></tr>
+    <tr><td><code>Ctrl+Shift+Space</code></td><td>Toggle Neural Field</td></tr>
+    <tr><td><code>Ctrl+Shift+Right</code></td><td>Next project</td></tr>
+    <tr><td><code>Ctrl+Shift+Left</code></td><td>Previous project</td></tr>
+    <tr><td><code>Ctrl+,</code></td><td>Open settings</td></tr>
+    <tr><td><code>Ctrl+=</code></td><td>Increase font size</td></tr>
+    <tr><td><code>Ctrl+-</code></td><td>Decrease font size</td></tr>
+    <tr><td><code>Ctrl+0</code></td><td>Reset font size</td></tr>
+    <tr><td><code>Escape</code></td><td>Close overlay (Neural Field, then Command Palette)</td></tr>
+  </table>
+
+  <div class="callout">
+    <p><strong>Terminal-safe shortcuts:</strong> When focus is inside an xterm terminal, most shortcuts are passed through to the CLI. Only <kbd>Ctrl+Tab</kbd>, <kbd>Ctrl+Shift+Arrow</kbd>, <kbd>Ctrl+Shift+B</kbd>, <kbd>Ctrl+Shift+Space</kbd>, <kbd>Ctrl+P</kbd>, and the font size shortcuts are intercepted by the IDE.</p>
+  </div>
+
+  <a class="back-link" href="index.html">&larr; Back to Documentation</a>
+</div>
+</body>
+</html>

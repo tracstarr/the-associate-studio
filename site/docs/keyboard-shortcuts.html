@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Keyboard Shortcuts — The Associate Studio</title>
+<style>
+  :root {
+    --bg-base: #0F0F14;
+    --bg-surface: #181820;
+    --bg-raised: #22222C;
+    --bg-code: #1A1A24;
+    --gold: #D4A853;
+    --gold-dim: #B8933F;
+    --gold-glow: rgba(212,168,83,0.15);
+    --text-primary: #F5F5F8;
+    --text-secondary: #B0B0C0;
+    --text-muted: #7A7A92;
+    --border: #2A2A38;
+    --purple: #BC8CFF;
+    --green: #4ACA62;
+    --red: #F85149;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Inter", -apple-system, system-ui, sans-serif;
+    background: var(--bg-base);
+    color: var(--text-primary);
+    line-height: 1.7;
+    padding: 0;
+  }
+  .doc-container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 60px 32px;
+  }
+  .breadcrumb {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 40px;
+  }
+  .breadcrumb a {
+    color: var(--gold);
+    text-decoration: none;
+  }
+  .breadcrumb a:hover { text-decoration: underline; }
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+  }
+  h1 span { color: var(--gold); }
+  .subtitle {
+    font-size: 1.15rem;
+    color: var(--text-secondary);
+    margin-bottom: 48px;
+  }
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 48px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--gold);
+    margin: 32px 0 12px;
+  }
+  p { margin: 0 0 16px; color: var(--text-secondary); }
+  ul, ol {
+    margin: 0 0 20px 24px;
+    color: var(--text-secondary);
+  }
+  li { margin-bottom: 8px; }
+  li strong { color: var(--text-primary); }
+  code {
+    font-family: "Cascadia Code", "JetBrains Mono", "Fira Code", monospace;
+    background: var(--bg-code);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 0.88em;
+    color: var(--gold);
+    border: 1px solid var(--border);
+  }
+  pre {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    overflow-x: auto;
+    margin: 0 0 24px;
+    font-size: 0.88rem;
+    line-height: 1.6;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    border: none;
+    color: var(--text-secondary);
+  }
+  .callout {
+    background: var(--gold-glow);
+    border-left: 3px solid var(--gold);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 24px 0;
+  }
+  .callout p { color: var(--text-primary); margin: 0; }
+  .callout strong { color: var(--gold); }
+  .callout-warn {
+    background: rgba(248,81,73,0.08);
+    border-left-color: var(--red);
+  }
+  .callout-warn strong { color: var(--red); }
+  .callout-purple {
+    background: rgba(188,140,255,0.08);
+    border-left-color: var(--purple);
+  }
+  .callout-purple strong { color: var(--purple); }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 24px;
+  }
+  th {
+    text-align: left;
+    padding: 10px 14px;
+    background: var(--bg-surface);
+    color: var(--gold);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+  }
+  td:first-child {
+    white-space: nowrap;
+  }
+  a { color: var(--gold); }
+  .back-link {
+    display: inline-block;
+    margin-top: 48px;
+    padding: 10px 24px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--gold);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .back-link:hover { background: var(--bg-raised); }
+  kbd {
+    display: inline-block;
+    font-family: "Cascadia Code", "JetBrains Mono", "Fira Code", monospace;
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 0.82rem;
+    color: var(--text-primary);
+    box-shadow: 0 1px 0 var(--border);
+    line-height: 1.6;
+  }
+  .shortcut-section {
+    margin-bottom: 8px;
+  }
+  .category-label {
+    display: inline-block;
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 3px 10px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--purple);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-right: 6px;
+  }
+</style>
+</head>
+<body>
+<div class="doc-container">
+  <div class="breadcrumb"><a href="../index.html">Home</a> / <a href="index.html">Docs</a> / Keyboard Shortcuts</div>
+
+  <h1>Keyboard <span>Shortcuts</span></h1>
+  <p class="subtitle">Every shortcut to navigate The Associate Studio like a power user.</p>
+
+  <p>The Associate Studio is designed to be driven from the keyboard. Most actions have a shortcut, and the command palette fills the gaps for everything else. This page documents every binding, organized by what part of the interface it controls.</p>
+
+  <!-- ────────────────────────────────────────────────────────────── -->
+  <h2>Global</h2>
+  <p>These shortcuts work everywhere in the app, including when the terminal has focus.</p>
+
+  <table>
+    <tr><th>Shortcut</th><th>Action</th><th>Notes</th></tr>
+    <tr>
+      <td><kbd>Ctrl</kbd> + <kbd>P</kbd></td>
+      <td>Open Command Palette</td>
+      <td>Always intercepted, even in terminal</td>
+    </tr>
+    <tr>
+      <td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Space</kbd></td>
+      <td>Toggle Neural Field</td>
+      <td>Mission control overlay with active sessions and system status</td>
+    </tr>
+    <tr>
+      <td><kbd>Escape</kbd></td>
+      <td>Close overlays</td>
+      <td>Closes Neural Field first, then Command Palette (priority order)</td>
+    </tr>
+  </table>
+
+  <!-- ────────────────────────────────────────────────────────────── -->
+  <h2>Panels</h2>
+  <p>Toggle the three resizable panels that make up the IDE layout.</p>
+
+  <table>
+    <tr><th>Shortcut</th><th>Action</th><th>Notes</th></tr>
+    <tr>
+      <td><kbd>Ctrl</kbd> + <kbd>B</kbd></td>
+      <td>Toggle Sidebar</td>
+      <td>Left panel (sessions, git, PRs)</td>
+    </tr>
+    <tr>
+      <td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>B</kbd></td>
+      <td>Toggle Right Panel</td>
+      <td>Context viewer, teams, plans</td>
+    </tr>
+    <tr>
+      <td><kbd>Ctrl</kbd> + <kbd>J</kbd></td>
+      <td>Toggle Bottom Panel</td>
+      <td>Git log, output, PRs, issues</td>
+    </tr>
+  </table>
+
+  <!-- ────────────────────────────────────────────────────────────── -->
+  <h2>Sidebar Views</h2>
+  <p>Switch between sidebar tabs. If the sidebar is closed, these shortcuts also open it.</p>
+
+  <table>
+    <tr><th>Shortcut</th><th>Action</th></tr>
+    <tr>
+      <td><kbd>Ctrl</kbd> + <kbd>1</kbd></td>
+      <td>Show Sessions</td>
+    </tr>
+    <tr>
+      <td><kbd>Ctrl</kbd> + <kbd>2</kbd></td>
+      <td>Show Git</td>
+    </tr>
+    <tr>
+      <td><kbd>Ctrl</kbd> + <kbd>3</kbd></td>
+      <td>Show PRs</td>
+    </tr>
+  </table>
+
+  <!-- ────────────────────────────────────────────────────────────── -->
+  <h2>Sessions and Tabs</h2>
+  <p>Manage Claude sessions and navigate between open tabs.</p>
+
+  <table>
+    <tr><th>Shortcut</th><th>Action</th><th>Notes</th></tr>
+    <tr>
+      <td><kbd>Ctrl</kbd> + <kbd>N</kbd></td>
+      <td>New Session</td>
+      <td>Opens a new Claude CLI terminal tab in the active project</td>
+    </tr>
+    <tr>
+      <td><kbd>Ctrl</kbd> + <kbd>R</kbd></td>
+      <td>Resume Session</td>
+      <td>Resumes the current session-view tab as a live terminal</td>
+    </tr>
+    <tr>
+      <td><kbd>Ctrl</kbd> + <kbd>W</kbd></td>
+      <td>Close Tab</td>
+      <td>Closes the currently active tab</td>
+    </tr>
+    <tr>
+      <td><kbd>Ctrl</kbd> + <kbd>Tab</kbd></td>
+      <td>Next Tab</td>
+      <td>Cycles forward through open tabs</td>
+    </tr>
+    <tr>
+      <td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Tab</kbd></td>
+      <td>Previous Tab</td>
+      <td>Cycles backward through open tabs</td>
+    </tr>
+  </table>
+
+  <!-- ────────────────────────────────────────────────────────────── -->
+  <h2>Projects</h2>
+  <p>Cycle between open projects. Each project maintains its own set of tabs and session state.</p>
+
+  <table>
+    <tr><th>Shortcut</th><th>Action</th></tr>
+    <tr>
+      <td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>&rarr;</kbd></td>
+      <td>Next Project</td>
+    </tr>
+    <tr>
+      <td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>&larr;</kbd></td>
+      <td>Previous Project</td>
+    </tr>
+  </table>
+
+  <!-- ────────────────────────────────────────────────────────────── -->
+  <h2>Settings and Font</h2>
+  <p>Quick access to settings and font size adjustments. Font size changes apply to the terminal and the entire UI simultaneously.</p>
+
+  <table>
+    <tr><th>Shortcut</th><th>Action</th><th>Notes</th></tr>
+    <tr>
+      <td><kbd>Ctrl</kbd> + <kbd>,</kbd></td>
+      <td>Open Settings</td>
+      <td>Opens the Settings tab</td>
+    </tr>
+    <tr>
+      <td><kbd>Ctrl</kbd> + <kbd>=</kbd></td>
+      <td>Increase Font Size</td>
+      <td>+1px, max 24px</td>
+    </tr>
+    <tr>
+      <td><kbd>Ctrl</kbd> + <kbd>-</kbd></td>
+      <td>Decrease Font Size</td>
+      <td>-1px, min 8px</td>
+    </tr>
+    <tr>
+      <td><kbd>Ctrl</kbd> + <kbd>0</kbd></td>
+      <td>Reset Font Size</td>
+      <td>Resets to 13px default</td>
+    </tr>
+  </table>
+
+  <!-- ────────────────────────────────────────────────────────────── -->
+  <h2>Bottom Panel</h2>
+  <p>Shortcuts that target specific bottom panel tabs.</p>
+
+  <table>
+    <tr><th>Shortcut</th><th>Action</th><th>Notes</th></tr>
+    <tr>
+      <td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>G</kbd></td>
+      <td>Show Git Log</td>
+      <td>Opens bottom panel and switches to the Git tab</td>
+    </tr>
+  </table>
+
+  <!-- ────────────────────────────────────────────────────────────── -->
+  <h2>Development</h2>
+  <p>Shortcuts available only in development builds.</p>
+
+  <table>
+    <tr><th>Shortcut</th><th>Action</th><th>Notes</th></tr>
+    <tr>
+      <td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd></td>
+      <td>Toggle Debug Panel</td>
+      <td>Dev builds only. Shows internal event log (max 500 entries)</td>
+    </tr>
+  </table>
+
+  <!-- ────────────────────────────────────────────────────────────── -->
+  <h2>Command Palette</h2>
+
+  <p>The command palette (<kbd>Ctrl</kbd> + <kbd>P</kbd>) provides access to over 25 commands, including many that don't have dedicated keyboard shortcuts. Commands are organized into four categories:</p>
+
+  <table>
+    <tr><th>Category</th><th>Example Commands</th></tr>
+    <tr>
+      <td><span class="category-label">View</span></td>
+      <td>Toggle Sidebar, Toggle Right Panel, Toggle Bottom Panel, Show Sessions, Show Git, Show PRs, Show Issues, Right Panel: Context, Right Panel: Teams, Right Panel: Plans, Bottom Panel: Git, Bottom Panel: Output, Toggle Neural Field</td>
+    </tr>
+    <tr>
+      <td><span class="category-label">Session</span></td>
+      <td>New Claude Session, Resume Session, Close Current Tab, Next Tab, Previous Tab</td>
+    </tr>
+    <tr>
+      <td><span class="category-label">Project</span></td>
+      <td>Next Project, Previous Project</td>
+    </tr>
+    <tr>
+      <td><span class="category-label">Settings</span></td>
+      <td>Open Settings, Increase Font Size, Decrease Font Size, Reset Font Size</td>
+    </tr>
+  </table>
+
+  <p>Type to filter commands by name. Each command shows its keybinding (if one exists) on the right side. Press <kbd>Enter</kbd> to execute the highlighted command, or <kbd>Escape</kbd> to dismiss.</p>
+
+  <div class="callout">
+    <p><strong>Tip:</strong> The command palette is especially useful for actions that only appear there, like switching to specific right panel tabs (Context, Teams, Plans) or specific bottom panel tabs (Output).</p>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────────────── -->
+  <h2>Terminal Focus Behavior</h2>
+
+  <p>When a Claude session terminal (xterm.js) has focus, most keyboard input goes directly to the running process. This is intentional — you need to type freely when working with Claude. But it means shortcuts behave differently depending on where focus is.</p>
+
+  <h3>What always works in the terminal</h3>
+  <p>A small set of "terminal-safe" shortcuts are intercepted even when the terminal is focused:</p>
+  <ul>
+    <li><kbd>Ctrl</kbd> + <kbd>P</kbd> — Command Palette (always intercepted)</li>
+    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Space</kbd> — Neural Field (always intercepted)</li>
+    <li><kbd>Ctrl</kbd> + <kbd>Tab</kbd> / <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Tab</kbd> — Tab switching</li>
+    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>&rarr;</kbd> / <kbd>&larr;</kbd> — Project cycling</li>
+    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>B</kbd> — Right panel toggle</li>
+    <li><kbd>Ctrl</kbd> + <kbd>=</kbd> / <kbd>-</kbd> / <kbd>0</kbd> — Font size</li>
+  </ul>
+
+  <h3>What goes to the terminal</h3>
+  <p>Everything else passes through to the terminal process. This includes:</p>
+  <ul>
+    <li><kbd>Ctrl</kbd> + <kbd>C</kbd> — Sends SIGINT (interrupt) to the running process, not "copy"</li>
+    <li><kbd>Ctrl</kbd> + <kbd>V</kbd> — Pastes into the terminal</li>
+    <li><kbd>Ctrl</kbd> + <kbd>B</kbd> — Passes through (does not toggle sidebar from terminal)</li>
+    <li>All regular typing, arrow keys, etc.</li>
+  </ul>
+
+  <div class="callout callout-purple">
+    <p><strong>Copy from terminal:</strong> Use <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>C</kbd> to copy selected text from the terminal. The standard <kbd>Ctrl</kbd> + <kbd>C</kbd> sends an interrupt signal to the process instead.</p>
+  </div>
+
+  <!-- ────────────────────────────────────────────────────────────── -->
+  <h2>Input Guard</h2>
+
+  <p>When focus is in a regular input field or textarea (not the terminal), most shortcuts are suppressed to avoid interfering with text editing. The exceptions are the three "always active" shortcuts:</p>
+
+  <ul>
+    <li><kbd>Ctrl</kbd> + <kbd>P</kbd> — Command Palette</li>
+    <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Space</kbd> — Neural Field</li>
+    <li><kbd>Escape</kbd> — Close overlays</li>
+  </ul>
+
+  <p>This means you can safely type <kbd>Ctrl</kbd> + <kbd>B</kbd> in a text field without accidentally toggling the sidebar. If you need a shortcut while editing text, open the command palette and run the action from there.</p>
+
+  <!-- ────────────────────────────────────────────────────────────── -->
+  <h2>Quick Reference</h2>
+
+  <p>Every shortcut on one table, sorted by key combination.</p>
+
+  <table>
+    <tr><th>Shortcut</th><th>Action</th></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>P</kbd></td><td>Command Palette</td></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>N</kbd></td><td>New Session</td></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>R</kbd></td><td>Resume Session</td></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>W</kbd></td><td>Close Tab</td></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>B</kbd></td><td>Toggle Sidebar</td></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>J</kbd></td><td>Toggle Bottom Panel</td></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>,</kbd></td><td>Open Settings</td></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>=</kbd></td><td>Increase Font Size</td></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>-</kbd></td><td>Decrease Font Size</td></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>0</kbd></td><td>Reset Font Size (13px)</td></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>1</kbd></td><td>Sidebar: Sessions</td></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>2</kbd></td><td>Sidebar: Git</td></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>3</kbd></td><td>Sidebar: PRs</td></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>Tab</kbd></td><td>Next Tab</td></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Tab</kbd></td><td>Previous Tab</td></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Space</kbd></td><td>Neural Field</td></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>B</kbd></td><td>Toggle Right Panel</td></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>G</kbd></td><td>Bottom Panel: Git Log</td></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd></td><td>Debug Panel (dev only)</td></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>&rarr;</kbd></td><td>Next Project</td></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>&larr;</kbd></td><td>Previous Project</td></tr>
+    <tr><td><kbd>Escape</kbd></td><td>Close Overlays</td></tr>
+  </table>
+
+  <a class="back-link" href="index.html">&larr; Back to Documentation</a>
+</div>
+</body>
+</html>
