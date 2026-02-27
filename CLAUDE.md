@@ -12,9 +12,28 @@ Windows desktop IDE where **Claude Code CLI is the centerpiece**. Built with Tau
 
 ## Documentation requirement
 
-> **After every significant decision, update the relevant doc in `docs/`.** If no doc fits, create one and link it from `docs/index.md`.
+> **After every feature change, implementation, or significant decision, update ALL relevant documentation — both Markdown (`.md`) and HTML (`.html`) files.** If no doc fits, create one and link it from `docs/index.md`.
 
-What counts as a significant decision:
+### Mandatory: Update docs after every change
+
+Any time you change or implement a feature, you **must** update the corresponding documentation before considering the work complete. This applies to:
+
+- **New features** — document what was added, how it works, and how to use it
+- **Modified features** — update existing docs to reflect the new behavior
+- **Removed features** — remove or mark as deprecated in all docs that reference them
+- **Bug fixes that change behavior** — update docs if the fix alters observable behavior
+- **API or command changes** — update usage examples, parameter lists, and return types
+
+### Both Markdown and HTML docs must stay in sync
+
+This project may contain documentation in both **Markdown** (`.md`) and **HTML** (`.html`) formats. When updating documentation:
+
+1. **Find all affected docs** — search for references to the changed feature in both `.md` and `.html` files
+2. **Update every occurrence** — do not update one format and leave the other stale
+3. **Verify consistency** — ensure Markdown and HTML docs describe the same behavior
+
+### What counts as a significant decision
+
 - Choosing a library/crate (or rejecting one)
 - A non-obvious implementation approach (e.g., why portable-pty, why no StrictMode)
 - A security choice (e.g., where a secret is stored)
