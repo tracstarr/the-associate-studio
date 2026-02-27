@@ -65,9 +65,10 @@ jobs:
             echo "$RESPONSE" | python3 -c "import sys,json;d=json.load(sys.stdin);print(d['data']['issue'].get('description') or '')" > /tmp/issue_body.txt
           fi
           python3 -c "import re;body=open('/tmp/issue_body.txt').read();m=re.search('\\*\\*Prompt Start\\*\\*(.*?)\\*\\*Prompt End\\*\\*',body,re.DOTALL);prompt=m.group(1).strip() if m else body.strip();open('/tmp/prompt.txt','w').write(prompt)"
-          echo "prompt<<EOF" >> $GITHUB_OUTPUT
+          DELIMITER=$(openssl rand -hex 16)
+          echo "prompt<<${DELIMITER}" >> $GITHUB_OUTPUT
           cat /tmp/prompt.txt >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "${DELIMITER}" >> $GITHUB_OUTPUT
 
       - name: Configure git
         run: |
