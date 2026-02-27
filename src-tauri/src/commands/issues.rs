@@ -943,6 +943,259 @@ pub async fn cmd_list_jira_assignees(
         .collect())
 }
 
+// ─── Linear issue detail ──────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize)]
+pub struct LinearIssueDetail {
+    pub identifier: String,
+    pub title: String,
+    pub description: Option<String>,
+    pub state: String,
+    pub author: String,
+    pub assignee: Option<String>,
+    pub url: String,
+    pub created_at: String,
+    pub labels: Vec<String>,
+}
+
+#[tauri::command]
+pub async fn cmd_get_linear_issue(
+    identifier: String,
+) -> Result<LinearIssueDetail, String> {
+    let api_key = match get_linear_api_key() {
+        Some(k) => k,
+        None => return Err("Linear API key not configured".into()),
+    };
+
+    let gql_query = r#"
+        query IssueByIdentifier($filter: IssueFilter) {
+          issues(first: 1, filter: $filter) {
+            nodes {
+              id identifier title description
+              state { name type }
+              creator { name }
+              assignee { name }
+              url createdAt
+              labels { nodes { name } }
+            }
+          }
+        }
+    "#;
+
+    let variables = serde_json::json!({
+        "filter": {
+            "identifier": { "eq": identifier }
+        }
+    });
+
+    let body = serde_json::json!({ "query": gql_query, "variables": variables });
+
+    let client = reqwest::Client::new();
+    let res = client
+        .post("https://api.linear.app/graphql")
+        .header("Authorization", &api_key)
+        .header("Content-Type", "application/json")
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| format!("Linear request failed: {}", e))?;
+
+    if !res.status().is_success() {
+        return Err(format!("Linear API error: {}", res.status()));
+    }
+
+    let json: serde_json::Value = res
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse Linear response: {}", e))?;
+
+    if let Some(errors) = json["errors"].as_array() {
+        if !errors.is_empty() {
+            return Err(format!("Linear GraphQL error: {:?}", errors));
+        }
+    }
+
+    let node = json["data"]["issues"]["nodes"]
+        .as_array()
+        .and_then(|a| a.first())
+        .ok_or_else(|| format!("Issue {} not found", identifier))?;
+
+    let state_type = node["state"]["type"].as_str().unwrap_or("unknown");
+    let state_str = match state_type {
+        "completed" | "cancelled" => "closed",
+        _ => "open",
+    };
+
+    Ok(LinearIssueDetail {
+        identifier: node["identifier"].as_str().unwrap_or("").to_string(),
+        title: node["title"].as_str().unwrap_or("").to_string(),
+        description: node["description"].as_str().map(|s| s.to_string()),
+        state: state_str.to_string(),
+        author: node["creator"]["name"].as_str().unwrap_or("").to_string(),
+        assignee: node["assignee"]["name"].as_str().map(|s| s.to_string()),
+        url: node["url"].as_str().unwrap_or("").to_string(),
+        created_at: node["createdAt"].as_str().unwrap_or("").to_string(),
+        labels: node["labels"]["nodes"]
+            .as_array()
+            .map(|arr| {
+                arr.iter()
+                    .filter_map(|n| n["name"].as_str().map(|s| s.to_string()))
+                    .collect()
+            })
+            .unwrap_or_default(),
+    })
+}
+
+// ─── Issue description update commands ────────────────────────────────────────
+
+#[tauri::command]
+pub async fn cmd_update_linear_issue_description(
+    identifier: String,
+    description: String,
+) -> Result<(), String> {
+    let api_key = match get_linear_api_key() {
+        Some(k) => k,
+        None => return Err("Linear API key not configured".into()),
+    };
+
+    // First, look up the issue's internal ID from identifier
+    let id_query = serde_json::json!({
+        "query": r#"query($filter: IssueFilter) { issues(first: 1, filter: $filter) { nodes { id } } }"#,
+        "variables": { "filter": { "identifier": { "eq": identifier } } }
+    });
+
+    let client = reqwest::Client::new();
+    let res = client
+        .post("https://api.linear.app/graphql")
+        .header("Authorization", &api_key)
+        .header("Content-Type", "application/json")
+        .json(&id_query)
+        .send()
+        .await
+        .map_err(|e| format!("Linear request failed: {}", e))?;
+
+    let json: serde_json::Value = res.json().await
+        .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+    let issue_id = json["data"]["issues"]["nodes"]
+        .as_array()
+        .and_then(|a| a.first())
+        .and_then(|n| n["id"].as_str())
+        .ok_or_else(|| format!("Issue {} not found", identifier))?
+        .to_string();
+
+    // Now update the description
+    let mutation = serde_json::json!({
+        "query": r#"mutation($id: String!, $input: IssueUpdateInput!) { issueUpdate(id: $id, input: $input) { success } }"#,
+        "variables": {
+            "id": issue_id,
+            "input": { "description": description }
+        }
+    });
+
+    let res = client
+        .post("https://api.linear.app/graphql")
+        .header("Authorization", &api_key)
+        .header("Content-Type", "application/json")
+        .json(&mutation)
+        .send()
+        .await
+        .map_err(|e| format!("Linear update failed: {}", e))?;
+
+    let json: serde_json::Value = res.json().await
+        .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+    if let Some(errors) = json["errors"].as_array() {
+        if !errors.is_empty() {
+            return Err(format!("Linear update error: {:?}", errors));
+        }
+    }
+
+    let success = json["data"]["issueUpdate"]["success"].as_bool().unwrap_or(false);
+    if !success {
+        return Err("Linear update returned success=false".into());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn cmd_update_github_issue_description(
+    cwd: String,
+    number: u32,
+    body: String,
+) -> Result<(), String> {
+    let output = silent_command("gh")
+        .args([
+            "issue",
+            "edit",
+            &number.to_string(),
+            "--body",
+            &body,
+        ])
+        .current_dir(&cwd)
+        .output()
+        .map_err(|e| format!("gh not found or failed: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("gh issue edit failed: {}", stderr));
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn cmd_update_jira_issue_description(
+    base_url: String,
+    email: String,
+    api_token: String,
+    issue_key: String,
+    description: String,
+) -> Result<(), String> {
+    let url = format!(
+        "{}/rest/api/3/issue/{}",
+        base_url.trim_end_matches('/'),
+        issue_key
+    );
+
+    // Jira expects ADF for description. Wrap plain text in a simple ADF paragraph.
+    let adf_body = serde_json::json!({
+        "fields": {
+            "description": {
+                "type": "doc",
+                "version": 1,
+                "content": [
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            { "type": "text", "text": description }
+                        ]
+                    }
+                ]
+            }
+        }
+    });
+
+    let client = reqwest::Client::new();
+    let res = client
+        .put(&url)
+        .basic_auth(&email, Some(&api_token))
+        .header("Content-Type", "application/json")
+        .json(&adf_body)
+        .send()
+        .await
+        .map_err(|e| format!("Jira request failed: {}", e))?;
+
+    if !res.status().is_success() {
+        let status = res.status();
+        let body = res.text().await.unwrap_or_default();
+        return Err(format!("Jira API error {}: {}", status, body));
+    }
+
+    Ok(())
+}
+
 // ─── "Me" commands ────────────────────────────────────────────────────────────
 
 #[tauri::command]
