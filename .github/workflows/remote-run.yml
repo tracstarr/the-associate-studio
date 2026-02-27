@@ -65,6 +65,7 @@ jobs:
           DELIMITER=$(openssl rand -hex 16)
           echo "prompt<<${DELIMITER}" >> $GITHUB_OUTPUT
           cat /tmp/prompt.txt >> $GITHUB_OUTPUT
+          printf "\n" >> $GITHUB_OUTPUT
           echo "${DELIMITER}" >> $GITHUB_OUTPUT
 
       - name: Configure git
