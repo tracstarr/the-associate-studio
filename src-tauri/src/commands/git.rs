@@ -1,5 +1,6 @@
 use crate::data::git;
 use crate::models::git::{DiffLine, GitStatus};
+use crate::watcher::git_watcher::GitWatcherState;
 use std::fs;
 use std::path::PathBuf;
 
@@ -536,4 +537,13 @@ pub async fn cmd_claude_git_action(cwd: String, action: String) -> Result<String
             combined.trim().to_string()
         })
     }
+}
+
+#[tauri::command]
+pub async fn cmd_watch_git_head(
+    cwd: String,
+    app_handle: tauri::AppHandle,
+    state: tauri::State<'_, GitWatcherState>,
+) -> Result<(), String> {
+    crate::watcher::git_watcher::start_git_head_watch(app_handle, cwd, &state)
 }

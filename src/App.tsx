@@ -5,7 +5,7 @@ import { StatusBar } from "./components/shell/StatusBar";
 import { IDELayout } from "./components/layout/IDELayout";
 import { CommandPalette } from "./components/shell/CommandPalette";
 import { useKeyBindings } from "./hooks/useKeyBindings";
-import { useClaudeWatcher } from "./hooks/useClaudeData";
+import { useClaudeWatcher, useGitBranchWatcher } from "./hooks/useClaudeData";
 import { useSettingsStore } from "./stores/settingsStore";
 import { useProjectsStore } from "./stores/projectsStore";
 import { useIssueFilterStore } from "./stores/issueFilterStore";
@@ -46,6 +46,7 @@ const queryClient = new QueryClient({
 function IDEShell() {
   useKeyBindings();
   useClaudeWatcher();
+  useGitBranchWatcher();
   const loadFromDisk = useSettingsStore((s) => s.loadFromDisk);
   const loadProjects = useProjectsStore((s) => s.loadProjects);
   const loadRecentFromDisk = useProjectsStore((s) => s.loadRecentFromDisk);

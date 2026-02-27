@@ -420,6 +420,10 @@ export async function gitExclude(cwd: string, filePath: string): Promise<string>
   return invoke("cmd_git_exclude", { cwd, filePath });
 }
 
+export async function watchGitHead(cwd: string): Promise<void> {
+  return invoke("cmd_watch_git_head", { cwd });
+}
+
 // ─── PR / Issues Types ────────────────────────────────────────────────────────
 
 export interface PullRequest {

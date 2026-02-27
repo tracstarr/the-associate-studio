@@ -87,9 +87,9 @@ npm run tauri build      # release build
 
 | Area | Files | Purpose |
 |------|-------|---------|
-| Entry | `src-tauri/src/lib.rs` | Plugin init, PtyState, hook setup on launch, starts claude_watcher |
+| Entry | `src-tauri/src/lib.rs` | Plugin init, PtyState, GitWatcherState, hook setup on launch, starts claude_watcher |
 | Commands | `commands/pty.rs` | PTY spawn/resize/write/kill via portable-pty (ConPTY) |
-| | `commands/git.rs` | git status/diff/log/branches/worktrees/fetch/pull/rebase + Claude git actions |
+| | `commands/git.rs` | git status/diff/log/branches/worktrees/fetch/pull/rebase + Claude git actions + `cmd_watch_git_head` |
 | | `commands/sessions.rs` | Load session index + transcripts from `~/.claude/projects/` |
 | | `commands/integrations.rs` | GitHub device flow, Linear, Jira auth; Windows Credential Manager |
 | | `commands/hooks.rs` | Install/remove Claude CLI hooks in `~/.claude/theassociate/` |
@@ -106,6 +106,7 @@ npm run tauri build      # release build
 | Data layer | `data/` module | File I/O + parsing for each domain: `sessions`, `transcripts`, `teams`, `tasks`, `inboxes`, `todos`, `plans`, `notes`, `summaries`, `projects`, `git`, `hook_state`, `watcher_state`, `path_encoding` |
 | Models | `models/` module | Serde structs: `session`, `transcript`, `team`, `task`, `inbox`, `todo`, `plan`, `note`, `summary`, `git`, `hook_event` |
 | Watcher | `watcher/claude_watcher.rs` | Watches `~/.claude/` dirs (teams, tasks, projects, todos, plans, notes, theassociate); emits Tauri events on file changes; parses `hook-events.jsonl` for session/subagent lifecycle |
+| Git watcher | `watcher/git_watcher.rs` | Watches `.git/HEAD` for active project; emits `git-branch-changed` when branch switches; managed state replaced when project changes |
 
 ## Component areas
 
@@ -139,6 +140,7 @@ npm run tauri build      # release build
 7. **pathToProjectId encoding** — `C:\dev\ide` → `C--dev-ide`; `C:\dev\apex_3.11.0` → `C--dev-apex-3-11-0`; path separators, `.`, and `_` all become `-`; `lib/utils.ts` must stay in sync with Rust `data/path_encoding.rs`
 8. **Hook events via file watcher** — `hook-events.jsonl` is append-only; watcher tracks file offset to read only new lines
 9. **Claude watcher auto-starts** — `lib.rs` calls `start_claude_watcher()` in `.setup()`; also auto-installs hooks via `cmd_setup_hooks()`
+10. **Git branch watcher** — `useGitBranchWatcher()` calls `cmd_watch_git_head(cwd)` when active project changes; watches `.git/HEAD` via `notify` crate; emits `git-branch-changed` event; old watcher dropped when project switches
 
 ## Research reference
 
