@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { ArrowLeft, Save, Trash2, ExternalLink, ChevronDown, ChevronRight } from "lucide-react";
+import { ArrowLeft, Save, Trash2, ExternalLink, ChevronDown, ChevronRight, Link } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Note, FileRef } from "@/lib/tauri";
+import type { Note, FileRef, IssueRef } from "@/lib/tauri";
 import { useSessionStore } from "@/stores/sessionStore";
 import { useProjectsStore } from "@/stores/projectsStore";
 import { useUIStore } from "@/stores/uiStore";
+import { CreateIssueModal } from "./CreateIssueModal";
 
 interface NoteEditorProps {
   note: Note;
@@ -61,12 +62,64 @@ function FileRefItem({ ref: fileRef }: { ref: FileRef }) {
   );
 }
 
+function IssueRefItem({ issueRef }: { issueRef: IssueRef }) {
+  const openTab = useSessionStore((s) => s.openTab);
+  const activeProject = useProjectsStore((s) =>
+    s.projects.find((p) => p.id === s.activeProjectId)
+  );
+  const activeProjectId = useProjectsStore((s) => s.activeProjectId);
+
+  const handleOpen = () => {
+    if (!activeProjectId) return;
+    openTab(
+      {
+        id: `issue:${issueRef.provider}:${issueRef.key}`,
+        type: "issue-detail",
+        title: issueRef.key,
+        projectDir: activeProject?.path ?? "",
+        issueKey: issueRef.key,
+        issueSource: issueRef.provider as "github" | "linear" | "jira",
+        issueUrl: issueRef.url,
+      },
+      activeProjectId
+    );
+  };
+
+  return (
+    <div
+      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-bg-surface border border-border-muted cursor-pointer hover:border-[var(--color-accent-primary)] transition-colors duration-200"
+      onClick={handleOpen}
+    >
+      <Link size={10} className="text-[var(--color-accent-secondary)] shrink-0" />
+      <span className="text-[10px] font-mono text-[var(--color-accent-secondary)] shrink-0">
+        {issueRef.key}
+      </span>
+      <span className="text-[10px] text-text-muted truncate flex-1">{issueRef.title}</span>
+      <ExternalLink
+        size={10}
+        className="text-text-muted shrink-0"
+        onClick={(e) => {
+          e.stopPropagation();
+          window.open(issueRef.url, "_blank", "noopener,noreferrer");
+        }}
+      />
+    </div>
+  );
+}
+
 export function NoteEditor({ note, onBack, onSave, onDelete }: NoteEditorProps) {
   const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.content);
   const [refsOpen, setRefsOpen] = useState(true);
+  const [issuesOpen, setIssuesOpen] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const setPendingAttachToNoteId = useUIStore((s) => s.setPendingAttachToNoteId);
+  const activeProject = useProjectsStore((s) =>
+    s.projects.find((p) => p.id === s.activeProjectId)
+  );
+  const activeProjectId = useProjectsStore((s) => s.activeProjectId);
+  const openTab = useSessionStore((s) => s.openTab);
 
   // Reset when note changes and focus textarea
   useEffect(() => {
@@ -85,6 +138,34 @@ export function NoteEditor({ note, onBack, onSave, onDelete }: NoteEditorProps) 
       content,
       modified: Date.now(),
     });
+  };
+
+  const handleIssueCreated = (ref: IssueRef) => {
+    // Save note with new issueRef (bypasses isDirty guard — issueRefs changed, not title/content)
+    const updated = {
+      ...note,
+      issueRefs: [...(note.issueRefs ?? []), ref],
+      modified: Date.now(),
+    };
+    onSave(updated);
+
+    // Open issue in center tab
+    if (activeProjectId) {
+      openTab(
+        {
+          id: `issue:${ref.provider}:${ref.key}`,
+          type: "issue-detail",
+          title: ref.key,
+          projectDir: activeProject?.path ?? "",
+          issueKey: ref.key,
+          issueSource: ref.provider as "github" | "linear" | "jira",
+          issueUrl: ref.url,
+        },
+        activeProjectId
+      );
+    }
+
+    setShowCreateModal(false);
   };
 
   return (
@@ -168,6 +249,42 @@ export function NoteEditor({ note, onBack, onSave, onDelete }: NoteEditorProps) 
           </div>
         )}
       </div>
+
+      {/* Linked issues section */}
+      <div className="border-t border-border-muted shrink-0">
+        <div className="flex items-center w-full px-3 py-1.5">
+          <button
+            onClick={() => setIssuesOpen(!issuesOpen)}
+            className="flex items-center gap-1 text-[10px] text-text-muted hover:text-text-secondary transition-colors duration-200 flex-1"
+          >
+            {issuesOpen ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
+            Linked issues ({(note.issueRefs ?? []).length})
+          </button>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="text-[10px] text-[var(--color-accent-primary)] hover:underline transition-all duration-200"
+          >
+            + Create issue
+          </button>
+        </div>
+        {issuesOpen && (note.issueRefs ?? []).length > 0 && (
+          <div className="px-3 pb-2 flex flex-col gap-1.5 max-h-40 overflow-y-auto">
+            {(note.issueRefs ?? []).map((issueRef) => (
+              <IssueRefItem key={issueRef.id} issueRef={issueRef} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Create issue modal */}
+      {showCreateModal && (
+        <CreateIssueModal
+          note={note}
+          activeProjectDir={activeProject?.path ?? null}
+          onCreated={handleIssueCreated}
+          onClose={() => setShowCreateModal(false)}
+        />
+      )}
     </div>
   );
 }

@@ -103,12 +103,24 @@ export interface FileRef {
   quote: string;
 }
 
+export interface IssueRef {
+  id: string;
+  provider: "github" | "linear" | "jira";
+  key: string;   // "42", "ENG-1", "PROJ-123" — matches tab.issueKey
+  url: string;
+  title: string;
+}
+
+export interface LinearTeam { id: string; key: string; name: string; }
+export interface JiraProject { id: string; key: string; name: string; }
+
 export interface Note {
   id: string;
   title: string;
   content: string;
   projectPath: string | null;
   fileRefs: FileRef[];
+  issueRefs: IssueRef[];
   created: number;
   modified: number;
 }
@@ -274,6 +286,34 @@ export function saveNote(note: Note): Promise<void> {
 
 export function deleteNote(noteId: string, encodedProjectId: string | null): Promise<void> {
   return invoke("cmd_delete_note", { noteId, encodedProjectId });
+}
+
+export function createGithubIssue(cwd: string, title: string, body: string): Promise<IssueRef> {
+  return invoke("cmd_create_github_issue", { cwd, title, body });
+}
+
+export function getLinearTeams(): Promise<LinearTeam[]> {
+  return invoke("cmd_get_linear_teams");
+}
+
+export function createLinearIssue(title: string, body: string, teamId: string): Promise<IssueRef> {
+  return invoke("cmd_create_linear_issue", { title, body, teamId });
+}
+
+export function getJiraProjects(baseUrl: string, email: string, apiToken: string): Promise<JiraProject[]> {
+  return invoke("cmd_get_jira_projects", { baseUrl, email, apiToken });
+}
+
+export function createJiraIssue(
+  baseUrl: string,
+  email: string,
+  apiToken: string,
+  title: string,
+  body: string,
+  projectKey: string,
+  issueType: string
+): Promise<IssueRef> {
+  return invoke("cmd_create_jira_issue", { baseUrl, email, apiToken, title, body, projectKey, issueType });
 }
 
 export async function gitStatus(cwd: string): Promise<GitStatus> {
@@ -676,6 +716,7 @@ export function getHomeDir(): Promise<string> {
 
 export interface ProjectSettings {
   docsFolder?: string;
+  showHiddenFiles?: boolean;   // undefined = use global default
 }
 
 export function getProjectSettings(projectPath: string): Promise<ProjectSettings> {

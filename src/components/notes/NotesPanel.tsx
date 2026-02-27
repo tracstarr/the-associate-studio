@@ -136,6 +136,7 @@ export function NotesPanel() {
           quote: pendingNoteRef.quote,
         },
       ],
+      issueRefs: [],
       created: now,
       modified: now,
     };
@@ -164,6 +165,7 @@ export function NotesPanel() {
       content: "",
       projectPath: scope === "global" ? null : (activeProject?.path ?? null),
       fileRefs: [],
+      issueRefs: [],
       created: now,
       modified: now,
     };

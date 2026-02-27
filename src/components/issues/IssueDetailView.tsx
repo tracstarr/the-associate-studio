@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { ExternalLink, RefreshCw, User, Tag, AlertCircle, MessageSquare, Play, Pencil, X, Save, Loader2 } from "lucide-react";
-import { useJiraIssueDetail, useIssues, useLinearIssueDetail } from "@/hooks/useClaudeData";
+import { ExternalLink, RefreshCw, User, Tag, AlertCircle, MessageSquare, Play, Pencil, X, Save, Loader2, StickyNote } from "lucide-react";
+import { useJiraIssueDetail, useIssues, useLinearIssueDetail, useGlobalNotes, useProjectNotes } from "@/hooks/useClaudeData";
 import { useSettingsStore } from "@/stores/settingsStore";
 import type { SessionTab } from "@/stores/sessionStore";
 import { useSessionStore } from "@/stores/sessionStore";
@@ -14,6 +14,42 @@ import {
   updateJiraIssueDescription,
 } from "@/lib/tauri";
 import { cn } from "@/lib/utils";
+import { useProjectsStore } from "@/stores/projectsStore";
+import { useUIStore } from "@/stores/uiStore";
+
+// ---- Notes breadcrumb ----
+
+function useNotesBreadcrumb(issueKey: string, provider: string) {
+  const activeProject = useProjectsStore((s) =>
+    s.projects.find((p) => p.id === s.activeProjectId)
+  );
+  const { data: globalNotes = [] } = useGlobalNotes();
+  const { data: projectNotes = [] } = useProjectNotes(activeProject?.path ?? null);
+  const openNoteById = useUIStore((s) => s.openNoteById);
+
+  const linkedNotes = [...globalNotes, ...projectNotes].filter((n) =>
+    (n.issueRefs ?? []).some((r) => r.key === issueKey && r.provider === provider)
+  );
+
+  return {
+    count: linkedNotes.length,
+    handleNotesClick: () => linkedNotes.length > 0 && openNoteById(linkedNotes[0].id),
+  };
+}
+
+function NotesBreadcrumb({ count, onClick }: { count: number; onClick: () => void }) {
+  if (count === 0) return null;
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center gap-1 px-2 py-0.5 text-[11px] rounded border border-[var(--color-border-default)] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-overlay)] transition-colors"
+      title="Open linked note"
+    >
+      <StickyNote size={10} />
+      Notes ({count})
+    </button>
+  );
+}
 
 // ---- Remote Run hook + controls ----
 
@@ -327,6 +363,7 @@ function JiraIssueDetailView({ tab }: { tab: SessionTab }) {
     jiraApiToken,
     tab.issueKey ?? ""
   );
+  const { count: notesCount, handleNotesClick } = useNotesBreadcrumb(tab.issueKey ?? "", "jira");
 
   const handleSaveDescription = useCallback(
     async (text: string) => {
@@ -385,6 +422,7 @@ function JiraIssueDetailView({ tab }: { tab: SessionTab }) {
               issueNumber={tab.issueKey ?? ""}
               issueType="jira"
             />
+            <NotesBreadcrumb count={notesCount} onClick={handleNotesClick} />
             <button
               onClick={() => refetch()}
               className="text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors"
@@ -473,6 +511,7 @@ function GitHubIssueDetailView({ tab }: { tab: SessionTab }) {
   const issue: Issue | undefined = [...(openIssues ?? []), ...(closedIssues ?? [])].find(
     (i) => i.number === issueNum
   );
+  const { count: notesCount, handleNotesClick } = useNotesBreadcrumb(tab.issueKey ?? "", "github");
 
   const handleSaveDescription = useCallback(
     async (text: string) => {
@@ -521,6 +560,7 @@ function GitHubIssueDetailView({ tab }: { tab: SessionTab }) {
               issueNumber={issue.number.toString()}
               issueType="github"
             />
+            <NotesBreadcrumb count={notesCount} onClick={handleNotesClick} />
             <svg
               width="12"
               height="12"
@@ -590,6 +630,7 @@ function LinearIssueDetailView({ tab }: { tab: SessionTab }) {
   const identifier = tab.issueKey ?? "";
 
   const { data: detail, isLoading, error, refetch } = useLinearIssueDetail(hasKey, identifier);
+  const { count: notesCount, handleNotesClick } = useNotesBreadcrumb(identifier, "linear");
 
   const handleSaveDescription = useCallback(
     async (text: string) => {
@@ -630,6 +671,7 @@ function LinearIssueDetailView({ tab }: { tab: SessionTab }) {
               issueNumber={tab.issueKey ?? ""}
               issueType="linear"
             />
+            <NotesBreadcrumb count={notesCount} onClick={handleNotesClick} />
             {!isLoading && (
               <button
                 onClick={() => refetch()}

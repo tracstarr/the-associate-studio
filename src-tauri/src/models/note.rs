@@ -12,12 +12,24 @@ pub struct FileRef {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct IssueRef {
+    pub id: String,          // unique local ID
+    pub provider: String,    // "github" | "linear" | "jira"
+    pub key: String,         // "42", "ENG-456", "PROJ-123" (matches tab.issueKey)
+    pub url: String,
+    pub title: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Note {
     pub id: String,
     pub title: String,
     pub content: String,
     pub project_path: Option<String>, // None = global
     pub file_refs: Vec<FileRef>,
+    #[serde(default)]
+    pub issue_refs: Vec<IssueRef>,
     pub created: u64, // ms timestamp
     pub modified: u64,
 }
