@@ -696,6 +696,62 @@ export function loadExtensions(projectDir: string): Promise<ClaudeExtension[]> {
   return invoke("cmd_load_extensions", { projectDir });
 }
 
+// ---- Workflow Types ----
+
+export interface WorkflowFile {
+  name: string;
+  filename: string;
+  path: string;
+}
+
+export interface WorkflowRun {
+  id: number;
+  name: string;
+  displayTitle: string;
+  status: string;
+  conclusion: string | null;
+  headBranch: string;
+  createdAt: string;
+  url: string;
+  workflowName: string;
+}
+
+export interface WorkflowRunJob {
+  name: string;
+  status: string;
+  conclusion: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+}
+
+export interface WorkflowRunDetail {
+  id: number;
+  name: string;
+  displayTitle: string;
+  status: string;
+  conclusion: string | null;
+  headBranch: string;
+  createdAt: string;
+  url: string;
+  jobs: WorkflowRunJob[];
+}
+
+export function listWorkflowFiles(cwd: string): Promise<WorkflowFile[]> {
+  return invoke("cmd_list_workflow_files", { cwd });
+}
+
+export function listWorkflowRuns(cwd: string, workflow?: string): Promise<WorkflowRun[]> {
+  return invoke("cmd_list_workflow_runs", { cwd, workflow: workflow ?? null });
+}
+
+export function getWorkflowRunDetail(cwd: string, runId: number): Promise<WorkflowRunDetail> {
+  return invoke("cmd_get_workflow_run_detail", { cwd, runId });
+}
+
+export function getWorkflowRunLogs(cwd: string, runId: number): Promise<string> {
+  return invoke("cmd_get_workflow_run_logs", { cwd, runId });
+}
+
 // ---- Remote Run ----
 
 export interface RemoteRunResult {

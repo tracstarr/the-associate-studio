@@ -5,15 +5,18 @@ import { useDebugStore } from "@/stores/debugStore";
 import { GitLogPanel } from "@/components/git/GitLogPanel";
 import { OutputPanel } from "@/components/layout/OutputPanel";
 import { DebugPanel } from "@/components/debug/DebugPanel";
+import { WorkflowsPanel } from "@/components/workflows/WorkflowsPanel";
 
 const BASE_TABS: { id: BottomTab; label: string }[] = [
   { id: "git", label: "Git" },
   { id: "output", label: "Output" },
+  { id: "workflows", label: "Workflows" },
 ];
 
 const tabPlaceholders: Record<BottomTab, string> = {
   git: "Select a project to view git log.",
   output: "No output.",
+  workflows: "Open a project to see workflows.",
   debug: "No debug entries.",
 };
 
@@ -59,6 +62,10 @@ function BottomPanelComponent() {
       ) : activeTab === "output" ? (
         <div className="flex-1 overflow-hidden">
           <OutputPanel />
+        </div>
+      ) : activeTab === "workflows" ? (
+        <div className="flex-1 overflow-hidden">
+          <WorkflowsPanel />
         </div>
       ) : activeTab === "debug" ? (
         <div className="flex-1 overflow-hidden">
