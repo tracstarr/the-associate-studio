@@ -100,7 +100,7 @@ jobs:
             exit 0
           fi
           git commit -m "feat: $(cat /tmp/issue_title.txt)"
-          git push origin "$BRANCH"
+          git push --force-with-lease origin "$BRANCH"
           gh pr create \\
             --title "feat: $(cat /tmp/issue_title.txt)" \\
             --body "Automated remote run from \${{ inputs.issue_type }} \${{ inputs.issue_number }}." \\
