@@ -25,10 +25,11 @@ jobs:
           set -e
           ISSUES=$(gh issue list --repo "\${{ github.repository }}" \\
             --label "scheduled-run" --state open \\
-            --json number \\
-            --jq '[.[] | {issue_number: (.number | tostring), issue_type: "github"}]')
+            --limit 20 \\
+            --json number,assignees,labels \\
+            --jq '[.[] | select(.assignees | length == 0) | select(.labels | map(.name) | (contains(["scheduled-running"]) or contains(["scheduled-complete"])) | not) | {issue_number: (.number | tostring), issue_type: "github"}] | .[:3]')
           if [ "$ISSUES" = "[]" ] || [ -z "$ISSUES" ]; then
-            echo "No issues labeled 'scheduled-run' — nothing to do."
+            echo "No unassigned, unprocessed issues labeled 'scheduled-run' — nothing to do."
             echo "has_issues=false" >> "$GITHUB_OUTPUT"
             echo "matrix={\\"include\\":[]}" >> "$GITHUB_OUTPUT"
           else
@@ -49,7 +50,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-      issues: read
+      issues: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -59,6 +60,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+
+      - name: Mark issue as scheduled-running
+        env:
+          ISSUE_NUMBER: \${{ matrix.issue_number }}
+          GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue edit "$ISSUE_NUMBER" \\
+            --add-label "scheduled-running" \\
+            --remove-label "scheduled-run"
 
       - name: Fetch issue and extract prompt
         id: issue
@@ -115,4 +125,14 @@ jobs:
               --body "Automated scheduled run for issue #\${{ matrix.issue_number }}." \\
               --head "$BRANCH"
           fi
+
+      - name: Mark issue as scheduled-complete
+        if: success()
+        env:
+          ISSUE_NUMBER: \${{ matrix.issue_number }}
+          GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue edit "$ISSUE_NUMBER" \\
+            --add-label "scheduled-complete" \\
+            --remove-label "scheduled-running"
 `;
