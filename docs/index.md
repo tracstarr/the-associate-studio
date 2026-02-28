@@ -18,6 +18,7 @@
 | [Data Formats](data-formats.md) | `~/.claude/` file layout, path encoding, session JSONL, teams JSON |
 | [Integrations](integrations.md) | GitHub OAuth device flow, Linear API key, Jira token, `gh` CLI wiring |
 | [Remote Run](remote-run.md) | GitHub Actions workflow triggered from issue tabs; prompt extraction, secrets setup, status polling |
+| [Testing](testing.md) | Vitest + RTL frontend tests, Rust `#[cfg(test)]` backend tests, CI integration |
 
 ## Design
 
