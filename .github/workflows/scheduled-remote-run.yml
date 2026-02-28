@@ -1,0 +1,113 @@
+name: Scheduled Remote Run
+on:
+  schedule:
+    # Every hour from 10 PM to 6 AM UTC. Adjust for your timezone.
+    # GitHub Actions cron is always UTC.
+    - cron: '0 22-23,0-6 * * *'
+  workflow_dispatch: {} # Allow manual trigger
+
+jobs:
+  find-issues:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.find.outputs.matrix }}
+      has_issues: ${{ steps.find.outputs.has_issues }}
+    steps:
+      - name: Find issues labeled for scheduled run
+        id: find
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          ISSUES=$(gh issue list --repo "${{ github.repository }}" \
+            --label "scheduled-run" --state open \
+            --json number \
+            --jq '[.[] | {issue_number: (.number | tostring), issue_type: "github"}]')
+          if [ "$ISSUES" = "[]" ] || [ -z "$ISSUES" ]; then
+            echo "No issues labeled 'scheduled-run' — nothing to do."
+            echo "has_issues=false" >> "$GITHUB_OUTPUT"
+            echo "matrix={\"include\":[]}" >> "$GITHUB_OUTPUT"
+          else
+            COUNT=$(echo "$ISSUES" | jq length)
+            echo "Found $COUNT issue(s) to process."
+            echo "has_issues=true" >> "$GITHUB_OUTPUT"
+            echo "matrix={\"include\":$(echo "$ISSUES" | jq -c '.')}" >> "$GITHUB_OUTPUT"
+          fi
+
+  remote-run:
+    needs: find-issues
+    if: needs.find-issues.outputs.has_issues == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.find-issues.outputs.matrix) }}
+      max-parallel: 2
+      fail-fast: false
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fetch issue and extract prompt
+        id: issue
+        env:
+          ISSUE_NUMBER: ${{ matrix.issue_number }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          gh issue view "$ISSUE_NUMBER" --json title -q '.title' > /tmp/issue_title.txt
+          gh issue view "$ISSUE_NUMBER" --json body -q '.body' > /tmp/issue_body.txt
+          python3 -c "import re;body=open('/tmp/issue_body.txt').read();m=re.search('\*\*Prompt Start\*\*(.*?)\*\*Prompt End\*\*',body,re.DOTALL);prompt=m.group(1).strip() if m else body.strip();open('/tmp/prompt.txt','w').write(prompt)"
+          DELIMITER=$(openssl rand -hex 16)
+          echo "prompt<<${DELIMITER}" >> $GITHUB_OUTPUT
+          cat /tmp/prompt.txt >> $GITHUB_OUTPUT
+          printf "\n" >> $GITHUB_OUTPUT
+          echo "${DELIMITER}" >> $GITHUB_OUTPUT
+
+      - name: Configure git
+        run: |
+          git config user.email "remote-run[bot]@users.noreply.github.com"
+          git config user.name "Remote Run"
+
+      - name: Create branch
+        run: |
+          BRANCH="remote-run/${{ matrix.issue_number }}"
+          git checkout -b "$BRANCH"
+          echo "BRANCH=$BRANCH" >> "$GITHUB_ENV"
+
+      - name: Run Claude Code
+        uses: anthropics/claude-code-action@main
+        with:
+          prompt: ${{ steps.issue.outputs.prompt }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          claude_args: "--allowedTools Bash,View,GlobTool,GrepTool,Write,Edit,BatchTool"
+
+      - name: Commit and open PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git add -A
+          if git diff --staged --quiet; then
+            echo "No changes produced for issue #${{ matrix.issue_number }} — skipping."
+            exit 0
+          fi
+          git commit -m "feat: $(cat /tmp/issue_title.txt)"
+          git push --force-with-lease origin "$BRANCH"
+          EXISTING=$(gh pr list --head "$BRANCH" --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING" ]; then
+            echo "PR #$EXISTING already exists for branch $BRANCH — pushing update only."
+          else
+            gh pr create \
+              --title "feat: $(cat /tmp/issue_title.txt)" \
+              --body "Automated scheduled run for issue #${{ matrix.issue_number }}." \
+              --head "$BRANCH"
+          fi

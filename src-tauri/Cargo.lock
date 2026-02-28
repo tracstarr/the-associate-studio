@@ -4722,7 +4722,7 @@ dependencies = [
 
 [[package]]
 name = "the-associate-studio"
-version = "0.1.0"
+version = "0.4.4"
 dependencies = [
  "anyhow",
  "chrono",
