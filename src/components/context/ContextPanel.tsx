@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Wrench, CheckSquare, Brain, MessageSquare, ChevronDown, ChevronRight } from "lucide-react";
+import { CheckSquare, Brain, ChevronDown, ChevronRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { useTranscript, useTodos, useTeams, useTasks } from "../../hooks/useClaudeData";
+import { useTodos, useTeams, useTasks } from "../../hooks/useClaudeData";
 import { useActiveProjectTabs } from "../../hooks/useActiveProjectTabs";
 import { useProjectsStore } from "../../stores/projectsStore";
 import { useSessionStore } from "../../stores/sessionStore";
-import type { TranscriptItem, FileEntry } from "../../lib/tauri";
+import type { FileEntry } from "../../lib/tauri";
 import { getHomeDir, listDir } from "../../lib/tauri";
 import { cn, pathToProjectId } from "@/lib/utils";
 import { ExtensionsSection } from "./ExtensionsSection";
@@ -28,14 +28,6 @@ export function ContextPanel() {
   const effectiveSessionId =
     activeTab?.resolvedSessionId ?? activeTab?.sessionId ?? null;
 
-  const sessionPath =
-    effectiveSessionId && activeProjectDir && homeDir
-      ? `${homeDir}/.claude/projects/${pathToProjectId(activeProjectDir)}/${effectiveSessionId}.jsonl`
-      : null;
-
-  const { data: transcriptResult } = useTranscript(sessionPath ?? "", 0);
-  const items = transcriptResult?.[0] ?? [];
-
   const { data: teams } = useTeams(activeProjectDir ?? undefined);
   const activeTeam = effectiveSessionId
     ? teams?.find((t) => t.config?.leadSessionId === effectiveSessionId)
@@ -48,8 +40,6 @@ export function ContextPanel() {
     (a, b) => (statusOrder[a.status] ?? 3) - (statusOrder[b.status] ?? 3)
   );
   const displayTasks = sortedTasks.slice(0, 8);
-
-  const recentItems = items.slice(-20);
 
   if (!activeTab) {
     return (
@@ -158,18 +148,6 @@ export function ContextPanel() {
 
       {/* Extensions section (plugins, skills, agents) */}
       <ExtensionsSection />
-
-      {/* Recent transcript items */}
-      <div className="flex-1 overflow-y-auto">
-        {recentItems.length === 0 && (
-          <div className="p-3 text-xs text-[var(--color-text-muted)] text-center">
-            No transcript yet
-          </div>
-        )}
-        {recentItems.map((item, i) => (
-          <TranscriptItemRow key={i} item={item} />
-        ))}
-      </div>
     </div>
   );
 }
@@ -423,57 +401,4 @@ function MemFileRow({
   );
 }
 
-function TranscriptItemRow({ item }: { item: TranscriptItem }) {
-  const icons: Record<string, React.ReactNode> = {
-    User: (
-      <MessageSquare
-        size={10}
-        className="text-[var(--color-accent-primary)]"
-      />
-    ),
-    Assistant: (
-      <Brain size={10} className="text-[var(--color-accent-secondary)]" />
-    ),
-    ToolUse: (
-      <Wrench size={10} className="text-[var(--color-status-warning)]" />
-    ),
-    ToolResult: (
-      <Wrench size={10} className="text-[var(--color-text-muted)]" />
-    ),
-    System: (
-      <span className="text-[10px] text-[var(--color-text-muted)]">SYS</span>
-    ),
-  };
-
-  const icon = icons[item.kind] ?? null;
-  const textPreview = item.text.slice(0, 200);
-
-  return (
-    <div
-      className={cn(
-        "px-3 py-2 border-b border-[var(--color-border-muted)]",
-        item.kind === "User" ? "bg-[var(--color-bg-surface)]" : ""
-      )}
-    >
-      <div className="flex items-center gap-2 mb-0.5">
-        {icon}
-        <span className="text-[10px] font-medium text-[var(--color-text-muted)] uppercase">
-          {item.kind}
-        </span>
-        {item.timestamp && (
-          <span className="ml-auto text-[10px] text-[var(--color-text-muted)]">
-            {new Date(item.timestamp).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </span>
-        )}
-      </div>
-      <p className="text-xs text-[var(--color-text-secondary)] line-clamp-3 whitespace-pre-wrap break-words">
-        {textPreview}
-        {item.text.length > 200 && "..."}
-      </p>
-    </div>
-  );
-}
 

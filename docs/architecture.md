@@ -278,7 +278,7 @@ The right ActivityBar controls which right panel view is shown:
 
 | View | Component | Description |
 |------|-----------|-------------|
-| Context | `ContextPanel` | CLAUDE.md content + memory files |
+| Context | `ContextPanel` | Tasks/todos, memory files, and extensions for the active session |
 | Teams | `TeamsRightPanel` | Team/agent status for active session |
 | Plans | `PlansPanel` | List and manage plan files |
 | Docs | `DocsSection` | Project documentation browser |
