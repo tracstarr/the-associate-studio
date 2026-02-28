@@ -28,14 +28,13 @@ export function CreateIssueModal({
   onCreated,
   onClose,
 }: CreateIssueModalProps) {
-  const githubToken = useSettingsStore((s) => s.githubToken);
   const linearApiKey = useSettingsStore((s) => s.linearApiKey);
   const jiraBaseUrl = useSettingsStore((s) => s.jiraBaseUrl);
   const jiraEmail = useSettingsStore((s) => s.jiraEmail);
   const jiraApiToken = useSettingsStore((s) => s.jiraApiToken);
 
   const availableProviders: Provider[] = [];
-  if (githubToken && activeProjectDir) availableProviders.push("github");
+  if (activeProjectDir) availableProviders.push("github");
   if (linearApiKey) availableProviders.push("linear");
   if (jiraBaseUrl && jiraEmail && jiraApiToken) availableProviders.push("jira");
 
