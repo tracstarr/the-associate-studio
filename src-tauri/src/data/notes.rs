@@ -95,6 +95,7 @@ mod tests {
             content: "Test content".to_string(),
             project_path: None,
             file_refs: vec![],
+            issue_refs: vec![],
             created: 1000,
             modified,
         }
