@@ -29,7 +29,7 @@ describe("pathToProjectId", () => {
   it("encodes a worktree path", () => {
     expect(
       pathToProjectId("C:\\dev\\profile-server\\.worktrees\\aero-planning")
-    ).toBe("C--dev-profile-server-.worktrees-aero-planning");
+    ).toBe("C--dev-profile-server--worktrees-aero-planning");
   });
 
   it("encodes a deep path", () => {
