@@ -14,7 +14,6 @@ pub mod pty;
 pub mod remote_run;
 pub mod sessions;
 pub mod summaries;
-pub mod task_snapshots;
 pub mod tasks;
 pub mod teams;
 pub mod todos;

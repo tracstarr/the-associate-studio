@@ -70,26 +70,12 @@ export interface Task {
   metadata?: Record<string, unknown>;
 }
 
-// ---- Task Snapshot Types ----
+// ---- Session Task Types ----
 
-export interface StatusChange {
-  status: string;
-  at: string;
-}
-
-export interface TaskRecord {
-  id: string;
-  subject?: string;
-  firstSeen: string;
-  lastSeen: string;
-  statusChanges: StatusChange[];
-  snapshot: Task;
-}
-
-export interface TaskSnapshotFile {
-  teamName: string;
-  updatedAt: string;
-  tasks: Record<string, TaskRecord>;
+export interface SessionTaskEvent {
+  toolName: string;
+  input: Record<string, unknown>;
+  timestamp?: string;
 }
 
 // ---- Inbox Types ----
@@ -271,11 +257,8 @@ export async function loadTasks(teamName: string): Promise<Task[]> {
   return invoke("cmd_load_tasks", { teamName });
 }
 
-export async function loadTaskSnapshots(
-  projectDir: string,
-  teamName: string
-): Promise<TaskSnapshotFile> {
-  return invoke("cmd_load_task_snapshots", { projectDir, teamName });
+export async function getSessionTasks(sessionPath: string): Promise<SessionTaskEvent[]> {
+  return invoke("cmd_get_session_tasks", { sessionPath });
 }
 
 export async function loadInbox(

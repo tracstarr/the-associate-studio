@@ -96,12 +96,12 @@ export function useTasks(teamName: string) {
   });
 }
 
-export function useTaskSnapshots(projectDir: string, teamName: string) {
+export function useSessionTasks(sessionPath: string | null) {
   return useQuery({
-    queryKey: ["task-snapshots", projectDir, teamName],
-    queryFn: () => tauri.loadTaskSnapshots(projectDir, teamName),
-    enabled: !!projectDir && !!teamName,
-    staleTime: 10_000,
+    queryKey: ["session-tasks", sessionPath],
+    queryFn: () => tauri.getSessionTasks(sessionPath!),
+    enabled: !!sessionPath,
+    staleTime: 5_000,
   });
 }
 
@@ -694,13 +694,9 @@ export function useClaudeWatcher() {
       })
     );
     unlisteners.push(
-      listen("task-snapshot-changed", () => {
-        queryClient.invalidateQueries({ queryKey: ["task-snapshots"] });
-      })
-    );
-    unlisteners.push(
       listen("transcript-updated", () => {
         queryClient.invalidateQueries({ queryKey: ["transcript"] });
+        queryClient.invalidateQueries({ queryKey: ["session-tasks"] });
       })
     );
     unlisteners.push(

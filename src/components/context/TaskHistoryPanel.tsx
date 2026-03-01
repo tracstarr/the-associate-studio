@@ -1,10 +1,68 @@
 import { useState } from "react";
 import { ClipboardList, ChevronRight, ChevronDown } from "lucide-react";
-import { useTaskSnapshots } from "../../hooks/useClaudeData";
+import { useQuery } from "@tanstack/react-query";
+import { useSessionTasks } from "../../hooks/useClaudeData";
+import { useActiveProjectTabs } from "../../hooks/useActiveProjectTabs";
 import { useProjectsStore } from "../../stores/projectsStore";
-import { useTeams } from "../../hooks/useClaudeData";
-import type { TaskRecord } from "../../lib/tauri";
+import type { SessionTaskEvent } from "../../lib/tauri";
+import { getHomeDir } from "../../lib/tauri";
 import { cn } from "../../lib/utils";
+
+interface DerivedStatusChange {
+  status: string;
+  at: string;
+}
+
+interface DerivedTaskRecord {
+  id: string;
+  subject?: string;
+  firstSeen: string;
+  lastSeen: string;
+  statusChanges: DerivedStatusChange[];
+}
+
+function deriveTaskRecords(events: SessionTaskEvent[]): DerivedTaskRecord[] {
+  const records = new Map<string, DerivedTaskRecord>();
+  let createCount = 0;
+
+  for (const event of events) {
+    const at = event.timestamp ?? "";
+    if (event.toolName === "TaskCreate") {
+      createCount++;
+      const id = String(createCount);
+      records.set(id, {
+        id,
+        subject: event.input.subject as string | undefined,
+        firstSeen: at,
+        lastSeen: at,
+        statusChanges: [{ status: "pending", at }],
+      });
+    } else if (event.toolName === "TaskUpdate") {
+      const taskId = String(event.input.taskId);
+      const record = records.get(taskId);
+      if (record) {
+        record.lastSeen = at;
+        if (event.input.status !== undefined) {
+          const newStatus = event.input.status as string;
+          const lastStatus = record.statusChanges[record.statusChanges.length - 1]?.status;
+          if (lastStatus !== newStatus) {
+            record.statusChanges.push({ status: newStatus, at });
+          }
+        }
+        if (event.input.subject !== undefined) {
+          record.subject = event.input.subject as string;
+        }
+      }
+    }
+  }
+
+  return Array.from(records.values()).sort((a, b) => {
+    const aNum = parseInt(a.id, 10);
+    const bNum = parseInt(b.id, 10);
+    if (!isNaN(aNum) && !isNaN(bNum)) return bNum - aNum;
+    return b.lastSeen.localeCompare(a.lastSeen);
+  });
+}
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "Pending",
@@ -35,7 +93,7 @@ function formatAt(iso: string): string {
   }
 }
 
-function TaskRecordRow({ record }: { record: TaskRecord }) {
+function TaskRecordRow({ record }: { record: DerivedTaskRecord }) {
   const [expanded, setExpanded] = useState(false);
   const lastStatus = record.statusChanges[record.statusChanges.length - 1]?.status ?? "pending";
 
@@ -96,55 +154,39 @@ function TaskRecordRow({ record }: { record: TaskRecord }) {
   );
 }
 
-function TeamTaskHistory({
-  projectDir,
-  teamName,
-}: {
-  projectDir: string;
-  teamName: string;
-}) {
-  const { data } = useTaskSnapshots(projectDir, teamName);
-
-  const records = data
-    ? Object.values(data.tasks).sort((a, b) => {
-        const aNum = parseInt(a.id, 10);
-        const bNum = parseInt(b.id, 10);
-        if (!isNaN(aNum) && !isNaN(bNum)) return bNum - aNum;
-        return b.lastSeen.localeCompare(a.lastSeen);
-      })
-    : [];
-
-  if (records.length === 0) return null;
-
-  return (
-    <div>
-      <div className="flex items-center gap-1.5 px-3 py-1 bg-[var(--color-bg-raised)] border-b border-[var(--color-border-muted)]">
-        <ClipboardList size={10} className="text-[var(--color-accent-secondary)]" />
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
-          {teamName}
-        </span>
-        <span className="ml-auto text-[10px] text-[var(--color-text-muted)]">
-          {records.length} task{records.length !== 1 ? "s" : ""}
-        </span>
-      </div>
-      {records.map((record) => (
-        <TaskRecordRow key={record.id} record={record} />
-      ))}
-    </div>
-  );
-}
-
 export function TaskHistoryPanel() {
-  const activeProject = useProjectsStore((s) =>
-    s.projects.find((p) => p.id === s.activeProjectId)
-  );
   const activeProjectId = useProjectsStore((s) => s.activeProjectId ?? "");
-  const { data: teams, isLoading } = useTeams(activeProject?.path);
+  const { openTabs, activeTabId } = useActiveProjectTabs();
+  const activeTab = openTabs.find((t) => t.id === activeTabId);
+  const effectiveSessionId =
+    activeTab?.resolvedSessionId ?? activeTab?.sessionId ?? null;
 
-  if (!activeProject) {
+  const { data: homeDir } = useQuery({
+    queryKey: ["home-dir"],
+    queryFn: getHomeDir,
+    staleTime: Infinity,
+  });
+
+  const sessionPath =
+    homeDir && activeProjectId && effectiveSessionId
+      ? `${homeDir}/.claude/projects/${activeProjectId}/${effectiveSessionId}.jsonl`
+      : null;
+
+  const { data: events, isLoading } = useSessionTasks(sessionPath);
+  const records = deriveTaskRecords(events ?? []);
+
+  if (!activeProjectId) {
     return (
       <div className="p-3 text-xs text-[var(--color-text-muted)] text-center">
         Open a project to see task history
+      </div>
+    );
+  }
+
+  if (!sessionPath) {
+    return (
+      <div className="p-3 text-xs text-[var(--color-text-muted)] text-center">
+        Open a session to see task history
       </div>
     );
   }
@@ -155,12 +197,10 @@ export function TaskHistoryPanel() {
     );
   }
 
-  const teamNames = (teams ?? []).map((t) => t.dirName);
-
-  if (teamNames.length === 0) {
+  if (records.length === 0) {
     return (
       <div className="p-3 text-xs text-[var(--color-text-muted)] text-center">
-        No teams found for this project
+        No tasks found in this session
       </div>
     );
   }
@@ -172,13 +212,12 @@ export function TaskHistoryPanel() {
         <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
           Task History
         </span>
+        <span className="ml-auto text-[10px] text-[var(--color-text-muted)]">
+          {records.length} task{records.length !== 1 ? "s" : ""}
+        </span>
       </div>
-      {teamNames.map((teamName) => (
-        <TeamTaskHistory
-          key={teamName}
-          projectDir={activeProjectId}
-          teamName={teamName}
-        />
+      {records.map((record) => (
+        <TaskRecordRow key={record.id} record={record} />
       ))}
     </div>
   );

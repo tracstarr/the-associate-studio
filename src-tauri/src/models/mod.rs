@@ -7,7 +7,6 @@ pub mod plan;
 pub mod session;
 pub mod summary;
 pub mod task;
-pub mod task_snapshot;
 pub mod team;
 pub mod todo;
 pub mod transcript;

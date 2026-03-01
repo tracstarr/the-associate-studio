@@ -5,12 +5,6 @@ use tauri::Emitter;
 use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize)]
-struct TaskSnapshotChangedPayload {
-    team_name: String,
-    encoded_project_dir: String,
-}
-
-#[derive(Debug, Clone, Serialize)]
 pub struct SummaryPayload {
     pub session_id: String,
     pub project_path: String,
@@ -70,15 +64,11 @@ pub fn start_claude_watcher(app_handle: tauri::AppHandle) {
 
     // Watch key paths (ignore errors if dirs don't exist yet)
     let teams_dir = claude_home.join("teams");
-    let tasks_dir = claude_home.join("tasks");
     let projects_dir = claude_home.join("projects");
     let todos_dir = claude_home.join("todos");
     let plans_dir = claude_home.join("plans");
     watcher
         .watch(&teams_dir, RecursiveMode::Recursive)
-        .ok();
-    watcher
-        .watch(&tasks_dir, RecursiveMode::Recursive)
         .ok();
     watcher
         .watch(&projects_dir, RecursiveMode::Recursive)
@@ -141,61 +131,6 @@ pub fn start_claude_watcher(app_handle: tauri::AppHandle) {
                         let _ = app_handle.emit("inbox-changed", &path_str);
                     } else if is_claude_child(path, "teams") {
                         let _ = app_handle.emit("team-changed", &path_str);
-                    } else if is_claude_child(path, "tasks") {
-                        // Snapshot the task before emitting the live event
-                        if let Some(team_name) = path.parent()
-                            .and_then(|p| p.file_name())
-                            .map(|n| n.to_string_lossy().to_string())
-                        {
-                            // Only snapshot .json files (skip .lock files and dirs)
-                            let is_json = path.extension().and_then(|e| e.to_str()) == Some("json");
-                            let not_lock = !path_str.contains(".lock");
-                            if is_json && not_lock {
-                                if let Ok(data) = std::fs::read_to_string(path) {
-                                    if let Ok(task) = serde_json::from_str::<crate::models::task::Task>(&data) {
-                                        // Find CWD from team config
-                                        let team_config_path = claude_home
-                                            .join("teams")
-                                            .join(&team_name)
-                                            .join("config.json");
-                                        let cwd_opt: Option<String> = std::fs::read_to_string(&team_config_path)
-                                            .ok()
-                                            .and_then(|d| serde_json::from_str::<crate::models::team::TeamConfig>(&d).ok())
-                                            .and_then(|cfg| {
-                                                cfg.members.into_iter()
-                                                    .find_map(|m| m.cwd.filter(|c| !c.is_empty()))
-                                            });
-                                        if let Some(cwd) = cwd_opt {
-                                            let encoded = crate::data::path_encoding::encode_project_path(
-                                                &std::path::PathBuf::from(&cwd)
-                                            );
-                                            let now = chrono::Utc::now().to_rfc3339();
-                                            match crate::data::task_snapshots::upsert_task_snapshot(
-                                                &claude_home,
-                                                &encoded,
-                                                &team_name,
-                                                &task,
-                                                &now,
-                                            ) {
-                                                Ok(()) => {
-                                                    let _ = app_handle.emit(
-                                                        "task-snapshot-changed",
-                                                        &TaskSnapshotChangedPayload {
-                                                            team_name: team_name.clone(),
-                                                            encoded_project_dir: encoded,
-                                                        },
-                                                    );
-                                                }
-                                                Err(e) => {
-                                                    eprintln!("[watcher] task snapshot failed: {}", e);
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        let _ = app_handle.emit("task-changed", &path_str);
                     } else if is_claude_child(path, "projects") && path_str.ends_with(".jsonl") {
                         let _ = app_handle.emit("transcript-updated", &path_str);
                     } else if is_claude_child(path, "projects")

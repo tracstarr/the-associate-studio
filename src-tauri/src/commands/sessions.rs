@@ -3,6 +3,7 @@ use crate::data::sessions::{load_sessions, load_subagent_sessions};
 use crate::data::transcripts::TranscriptReader;
 use crate::models::session::{SessionEntry, SessionIndex, SubagentSessionEntry};
 use crate::models::transcript::TranscriptItem;
+use serde::Serialize;
 use std::path::PathBuf;
 
 fn get_claude_home() -> Result<PathBuf, String> {
@@ -60,6 +61,65 @@ pub async fn cmd_load_subagent_sessions(
     let encoded = encode_project_path(&PathBuf::from(&project_dir));
     let project_sessions_dir = claude_home.join("projects").join(&encoded);
     Ok(load_subagent_sessions(&project_sessions_dir, &session_id))
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct SessionTaskEvent {
+    pub tool_name: String,
+    pub input: serde_json::Value,
+    pub timestamp: Option<String>,
+}
+
+#[tauri::command]
+pub async fn cmd_get_session_tasks(
+    session_path: String,
+) -> Result<Vec<SessionTaskEvent>, String> {
+    use crate::models::transcript::{ContentBlock, MessageContent, TranscriptEnvelope};
+
+    let path = PathBuf::from(&session_path);
+    if !path.exists() {
+        return Ok(vec![]);
+    }
+
+    let content = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
+    let mut events = Vec::new();
+
+    for line in content.lines() {
+        let line = line.trim();
+        if line.is_empty() {
+            continue;
+        }
+        let envelope: TranscriptEnvelope = match serde_json::from_str(line) {
+            Ok(e) => e,
+            Err(_) => continue,
+        };
+
+        if envelope.kind != "assistant" {
+            continue;
+        }
+
+        let ts = envelope.timestamp.map(|t| t.to_rfc3339());
+
+        if let Some(ref msg) = envelope.message {
+            if let MessageContent::Blocks(ref blocks) = msg.content {
+                for block in blocks {
+                    if let ContentBlock::ToolUse { name, input } = block {
+                        let tool_name = match name {
+                            Some(n) if n.starts_with("Task") => n.clone(),
+                            _ => continue,
+                        };
+                        events.push(SessionTaskEvent {
+                            tool_name,
+                            input: input.clone().unwrap_or(serde_json::Value::Null),
+                            timestamp: ts.clone(),
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(events)
 }
 
 #[tauri::command]

@@ -8,7 +8,6 @@ pub mod plans;
 pub mod projects;
 pub mod sessions;
 pub mod summaries;
-pub mod task_snapshots;
 pub mod tasks;
 pub mod teams;
 pub mod todos;

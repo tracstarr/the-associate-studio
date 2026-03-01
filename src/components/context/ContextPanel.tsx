@@ -1,14 +1,61 @@
 import { useState } from "react";
 import { CheckSquare, Brain, ChevronDown, ChevronRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { useTodos, useTeams, useTasks } from "../../hooks/useClaudeData";
+import { useTodos, useSessionTasks } from "../../hooks/useClaudeData";
 import { useActiveProjectTabs } from "../../hooks/useActiveProjectTabs";
 import { useProjectsStore } from "../../stores/projectsStore";
 import { useSessionStore } from "../../stores/sessionStore";
-import type { FileEntry } from "../../lib/tauri";
+import type { FileEntry, SessionTaskEvent, Task, TaskStatus } from "../../lib/tauri";
 import { getHomeDir, listDir } from "../../lib/tauri";
 import { cn, pathToProjectId } from "@/lib/utils";
 import { ExtensionsSection } from "./ExtensionsSection";
+
+function deriveCurrentTasks(events: SessionTaskEvent[]): Task[] {
+  const tasks = new Map<string, Task>();
+  let createCount = 0;
+
+  for (const event of events) {
+    if (event.toolName === "TaskCreate") {
+      createCount++;
+      const id = String(createCount);
+      tasks.set(id, {
+        id,
+        subject: event.input.subject as string | undefined,
+        description: event.input.description as string | undefined,
+        status: "pending",
+        owner: undefined,
+        blocks: [],
+        blockedBy: [],
+        activeForm: event.input.activeForm as string | undefined,
+      });
+    } else if (event.toolName === "TaskUpdate") {
+      const taskId = String(event.input.taskId);
+      const task = tasks.get(taskId);
+      if (task) {
+        if (event.input.status !== undefined) {
+          task.status = event.input.status as TaskStatus;
+        }
+        if (event.input.subject !== undefined) {
+          task.subject = event.input.subject as string;
+        }
+        if (event.input.owner !== undefined) {
+          task.owner = event.input.owner as string;
+        }
+        if (event.input.activeForm !== undefined) {
+          task.activeForm = event.input.activeForm as string;
+        }
+        if (event.input.description !== undefined) {
+          task.description = event.input.description as string;
+        }
+        if (event.input.status === "deleted") {
+          tasks.delete(taskId);
+        }
+      }
+    }
+  }
+
+  return Array.from(tasks.values());
+}
 
 export function ContextPanel() {
   const { openTabs, activeTabId } = useActiveProjectTabs();
@@ -28,18 +75,19 @@ export function ContextPanel() {
   const effectiveSessionId =
     activeTab?.resolvedSessionId ?? activeTab?.sessionId ?? null;
 
-  const { data: teams } = useTeams(activeProjectDir ?? undefined);
-  const activeTeam = effectiveSessionId
-    ? teams?.find((t) => t.config?.leadSessionId === effectiveSessionId)
-    : undefined;
-  const { data: teamTasks } = useTasks(activeTeam?.dirName ?? "");
+  const sessionPath =
+    homeDir && activeProjectId && effectiveSessionId
+      ? `${homeDir}/.claude/projects/${activeProjectId}/${effectiveSessionId}.jsonl`
+      : null;
+
+  const { data: sessionTaskEvents } = useSessionTasks(sessionPath);
   const { data: todos } = useTodos();
 
+  const allDerived = deriveCurrentTasks(sessionTaskEvents ?? []);
   const statusOrder: Record<string, number> = { in_progress: 0, pending: 1, completed: 2 };
-  const sortedTasks = [...(teamTasks ?? [])].sort(
-    (a, b) => (statusOrder[a.status] ?? 3) - (statusOrder[b.status] ?? 3)
-  );
-  const displayTasks = sortedTasks.slice(0, 8);
+  const displayTasks = [...allDerived]
+    .sort((a, b) => (statusOrder[a.status] ?? 3) - (statusOrder[b.status] ?? 3))
+    .slice(0, 8);
 
   if (!activeTab) {
     return (
@@ -51,8 +99,8 @@ export function ContextPanel() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Team tasks section */}
-      {activeTeam && displayTasks.length > 0 && (
+      {/* Session tasks section */}
+      {displayTasks.length > 0 && (
         <div className="border-b border-[var(--color-border-muted)]">
           <div className="flex items-center gap-2 px-3 py-2">
             <CheckSquare
@@ -97,7 +145,7 @@ export function ContextPanel() {
       )}
 
       {/* Global todos fallback */}
-      {!activeTeam && todos && todos.length > 0 && (
+      {displayTasks.length === 0 && todos && todos.length > 0 && (
         <div className="border-b border-[var(--color-border-muted)]">
           <div className="flex items-center gap-2 px-3 py-2">
             <CheckSquare
