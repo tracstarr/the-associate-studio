@@ -1,7 +1,7 @@
 use crate::data::path_encoding::encode_project_path;
-use crate::data::sessions::load_sessions;
+use crate::data::sessions::{load_sessions, load_subagent_sessions};
 use crate::data::transcripts::TranscriptReader;
-use crate::models::session::{SessionEntry, SessionIndex};
+use crate::models::session::{SessionEntry, SessionIndex, SubagentSessionEntry};
 use crate::models::transcript::TranscriptItem;
 use std::path::PathBuf;
 
@@ -49,6 +49,17 @@ pub async fn cmd_delete_session(
     }
 
     Ok(())
+}
+
+#[tauri::command]
+pub async fn cmd_load_subagent_sessions(
+    project_dir: String,
+    session_id: String,
+) -> Result<Vec<SubagentSessionEntry>, String> {
+    let claude_home = get_claude_home()?;
+    let encoded = encode_project_path(&PathBuf::from(&project_dir));
+    let project_sessions_dir = claude_home.join("projects").join(&encoded);
+    Ok(load_subagent_sessions(&project_sessions_dir, &session_id))
 }
 
 #[tauri::command]

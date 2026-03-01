@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 export type SidebarView = "sessions" | "git" | "prs" | "issues" | "files";
-export type RightTab = "context" | "teams" | "plans" | "docs" | "notes";
+export type RightTab = "context" | "teams" | "plans" | "docs" | "notes" | "task-history";
 export type BottomTab = "git" | "output" | "workflows" | "debug";
 
 export interface PendingNoteRef {

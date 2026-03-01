@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { ActiveSubagent } from "../lib/tauri";
+import * as tauri from "../lib/tauri";
 import { useNotificationStore } from "./notificationStore";
 
 export interface SessionTab {
@@ -35,7 +36,7 @@ interface SessionStore {
   activeTabByProject: Record<string, string | null>;
   activeSubagents: Record<string, ActiveSubagent[]>;
   knownSessions: Record<string, "active" | "idle" | "completed">;
-  planLinks: Record<string, string>; // plan filename → tab id
+  planLinks: Record<string, string>; // plan filename → session id
   dirtyTabs: Record<string, boolean>;
 
   // Per-project tab management (require projectId)
@@ -61,24 +62,17 @@ interface SessionStore {
   // Global state (keyed by session ID, not project)
   setSubagents: (sessionId: string, subagents: ActiveSubagent[]) => void;
   markSessionStatus: (sessionId: string, status: "active" | "idle" | "completed") => void;
-  linkPlan: (filename: string, tabId: string) => void;
+  linkPlan: (filename: string, sessionId: string, projectDir: string) => void;
+  relinkPlan: (filename: string, sessionId: string, projectDir: string) => void;
+  setPlanLinks: (links: Record<string, string>) => void;
 }
-
-const loadStoredPlanLinks = (): Record<string, string> => {
-  try {
-    const raw = localStorage.getItem("planLinks");
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-};
 
 export const useSessionStore = create<SessionStore>((set) => ({
   tabsByProject: {},
   activeTabByProject: {},
   activeSubagents: {},
   knownSessions: {},
-  planLinks: loadStoredPlanLinks(),
+  planLinks: {},
   dirtyTabs: {},
 
   insertTabBackground: (tab, projectId) =>
@@ -137,6 +131,19 @@ export const useSessionStore = create<SessionStore>((set) => ({
       const tabs = s.tabsByProject[projectId] ?? [];
       const exists = tabs.find((t) => t.id === tabId);
       if (exists) return {}; // already open — don't steal focus
+
+      // Auto-link to the currently active terminal session (if any)
+      const activeTabId = s.activeTabByProject[projectId];
+      const activeTab = tabs.find((t) => t.id === activeTabId);
+      let newPlanLinks = s.planLinks;
+      if (activeTab && (!activeTab.type || activeTab.type === "terminal")) {
+        const sid = activeTab.resolvedSessionId ?? activeTab.sessionId;
+        if (sid && !s.planLinks[filename]) {
+          newPlanLinks = { ...s.planLinks, [filename]: sid };
+          tauri.savePlanLinks(projectId, newPlanLinks).catch(() => { /* ignore */ });
+        }
+      }
+
       return {
         tabsByProject: {
           ...s.tabsByProject,
@@ -146,6 +153,7 @@ export const useSessionStore = create<SessionStore>((set) => ({
           ],
         },
         activeTabByProject: { ...s.activeTabByProject, [projectId]: tabId },
+        planLinks: newPlanLinks,
       };
     });
   },
@@ -232,12 +240,22 @@ export const useSessionStore = create<SessionStore>((set) => ({
       knownSessions: { ...s.knownSessions, [sessionId]: status },
     })),
 
-  linkPlan: (filename, tabId) =>
+  linkPlan: (filename, sessionId, projectDir) =>
     set((s) => {
-      const planLinks = { ...s.planLinks, [filename]: tabId };
-      try { localStorage.setItem("planLinks", JSON.stringify(planLinks)); } catch { /* ignore */ }
+      const planLinks = { ...s.planLinks, [filename]: sessionId };
+      tauri.savePlanLinks(projectDir, planLinks).catch(() => { /* ignore */ });
       return { planLinks };
     }),
+
+  relinkPlan: (filename, sessionId, projectDir) =>
+    set((s) => {
+      const planLinks = { ...s.planLinks, [filename]: sessionId };
+      tauri.savePlanLinks(projectDir, planLinks).catch(() => { /* ignore */ });
+      return { planLinks };
+    }),
+
+  setPlanLinks: (links) =>
+    set(() => ({ planLinks: links })),
 
   resumeTab: (tabId, projectId) =>
     set((s) => {

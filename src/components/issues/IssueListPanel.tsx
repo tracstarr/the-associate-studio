@@ -171,7 +171,6 @@ export function IssueListPanel() {
   const activeProjectDir = useProjectsStore((s) =>
     s.projects.find((p) => p.id === s.activeProjectId)?.path ?? null
   );
-  const activeProjectId = useProjectsStore((s) => s.activeProjectId);
   const openTab = useSessionStore((s) => s.openTab);
   const linearApiKey = useSettingsStore((s) => s.linearApiKey);
   const jiraBaseUrl = useSettingsStore((s) => s.jiraBaseUrl);
@@ -179,9 +178,9 @@ export function IssueListPanel() {
   const jiraApiToken = useSettingsStore((s) => s.jiraApiToken);
   const hasJira = !!(jiraBaseUrl && jiraEmail && jiraApiToken);
 
-  // Persisted filter state from store — select reactive slice by project ID
-  const projectId = activeProjectId ?? "__none__";
-  const saved = useIssueFilterStore((s) => s.filters[projectId]) ?? DEFAULT_ISSUE_FILTERS;
+  // Persisted filter state from store — select reactive slice by project path
+  const projectKey = activeProjectDir ?? "__none__";
+  const saved = useIssueFilterStore((s) => s.filters[projectKey]) ?? DEFAULT_ISSUE_FILTERS;
   const setFilters = useIssueFilterStore((s) => s.setFilters);
 
   const state = saved.state;
@@ -191,24 +190,24 @@ export function IssueListPanel() {
   const labelFilter = useMemo(() => new Set(saved.labelFilter), [saved.labelFilter]);
 
   const setState = useCallback(
-    (s: "open" | "closed" | "all") => setFilters(projectId, { state: s }),
-    [projectId, setFilters],
+    (s: "open" | "closed" | "all") => setFilters(projectKey, { state: s }),
+    [projectKey, setFilters],
   );
   const setGhAssignees = useCallback(
-    (s: Set<string>) => setFilters(projectId, { ghAssignees: [...s] }),
-    [projectId, setFilters],
+    (s: Set<string>) => setFilters(projectKey, { ghAssignees: [...s] }),
+    [projectKey, setFilters],
   );
   const setLinearAssignees = useCallback(
-    (s: Set<string>) => setFilters(projectId, { linearAssignees: [...s] }),
-    [projectId, setFilters],
+    (s: Set<string>) => setFilters(projectKey, { linearAssignees: [...s] }),
+    [projectKey, setFilters],
   );
   const setJiraAssignees = useCallback(
-    (s: Set<string>) => setFilters(projectId, { jiraAssignees: [...s] }),
-    [projectId, setFilters],
+    (s: Set<string>) => setFilters(projectKey, { jiraAssignees: [...s] }),
+    [projectKey, setFilters],
   );
   const setLabelFilter = useCallback(
-    (s: Set<string>) => setFilters(projectId, { labelFilter: [...s] }),
-    [projectId, setFilters],
+    (s: Set<string>) => setFilters(projectKey, { labelFilter: [...s] }),
+    [projectKey, setFilters],
   );
 
   // Provider toggles
@@ -228,9 +227,9 @@ export function IssueListPanel() {
   const setActiveProviders = useCallback(
     (updater: (prev: Set<string>) => Set<string>) => {
       const next = updater(activeProviders);
-      setFilters(projectId, { activeProviders: [...next] });
+      setFilters(projectKey, { activeProviders: [...next] });
     },
-    [activeProviders, projectId, setFilters],
+    [activeProviders, projectKey, setFilters],
   );
 
   // Derive single filter values for each provider (GitHub only supports one --assignee)
@@ -326,7 +325,7 @@ export function IssueListPanel() {
   }
 
   function clearFilters() {
-    setFilters(projectId, {
+    setFilters(projectKey, {
       ghAssignees: [],
       linearAssignees: [],
       jiraAssignees: [],

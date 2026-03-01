@@ -11,7 +11,7 @@ pub struct GitBranchPayload {
 }
 
 /// Holds the active git HEAD watcher so it can be replaced when the project changes.
-struct GitWatcherInner {
+pub(crate) struct GitWatcherInner {
     _watcher: RecommendedWatcher,
     _cwd: String,
 }

@@ -31,7 +31,7 @@ Single-window desktop IDE. One Tauri window contains everything: multiple Claude
 +---------------------------------------------------------------------+
 
 AB  = Left ActivityBar (48px, 4 sidebar views + bottom toggle + settings)
-RAB = Right ActivityBar (48px, 5 right panel views)
+RAB = Right ActivityBar (48px, 6 right panel views)
 ```
 
 | Region | Size | Collapsible | Keybind |
@@ -80,8 +80,8 @@ App.tsx
             DiffViewer       -- inline diff viewer
             TabContextMenu   -- right-click context menu for tabs
             CloseTabsWarningDialog -- warns about active sessions / unsaved changes
-          RightPanel    -- ContextPanel | TeamsRightPanel | PlansPanel | DocsSection | NotesPanel
-        RightActivityBar -- 48px icon strip (Context, Teams, Plans, Docs, Notes)
+          RightPanel    -- ContextPanel | TeamsRightPanel | PlansPanel | DocsSection | NotesPanel | TaskHistoryPanel
+        RightActivityBar -- 48px icon strip (Context, Teams, Plans, Docs, Notes, Task History)
       Panel (bottom)
         BottomPanel     -- Log | Diff | PRs | Issues | Output tabs
     StatusBar           -- branch, counts, Claude status
@@ -239,6 +239,38 @@ GitHub Actions (remote-run.yml):
   -> If changes produced: commit + force-push + gh pr create
 ```
 
+### Task history snapshotting
+
+Tasks in `~/.claude/tasks/{team_name}/` are ephemeral — Claude deletes them on completion. The IDE snapshots each task write before it disappears:
+
+```
+File event on ~/.claude/tasks/{team}/N.json
+  -> claude_watcher.rs (task branch)
+     -> Read + parse task JSON
+     -> Read ~/.claude/teams/{team}/config.json → find first member CWD
+     -> encode_project_path(cwd) → encoded
+     -> data::task_snapshots::upsert_task_snapshot(claude_home, encoded, team, task, now)
+        -> Load ~/.claude/theassociate/projects/{encoded}/task-snapshots/{team}.json (or empty)
+        -> Create TaskRecord on first-seen (first_seen = now)
+        -> Always update last_seen + snapshot
+        -> Push StatusChange if status differs from last recorded
+        -> Atomic write via .tmp rename
+     -> Emit "task-snapshot-changed" { team_name, encoded_project_dir }
+  -> Still emit "task-changed" (live task list unaffected)
+
+useClaudeWatcher (React)
+  -> listen("task-snapshot-changed")
+  -> queryClient.invalidateQueries(["task-snapshots"])
+  -> useTaskSnapshots(projectDir, teamName) refetches
+  -> TaskHistoryPanel re-renders with updated history
+```
+
+**Storage**: `~/.claude/theassociate/projects/{encoded}/task-snapshots/{team_name}.json`
+
+**Format**: `TaskSnapshotFile` — map of task ID → `TaskRecord` with `statusChanges[]`, `firstSeen`, `lastSeen`, and full `snapshot`. Persists even after Claude deletes the live task file.
+
+**Project association**: determined by the first team member with a non-empty `cwd` field in `config.json`. If no CWD is found, the task is not snapshotted (can't associate it with a project).
+
 ### Notifications
 ```
 TerminalView detects question pattern in PTY output
@@ -261,13 +293,66 @@ TerminalView detects question pattern in PTY output
 | `debugStore` | Zustand | DEV-only debug log entries (max 500) |
 | Server data | TanStack Query | Sessions, teams, inbox, tasks, todos, plans, notes, git status/log/branches -- fetched via Tauri invoke |
 
+## Session tree view (`ProjectSwitcher`)
+
+The Sessions sidebar shows a collapsible tree for each session:
+
+```
+▼ Fix login bug (abc123) ●
+  ├── 📄 dark-mode-plan.md    (click → opens plan tab)
+  ├── 📋 Summary 1            (click → opens summary tab)
+  ├── 🤖 explorer · a5d8fd3a  (click → opens subagent transcript tab)  42
+  └── 🤖 tester · a780eff5    (click → opens subagent transcript tab)  18
+▶ Old session (def456)
+```
+
+- Clicking the chevron expands/collapses the tree node
+- Clicking the session title opens a session-view tab
+- Children are loaded lazily: plans from `planLinks[filename] === sessionId`; summaries from `useSummaries(projectId, sessionId)`; subagents from `useSubagentSessions(projectDir, sessionId)`
+- `NewSessionTabItem` shows freshly-spawned tabs that haven't yet been persisted to `sessions-index.json`
+
+### Subagent session entries
+
+Claude Code CLI stores subagent transcripts inside the session subdirectory:
+
+```
+~/.claude/projects/{encoded}/
+└── {session-uuid}/
+    ├── subagents/
+    │   └── agent-{id}.jsonl    ← isSidechain: true, full transcript
+    └── tool-results/
+        └── {id}.txt            ← raw hook metadata (not surfaced in UI)
+```
+
+`cmd_load_subagent_sessions(projectDir, sessionId)` scans `{session_uuid}/subagents/*.jsonl`, reads up to 30 lines per file for first prompt and message count, and returns `Vec<SubagentSessionEntry>` sorted chronologically.
+
+Clicking a subagent row opens a `session-view` tab with `tab.filePath = subagent.jsonlPath`. `SessionView` checks `tab.filePath` first before deriving the path from `homeDir + projectDir + sessionId`, so subagent transcripts display in the same viewer as parent sessions without any new tab type.
+
+`tool-results/` files contain Stop hook metadata (last assistant message, cwd, permission mode) — not conversation content. They are intentionally not surfaced in the UI.
+
+## planLinks semantics
+
+`sessionStore.planLinks` is a `Record<string, string>` mapping **plan filename → real Claude session ID** (the UUID from the `SessionStart` hook event, e.g. `"abc12345-..."`). It is persisted to `~/.claude/theassociate/plan-links.json` (via `cmd_save_plan_links` / `cmd_load_plan_links`) and hydrated from disk on startup in `App.tsx`.
+
+- `openPlanTab(filename, title, projectId)` auto-links the plan to the active terminal tab's `resolvedSessionId` (or `sessionId`) **if not already linked**
+- `linkPlan(filename, sessionId)` sets the mapping explicitly
+- `relinkPlan(filename, sessionId)` updates an existing mapping (for future UI, e.g. context menu "link to this session")
+
+### plan-linked event → session ID resolution
+
+When Claude CLI enters plan mode, the PTY reader detects the plan file path in terminal output and emits a `plan-linked` Tauri event with `{ tab_id, filename }`. The `useClaudeData` handler in `src/hooks/useClaudeData.ts` scans `tabsByProject` to find the terminal tab matching `tab_id`, then extracts `tab.resolvedSessionId ?? tab.sessionId` as the real session ID to pass to `linkPlan`. The owning project ID is also taken from the tab scan rather than from the active project, so plans are always linked to the correct project even when the user is viewing a different project.
+
+**Fallback**: if the tab hasn't been resolved to a real session ID yet (plan-linked fired before the `SessionStart` hook), `payload.tab_id` is used temporarily. The link stays as the tab ID until the user manually re-opens via Plans Panel, which triggers `openPlanTab`'s auto-link on the second pass.
+
+`PlansPanel` uses `planLinks[filename]` as a session ID to look up the session title via `useSessions` and load summaries via `useSummaries(projectId, sessionId)`. `ProjectSwitcher` filters plan children with `planLinks[filename] === session.sessionId`. Both require a real session UUID — **never a tab DOM ID** — to match correctly. The "No active plans" state shows when no plan has a linked session ID.
+
 ## Sidebar views
 
 The left ActivityBar controls which sidebar view is shown:
 
 | View | Keybind | Component | Description |
 |------|---------|-----------|-------------|
-| Sessions | Ctrl+1 | `ProjectSwitcher` | Project list + session management |
+| Sessions | Ctrl+1 | `ProjectSwitcher` | Project list + session management (tree view) |
 | Git | Ctrl+2 | `GitStatusPanel` | Staged/unstaged changes, branch ops, git actions |
 | Files | -- | `FileBrowserPanel` | File tree browser for the active project |
 | PRs | Ctrl+3 | `PRListPanel` | Pull requests list (via `gh` CLI) |
@@ -283,6 +368,7 @@ The right ActivityBar controls which right panel view is shown:
 | Plans | `PlansPanel` | List and manage plan files |
 | Docs | `DocsSection` | Project documentation browser |
 | Notes | `NotesPanel` | Per-project and global markdown notes scratchpad |
+| Task History | `TaskHistoryPanel` | Historical task snapshots per team, persisted after Claude deletes live task files |
 
 ## Bottom panel tabs
 
@@ -368,10 +454,10 @@ Startup behavior:
 When a `Stop` hook event includes a `last_assistant_message` that qualifies as a completion summary (contains "# Summary" heading, or is >200 chars with "summary" keyword or numbered steps), the watcher saves it as a markdown file:
 
 ```
-~/.claude/projects/{encoded-path}/{session-id}-summary-NNN.md
+~/.claude/theassociate/projects/{encoded-path}/summaries/{session-id}-summary-NNN.md
 ```
 
-A `session-summary` Tauri event is emitted with a `SummaryPayload` containing `session_id`, `project_path`, `project_dir`, `filename`, and a 200-char `preview`. The frontend invalidates the `["summaries"]` TanStack Query cache.
+A `session-summary` Tauri event is emitted with a `SummaryPayload` containing `session_id`, `project_path`, `project_dir`, `filename`, and a 200-char `preview`. The frontend invalidates the `["summaries"]` TanStack Query cache. A completion notification is only shown if there is an **open terminal tab** for that session (non-terminal tabs like session-view, summary, or plan tabs do not trigger notifications).
 
 Summaries can be loaded via `cmd_load_summaries(project_dir, session_id)` and read via `cmd_read_summary(project_dir, filename)`.
 
@@ -387,6 +473,7 @@ Summaries can be loaded via `cmd_load_summaries(project_dir, session_id)` and re
 | `inbox` | `cmd_load_inbox`, `cmd_send_inbox_message` |
 | `todos` | `cmd_load_todos` |
 | `plans` | `cmd_load_plans`, `cmd_read_plan`, `cmd_save_plan` |
+| `plan_links` | `cmd_load_plan_links`, `cmd_save_plan_links` |
 | `notes` | `cmd_load_global_notes`, `cmd_load_project_notes`, `cmd_save_note`, `cmd_delete_note` |
 | `git` | `cmd_git_status`, `cmd_git_diff`, `cmd_git_branches`, `cmd_git_current_branch`, `cmd_git_log`, `cmd_git_remote_branches`, `cmd_create_worktree`, `cmd_list_worktrees`, `cmd_get_worktree_copy`, `cmd_set_worktree_copy`, `cmd_claude_git_action`, `cmd_git_fetch`, `cmd_git_pull`, `cmd_git_create_branch`, `cmd_git_add`, `cmd_git_ignore`, `cmd_git_rebase`, `cmd_watch_git_head` |
 | `pty` | `pty_spawn`, `pty_resize`, `pty_write`, `pty_kill`, `pty_list` |
@@ -437,15 +524,51 @@ Summaries can be loaded via `cmd_load_summaries(project_dir, session_id)` and re
 
 Fullscreen overlay (`Ctrl+Shift+Space`) that visualizes active sessions, teams, and agents as an animated node graph. Uses `<canvas>` for rendering with physics-based layout. Shows HUD counters for sessions, teams, and agents. Clicking a node can navigate to that session.
 
-## Per-project IDE settings
+## Storage layout
 
-Settings specific to a project (e.g., the docs folder path) are stored in `~/.claude/projects/{encoded-path}/ide-settings.json` as a JSON file:
+All files *written* by the IDE live under `~/.claude/theassociate/`. Claude CLI's own directories (`~/.claude/projects/`, `~/.claude/plans/`, etc.) are read-only from the IDE's perspective.
 
-```json
-{ "docsFolder": "docs" }
+```
+~/.claude/theassociate/
+├── hook-events.jsonl             ← written by CLI hooks
+├── watcher-state.json            ← watcher byte-offset persistence
+├── plan-links.json               ← plan filename → session UUID mapping
+└── projects/
+    └── {encoded-path}/
+        ├── ide-settings.json     ← per-project IDE settings
+        ├── notes/                ← per-project notes ({id}.json)
+        └── summaries/
+            └── {id}-summary-NNN.md
 ```
 
-This keeps them alongside session data and out of the project repository. The Rust struct is `ProjectSettings` in `commands/projects.rs`; read/write via `cmd_get_project_settings` / `cmd_set_project_settings`.
+Global notes remain at `~/.claude/notes/` (written by the IDE, no conflict risk there).
+
+## Per-project IDE settings
+
+Settings specific to a project are stored in `~/.claude/theassociate/projects/{encoded-path}/ide-settings.json` as a JSON file:
+
+```json
+{
+  "docsFolder": "docs",
+  "issueFilters": {
+    "state": "open",
+    "ghAssignees": [],
+    "linearAssignees": [],
+    "jiraAssignees": [],
+    "labelFilter": [],
+    "activeProviders": [],
+    "prState": "open"
+  }
+}
+```
+
+Read/write via `cmd_get_project_settings` / `cmd_set_project_settings`. The Rust helper `get_theassociate_home()` in `commands/projects.rs` provides the `~/.claude/theassociate` base path shared across all commands.
+
+All fields in `ProjectSettings` are `Option<_>` so absent fields are treated as defaults — backward compatible.
+
+### Issue filter persistence
+
+Issue filter state (state, assignees, labels, providers) is per-project UI state stored under the `issueFilters` key in `ide-settings.json`. The `useIssueFilterStore` (keyed by raw project path, not encoded ID) loads filters via `loadFiltersForProject(projectPath)` on project switch, and debounce-persists via a read-before-write to preserve other `ProjectSettings` fields.
 
 ### Docs folder auto-detection
 

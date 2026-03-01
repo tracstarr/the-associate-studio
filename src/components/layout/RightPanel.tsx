@@ -5,6 +5,7 @@ import { TeamsRightPanel } from "@/components/context/TeamsRightPanel";
 import { PlansPanel } from "@/components/context/PlansPanel";
 import { DocsSection } from "@/components/context/DocsSection";
 import { NotesPanel } from "@/components/notes/NotesPanel";
+import { TaskHistoryPanel } from "@/components/context/TaskHistoryPanel";
 import { useProjectsStore } from "@/stores/projectsStore";
 
 function DocsTabPanel() {
@@ -33,7 +34,7 @@ function RightPanelComponent() {
   return (
     <div className="flex flex-col h-full">
       <div className="px-5 py-2.5 text-xs font-semibold text-accent-primary border-b border-border-muted capitalize shrink-0">
-        {activeTab}
+        {activeTab === "task-history" ? "Task History" : activeTab}
       </div>
       <div className="flex-1 overflow-hidden">
         {activeTab === "context" && <ContextPanel />}
@@ -41,6 +42,7 @@ function RightPanelComponent() {
         {activeTab === "plans" && <PlansPanel />}
         {activeTab === "docs" && <DocsTabPanel />}
         {activeTab === "notes" && <NotesPanel />}
+        {activeTab === "task-history" && <TaskHistoryPanel />}
       </div>
     </div>
   );

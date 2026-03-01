@@ -12,6 +12,19 @@ use crate::data::projects::{discover_orphaned_projects, discover_projects, Proje
 pub struct ProjectSettings {
     pub docs_folder: Option<String>,
     pub show_hidden_files: Option<bool>,   // None = use global default
+    pub issue_filters: Option<IssueFiltersSettings>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IssueFiltersSettings {
+    pub state: Option<String>,
+    pub gh_assignees: Option<Vec<String>>,
+    pub linear_assignees: Option<Vec<String>>,
+    pub jira_assignees: Option<Vec<String>>,
+    pub label_filter: Option<Vec<String>>,
+    pub active_providers: Option<Vec<String>>,
+    pub pr_state: Option<String>,
 }
 
 fn get_home_dir_str() -> Result<String, String> {
@@ -32,6 +45,10 @@ fn get_claude_home() -> Result<PathBuf, String> {
         return Err("Home directory environment variable is empty".to_string());
     }
     Ok(PathBuf::from(home).join(".claude"))
+}
+
+pub(crate) fn get_theassociate_home() -> Result<PathBuf, String> {
+    Ok(get_claude_home()?.join("theassociate"))
 }
 
 #[tauri::command]
@@ -202,9 +219,11 @@ pub async fn cmd_create_project(project_path: String) -> Result<ProjectInfo, Str
 
 #[tauri::command]
 pub async fn cmd_get_project_settings(project_path: String) -> Result<ProjectSettings, String> {
-    let claude_home = get_claude_home()?;
     let encoded = encode_project_path(&PathBuf::from(&project_path));
-    let settings_path = claude_home.join("projects").join(&encoded).join("ide-settings.json");
+    let settings_path = get_theassociate_home()?
+        .join("projects")
+        .join(&encoded)
+        .join("ide-settings.json");
 
     if !settings_path.exists() {
         return Ok(ProjectSettings::default());
@@ -216,9 +235,8 @@ pub async fn cmd_get_project_settings(project_path: String) -> Result<ProjectSet
 
 #[tauri::command]
 pub async fn cmd_set_project_settings(project_path: String, settings: ProjectSettings) -> Result<(), String> {
-    let claude_home = get_claude_home()?;
     let encoded = encode_project_path(&PathBuf::from(&project_path));
-    let project_dir = claude_home.join("projects").join(&encoded);
+    let project_dir = get_theassociate_home()?.join("projects").join(&encoded);
     std::fs::create_dir_all(&project_dir).map_err(|e| e.to_string())?;
     let settings_path = project_dir.join("ide-settings.json");
     let content = serde_json::to_string_pretty(&settings).map_err(|e| e.to_string())?;

@@ -16,16 +16,15 @@ export function PRListPanel() {
   const activeProjectDir = useProjectsStore((s) =>
     s.projects.find((p) => p.id === s.activeProjectId)?.path ?? null
   );
-  const activeProjectId = useProjectsStore((s) => s.activeProjectId);
   const openTab = useSessionStore((s) => s.openTab);
 
-  // Persisted PR state filter — select reactive slice by project ID
-  const projectId = activeProjectId ?? "__none__";
-  const state = (useIssueFilterStore((s) => s.filters[projectId]) ?? DEFAULT_ISSUE_FILTERS).prState;
+  // Persisted PR state filter — select reactive slice by project path
+  const projectKey = activeProjectDir ?? "__none__";
+  const state = (useIssueFilterStore((s) => s.filters[projectKey]) ?? DEFAULT_ISSUE_FILTERS).prState;
   const setFilters = useIssueFilterStore((s) => s.setFilters);
   const setState = useCallback(
-    (s: "open" | "closed" | "all") => setFilters(projectId, { prState: s }),
-    [projectId, setFilters],
+    (s: "open" | "closed" | "all") => setFilters(projectKey, { prState: s }),
+    [projectKey, setFilters],
   );
   const { data: prs, isLoading, error, refetch } = usePRs(activeProjectDir, state);
 

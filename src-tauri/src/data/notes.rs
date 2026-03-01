@@ -32,27 +32,35 @@ pub fn load_notes_from_dir(dir: &Path) -> Result<Vec<Note>> {
     Ok(notes)
 }
 
-/// Load global notes from `~/.claude/notes/`.
+/// Load global notes from `~/.claude/theassociate/notes/`.
 pub fn load_global_notes(claude_home: &Path) -> Result<Vec<Note>> {
-    let notes_dir = claude_home.join("notes");
+    let notes_dir = claude_home.join("theassociate").join("notes");
     load_notes_from_dir(&notes_dir)
 }
 
-/// Load project notes from `~/.claude/projects/{encoded_id}/notes/`.
+/// Load project notes from `~/.claude/theassociate/projects/{encoded_id}/notes/`.
 pub fn load_project_notes(claude_home: &Path, encoded_id: &str) -> Result<Vec<Note>> {
-    let notes_dir = claude_home.join("projects").join(encoded_id).join("notes");
+    let notes_dir = claude_home
+        .join("theassociate")
+        .join("projects")
+        .join(encoded_id)
+        .join("notes");
     load_notes_from_dir(&notes_dir)
 }
 
 /// Save a note to the appropriate directory based on `note.project_path`.
 pub fn save_note(claude_home: &Path, note: &Note) -> Result<()> {
     let dir = match &note.project_path {
-        None => claude_home.join("notes"),
+        None => claude_home.join("theassociate").join("notes"),
         Some(project_path) => {
             let encoded = crate::data::path_encoding::encode_project_path(
                 &std::path::PathBuf::from(project_path),
             );
-            claude_home.join("projects").join(encoded).join("notes")
+            claude_home
+                .join("theassociate")
+                .join("projects")
+                .join(encoded)
+                .join("notes")
         }
     };
     std::fs::create_dir_all(&dir)?;
@@ -69,8 +77,12 @@ pub fn delete_note(
     encoded_project_id: Option<&str>,
 ) -> Result<()> {
     let dir = match encoded_project_id {
-        None => claude_home.join("notes"),
-        Some(enc) => claude_home.join("projects").join(enc).join("notes"),
+        None => claude_home.join("theassociate").join("notes"),
+        Some(enc) => claude_home
+            .join("theassociate")
+            .join("projects")
+            .join(enc)
+            .join("notes"),
     };
     let file_path = dir.join(format!("{}.json", note_id));
     // Guard against path traversal

@@ -2,6 +2,15 @@ import { invoke } from "@tauri-apps/api/core";
 
 // ---- Session Types ----
 
+export interface SubagentSessionEntry {
+  agentId: string;
+  agentType?: string;
+  firstPrompt?: string;
+  messageCount?: number;
+  modified?: string;
+  jsonlPath: string;
+}
+
 export interface SessionEntry {
   sessionId: string;
   firstPrompt?: string;
@@ -59,6 +68,28 @@ export interface Task {
   blockedBy: string[];
   activeForm?: string;
   metadata?: Record<string, unknown>;
+}
+
+// ---- Task Snapshot Types ----
+
+export interface StatusChange {
+  status: string;
+  at: string;
+}
+
+export interface TaskRecord {
+  id: string;
+  subject?: string;
+  firstSeen: string;
+  lastSeen: string;
+  statusChanges: StatusChange[];
+  snapshot: Task;
+}
+
+export interface TaskSnapshotFile {
+  teamName: string;
+  updatedAt: string;
+  tasks: Record<string, TaskRecord>;
 }
 
 // ---- Inbox Types ----
@@ -208,6 +239,13 @@ export async function loadSessions(
   return invoke("cmd_load_sessions", { projectDir });
 }
 
+export function loadSubagentSessions(
+  projectDir: string,
+  sessionId: string
+): Promise<SubagentSessionEntry[]> {
+  return invoke("cmd_load_subagent_sessions", { projectDir, sessionId });
+}
+
 export async function deleteSession(projectDir: string, sessionId: string): Promise<void> {
   return invoke("cmd_delete_session", { projectDir, sessionId });
 }
@@ -231,6 +269,13 @@ export async function deleteTeam(teamName: string): Promise<void> {
 
 export async function loadTasks(teamName: string): Promise<Task[]> {
   return invoke("cmd_load_tasks", { teamName });
+}
+
+export async function loadTaskSnapshots(
+  projectDir: string,
+  teamName: string
+): Promise<TaskSnapshotFile> {
+  return invoke("cmd_load_task_snapshots", { projectDir, teamName });
 }
 
 export async function loadInbox(
@@ -286,6 +331,14 @@ export function saveNote(note: Note): Promise<void> {
 
 export function deleteNote(noteId: string, encodedProjectId: string | null): Promise<void> {
   return invoke("cmd_delete_note", { noteId, encodedProjectId });
+}
+
+export function loadPlanLinks(projectDir: string): Promise<Record<string, string>> {
+  return invoke("cmd_load_plan_links", { projectDir });
+}
+
+export function savePlanLinks(projectDir: string, links: Record<string, string>): Promise<void> {
+  return invoke("cmd_save_plan_links", { projectDir, links });
 }
 
 export function createGithubIssue(cwd: string, title: string, body: string): Promise<IssueRef> {
@@ -721,6 +774,15 @@ export function getHomeDir(): Promise<string> {
 export interface ProjectSettings {
   docsFolder?: string;
   showHiddenFiles?: boolean;   // undefined = use global default
+  issueFilters?: {
+    state?: "open" | "closed" | "all";
+    ghAssignees?: string[];
+    linearAssignees?: string[];
+    jiraAssignees?: string[];
+    labelFilter?: string[];
+    activeProviders?: string[];
+    prState?: "open" | "closed" | "all";
+  };
 }
 
 export function getProjectSettings(projectPath: string): Promise<ProjectSettings> {

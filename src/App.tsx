@@ -9,8 +9,10 @@ import { useClaudeWatcher, useGitBranchWatcher } from "./hooks/useClaudeData";
 import { useSettingsStore } from "./stores/settingsStore";
 import { useProjectsStore } from "./stores/projectsStore";
 import { useIssueFilterStore } from "./stores/issueFilterStore";
-import { useEffect, Component, type ReactNode } from "react";
+import { useSessionStore } from "./stores/sessionStore";
+import { useEffect, useRef, Component, type ReactNode } from "react";
 import { NeuralFieldOverlay } from "./components/dashboard/NeuralFieldOverlay";
+import * as tauri from "./lib/tauri";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   constructor(props: { children: ReactNode }) {
@@ -50,13 +52,31 @@ function IDEShell() {
   const loadFromDisk = useSettingsStore((s) => s.loadFromDisk);
   const loadProjects = useProjectsStore((s) => s.loadProjects);
   const loadRecentFromDisk = useProjectsStore((s) => s.loadRecentFromDisk);
-  const loadIssueFilters = useIssueFilterStore((s) => s.loadFromDisk);
+  const loadFiltersForProject = useIssueFilterStore((s) => s.loadFiltersForProject);
+  const setPlanLinks = useSessionStore((s) => s.setPlanLinks);
+  const activeProjectId = useProjectsStore((s) => s.activeProjectId);
+  const activeProjectPath = useProjectsStore((s) =>
+    s.projects.find((p) => p.id === s.activeProjectId)?.path ?? null
+  );
+  // Track previous activeProjectId to avoid re-running on unrelated re-renders
+  const prevProjectIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     loadFromDisk();
     loadProjects();
     loadRecentFromDisk();
-    loadIssueFilters();
-  }, [loadFromDisk, loadProjects, loadRecentFromDisk, loadIssueFilters]);
+  }, [loadFromDisk, loadProjects, loadRecentFromDisk]);
+
+  useEffect(() => {
+    if (activeProjectPath) loadFiltersForProject(activeProjectPath);
+  }, [activeProjectPath, loadFiltersForProject]);
+
+  useEffect(() => {
+    if (!activeProjectId) return;
+    if (prevProjectIdRef.current === activeProjectId) return;
+    prevProjectIdRef.current = activeProjectId;
+    tauri.loadPlanLinks(activeProjectId).then(setPlanLinks).catch(() => { /* ignore */ });
+  }, [activeProjectId, setPlanLinks]);
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-bg-base text-text-primary">
       <TitleBar />

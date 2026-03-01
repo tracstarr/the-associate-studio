@@ -69,7 +69,7 @@ npm run tauri build      # release build
 |------|-------|---------|
 | Entry | `src/main.tsx`, `src/App.tsx` | No StrictMode; ErrorBoundary wraps IDEShell; loads settings + projects on mount |
 | Stores | `src/stores/uiStore.ts` | Panel visibility, sidebar/right/bottom tab state, neural field, debug panel, `pendingNoteRef` for editor→notes handoff |
-| | `src/stores/sessionStore.ts` | Per-project tabs (open/close/resume), subagent tracking, plan links |
+| | `src/stores/sessionStore.ts` | Per-project tabs (open/close/resume), subagent tracking, plan links (filename → session UUID) |
 | | `src/stores/projectsStore.ts` | Multi-project management, active project, `pathToProjectId()` encoding |
 | | `src/stores/settingsStore.ts` | Font, GitHub/Linear/Jira config; secrets via keyring, rest via `settings.json` |
 | | `src/stores/notificationStore.ts` | Claude question notifications (per-tab, read/unread) |
@@ -102,7 +102,7 @@ npm run tauri build      # release build
 | | `commands/issues.rs` | List GitHub PRs, GitHub issues, and Linear issues |
 | | `commands/summaries.rs` | Load/read session completion summaries |
 | | `commands/files.rs` | Directory listing for file browser |
-| | `commands/notes.rs` | Load/save/delete notes from `~/.claude/notes/` (global) and `~/.claude/projects/{encoded}/notes/` (per-project) |
+| | `commands/notes.rs` | Load/save/delete notes from `~/.claude/theassociate/notes/` (global) and `~/.claude/theassociate/projects/{encoded}/notes/` (per-project) |
 | Data layer | `data/` module | File I/O + parsing for each domain: `sessions`, `transcripts`, `teams`, `tasks`, `inboxes`, `todos`, `plans`, `notes`, `summaries`, `projects`, `git`, `hook_state`, `watcher_state`, `path_encoding` |
 | Models | `models/` module | Serde structs: `session`, `transcript`, `team`, `task`, `inbox`, `todo`, `plan`, `note`, `summary`, `git`, `hook_event` |
 | Watcher | `watcher/claude_watcher.rs` | Watches `~/.claude/` dirs (teams, tasks, projects, todos, plans, notes, theassociate); emits Tauri events on file changes; parses `hook-events.jsonl` for session/subagent lifecycle |
@@ -119,8 +119,8 @@ npm run tauri build      # release build
 | Git | `components/git/` | Sidebar git status, bottom panel git log/diff, branch management |
 | PRs & Issues | `components/issues/` | GitHub PR list, issue list + create issue (bottom panel tabs) |
 | Dashboard | `components/dashboard/` | NeuralFieldOverlay — mission control overlay (Ctrl+Shift+Space) |
-| Projects | `components/projects/` | Project switcher dropdown, project management |
-| Context | `components/context/` | Right panel context viewer (CLAUDE.md, memory files) |
+| Projects | `components/projects/` | Project switcher dropdown; session tree view with expandable nodes showing linked plans and summaries |
+| Context | `components/context/` | Right panel context viewer (CLAUDE.md, memory files); `PlansPanel` resolves plans to real session IDs and shows linked summaries |
 | Plans | `components/plan/` | Markdown plan editor (right panel) |
 | Notifications | `components/notifications/` | Claude question notification badges |
 | Settings | `components/settings/` | Settings tab (font, integrations) |
@@ -128,6 +128,20 @@ npm run tauri build      # release build
 | Files | `components/files/` | File browser sidebar view; `FileEditorTab` has Monaco selection → "Add to note" button |
 | README | `components/readme/` | README viewer/editor tab |
 | Notes | `components/notes/` | `NotesPanel` (orchestrator), `NotesList` (scoped list), `NoteEditor` (markdown editor + file refs), `CreateIssueModal` (shared issue creation dialog) |
+
+## Storage rules
+
+This is a Tauri desktop app with full filesystem access. **Never use `localStorage` or `sessionStorage`** — they are web primitives tied to the WebView origin, invisible to Rust, and accumulate stale data with no cleanup mechanism.
+
+| Data type | Correct storage |
+|-----------|----------------|
+| Simple persistent config (flat key-value) | Tauri `plugin-store` → `settings.json` |
+| Secrets / credentials | Windows Credential Manager via `keyring` crate |
+| Per-project structured data | Tauri command → file in `~/.claude/projects/{encoded}/` |
+| Global structured data | Tauri command → file in `~/.claude/` |
+| Ephemeral UI state (panel open/closed, etc.) | In-memory Zustand only — no persistence needed |
+
+> **`localStorage` is banned.** If you find existing code using it, migrate it to the appropriate Tauri-backed storage above.
 
 ## Critical gotchas (details in docs)
 
@@ -141,6 +155,7 @@ npm run tauri build      # release build
 8. **Hook events via file watcher** — `hook-events.jsonl` is append-only; watcher tracks file offset to read only new lines
 9. **Claude watcher auto-starts** — `lib.rs` calls `start_claude_watcher()` in `.setup()`; also auto-installs hooks via `cmd_setup_hooks()`
 10. **Git branch watcher** — `useGitBranchWatcher()` calls `cmd_watch_git_head(cwd)` when active project changes; watches `.git/HEAD` via `notify` crate; emits `git-branch-changed` event; old watcher dropped when project switches
+11. **planLinks maps to session UUIDs, not tab IDs** — `sessionStore.planLinks[filename]` must hold a real Claude session UUID (e.g. `"abc12345-..."`), never a tab DOM ID (e.g. `"session-1729..."`). Both `PlansPanel` and `ProjectSwitcher` match against session UUIDs; wrong type causes "No active plans" / empty tree children → [`docs/architecture.md`](docs/architecture.md) planLinks semantics
 
 ## Research reference
 

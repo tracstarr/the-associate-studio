@@ -1,17 +1,22 @@
 import { useState } from "react";
-import { FileText, ChevronRight, ChevronDown, Layers } from "lucide-react";
-import { usePlans } from "../../hooks/useClaudeData";
+import { FileText, ChevronRight, ChevronDown, Layers, Scroll } from "lucide-react";
+import { usePlans, useSessions, useSummaries } from "../../hooks/useClaudeData";
 import { useSessionStore } from "../../stores/sessionStore";
 import { useActiveProjectTabs } from "../../hooks/useActiveProjectTabs";
-import type { PlanFile, MarkdownLine } from "../../lib/tauri";
+import { useProjectsStore } from "../../stores/projectsStore";
+import type { PlanFile, MarkdownLine, SummaryFile } from "../../lib/tauri";
 import { cn } from "../../lib/utils";
 
 export function PlansPanel() {
   const { data: plans, isLoading } = usePlans();
   const planLinks = useSessionStore((s) => s.planLinks);
   const openPlanTab = useSessionStore((s) => s.openPlanTab);
-  const { openTabs, projectId } = useActiveProjectTabs();
+  const { projectId } = useActiveProjectTabs();
   const [expandedPlan, setExpandedPlan] = useState<string | null>(null);
+
+  const { projects, activeProjectId } = useProjectsStore();
+  const activeProject = projects.find((p) => p.id === activeProjectId);
+  const { data: sessions } = useSessions(activeProject?.path ?? "");
 
   if (isLoading) {
     return (
@@ -21,12 +26,12 @@ export function PlansPanel() {
     );
   }
 
-  const sessionPlans: { plan: PlanFile; tabTitle: string }[] = (plans ?? [])
+  const sessionPlans: { plan: PlanFile; sessionId: string; sessionLabel: string }[] = (plans ?? [])
     .filter((plan) => !!planLinks[plan.filename])
     .map((plan) => {
-      const tabId = planLinks[plan.filename];
-      const tab = openTabs.find((t) => t.id === tabId);
-      return { plan, tabTitle: tab?.title ?? tabId };
+      const sessionId = planLinks[plan.filename];
+      const session = sessions?.find((s) => s.sessionId === sessionId);
+      return { plan, sessionId, sessionLabel: session?.summary ?? sessionId?.slice(0, 8) ?? "" };
     });
 
   if (!plans || sessionPlans.length === 0) {
@@ -54,11 +59,13 @@ export function PlansPanel() {
           Session Plans
         </span>
       </div>
-      {sessionPlans.map(({ plan, tabTitle }) => (
+      {sessionPlans.map(({ plan, sessionId, sessionLabel }) => (
         <PlanRow
           key={plan.filename}
           plan={plan}
-          sessionLabel={tabTitle}
+          sessionId={sessionId}
+          sessionLabel={sessionLabel}
+          projectId={projectId}
           expanded={expandedPlan === plan.filename}
           onToggle={() => toggle(plan.filename)}
           onOpen={() => handleOpen(plan)}
@@ -70,16 +77,20 @@ export function PlansPanel() {
 
 function PlanRow({
   plan,
+  sessionId,
+  sessionLabel,
+  projectId,
   expanded,
   onToggle,
   onOpen,
-  sessionLabel,
 }: {
   plan: PlanFile;
+  sessionId: string;
+  sessionLabel: string;
+  projectId: string;
   expanded: boolean;
   onToggle: () => void;
   onOpen: () => void;
-  sessionLabel?: string;
 }) {
   return (
     <div className="border-b border-[var(--color-border-muted)] group">
@@ -109,12 +120,56 @@ function PlanRow({
         )}
       </div>
       {expanded && (
-        <div className="px-4 pb-3 space-y-0.5 max-h-60 overflow-y-auto">
-          {plan.lines.map((line, i) => (
-            <PlanLineRow key={i} line={line} />
-          ))}
+        <div className="pb-3">
+          <div className="px-4 space-y-0.5 max-h-48 overflow-y-auto">
+            {plan.lines.map((line, i) => (
+              <PlanLineRow key={i} line={line} />
+            ))}
+          </div>
+          {sessionId && projectId && (
+            <SummaryItems
+              encodedProjectDir={projectId}
+              sessionId={sessionId}
+              projectId={projectId}
+            />
+          )}
         </div>
       )}
+    </div>
+  );
+}
+
+function SummaryItems({
+  encodedProjectDir,
+  sessionId,
+  projectId,
+}: {
+  encodedProjectDir: string;
+  sessionId: string;
+  projectId: string;
+}) {
+  const { data: summaries } = useSummaries(encodedProjectDir, sessionId);
+  const openSummaryTab = useSessionStore((s) => s.openSummaryTab);
+
+  if (!summaries || summaries.length === 0) return null;
+
+  return (
+    <div className="mt-2 border-t border-[var(--color-border-muted)] pt-1">
+      {summaries.map((s: SummaryFile) => {
+        const match = s.filename.match(/-summary-(\d+)\.md$/);
+        const num = match ? parseInt(match[1], 10) : 1;
+        return (
+          <button
+            key={s.filename}
+            onClick={() => openSummaryTab(s.session_id, s.filename, encodedProjectDir, projectId)}
+            className="flex items-center gap-1.5 w-full px-4 py-1 text-left text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-accent-primary)] hover:bg-[var(--color-bg-raised)] transition-colors"
+            title={s.preview}
+          >
+            <Scroll size={10} className="text-[var(--color-text-muted)] shrink-0" />
+            <span className="truncate">Summary {num}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }

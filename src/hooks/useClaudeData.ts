@@ -47,6 +47,15 @@ export function useSummaries(projectDir: string, sessionId: string) {
 
 // ---- Session Hooks ----
 
+export function useSubagentSessions(projectDir: string | null, sessionId: string | null) {
+  return useQuery({
+    queryKey: ["subagent-sessions", projectDir, sessionId],
+    queryFn: () => tauri.loadSubagentSessions(projectDir!, sessionId!),
+    enabled: !!projectDir && !!sessionId,
+    staleTime: 30_000,
+  });
+}
+
 export function useSessions(projectDir: string) {
   return useQuery({
     queryKey: ["sessions", projectDir],
@@ -84,6 +93,15 @@ export function useTasks(teamName: string) {
     queryFn: () => tauri.loadTasks(teamName),
     enabled: !!teamName,
     staleTime: 5_000,
+  });
+}
+
+export function useTaskSnapshots(projectDir: string, teamName: string) {
+  return useQuery({
+    queryKey: ["task-snapshots", projectDir, teamName],
+    queryFn: () => tauri.loadTaskSnapshots(projectDir, teamName),
+    enabled: !!projectDir && !!teamName,
+    staleTime: 10_000,
   });
 }
 
@@ -448,6 +466,7 @@ export function useClaudeWatcher() {
   const activeSubagentsRef = useRef(useSessionStore.getState().activeSubagents);
   const activeProjectIdRef = useRef(useProjectsStore.getState().activeProjectId);
   const pendingCloseRef = useRef<Map<string, { tabId: string; projectId: string; projectDir: string; timer: ReturnType<typeof setTimeout> }>>(new Map());
+  const pendingPlanLinksRef = useRef<Map<string, string>>(new Map()); // tabId → plan filename
 
   // Keep refs in sync via subscriptions (no effect deps needed)
   useEffect(() => {
@@ -472,15 +491,13 @@ export function useClaudeWatcher() {
           store.setSubagents(session.session_id, session.subagents);
         }
         if (session.cwd) {
-          const normCwd = session.cwd.replace(/\\/g, "/").toLowerCase();
           const projectId = pathToProjectId(session.cwd);
           const projectTabs = tabsByProjectRef.current[projectId] ?? [];
           const tab = projectTabs.find(
             (t) =>
               (!t.type || t.type === "terminal") &&
               !t.resolvedSessionId &&
-              (t.sessionId === session.session_id ||
-                t.projectDir.replace(/\\/g, "/").toLowerCase() === normCwd)
+              t.sessionId === session.session_id
           );
           if (tab) {
             store.resolveTabSession(tab.id, session.session_id);
@@ -578,6 +595,12 @@ export function useClaudeWatcher() {
               if (!tab.sessionId && tab.title === "New Session") {
                 store.renameTab(tab.id, event.session_id.slice(0, 8));
               }
+              // Resolve any pending plan link for this tab now that we have the real session ID
+              const pendingFilename = pendingPlanLinksRef.current.get(tab.id);
+              if (pendingFilename) {
+                pendingPlanLinksRef.current.delete(tab.id);
+                store.linkPlan(pendingFilename, event.session_id, pathToProjectId(event.cwd ?? ""));
+              }
             }
             // Also check if a resume tab exists (has sessionId but not yet resolved)
             const resumeTab = projectTabs.find(
@@ -671,13 +694,24 @@ export function useClaudeWatcher() {
       })
     );
     unlisteners.push(
+      listen("task-snapshot-changed", () => {
+        queryClient.invalidateQueries({ queryKey: ["task-snapshots"] });
+      })
+    );
+    unlisteners.push(
       listen("transcript-updated", () => {
         queryClient.invalidateQueries({ queryKey: ["transcript"] });
       })
     );
     unlisteners.push(
-      listen("session-changed", () => {
-        queryClient.invalidateQueries({ queryKey: ["sessions"] });
+      listen<{ encoded_project_dir: string }>("session-changed", ({ payload }) => {
+        const projects = useProjectsStore.getState().projects;
+        const project = projects.find((p) => p.id === payload.encoded_project_dir);
+        if (project) {
+          queryClient.invalidateQueries({ queryKey: ["sessions", project.path] });
+        } else {
+          queryClient.invalidateQueries({ queryKey: ["sessions"] });
+        }
       })
     );
     unlisteners.push(
@@ -698,10 +732,28 @@ export function useClaudeWatcher() {
     unlisteners.push(
       listen<{ tab_id: string; filename: string }>("plan-linked", ({ payload }) => {
         const s = useSessionStore.getState();
-        s.linkPlan(payload.filename, payload.tab_id);
-        // Derive a readable title from the filename (strip extension)
         const title = payload.filename.replace(/\.md$/, "");
-        const pid = activeProjectIdRef.current ?? "";
+
+        // Look up the terminal tab to get the real Claude session ID and owning project
+        let realSessionId: string | undefined;
+        let owningProjectId: string | undefined;
+        for (const [pid, tabs] of Object.entries(s.tabsByProject)) {
+          const tab = tabs.find((t) => t.id === payload.tab_id);
+          if (tab) {
+            realSessionId = tab.resolvedSessionId ?? tab.sessionId ?? undefined;
+            owningProjectId = pid;
+            break;
+          }
+        }
+
+        const pid = owningProjectId ?? activeProjectIdRef.current ?? "";
+        // Only link if we have a real session UUID — tab DOM IDs start with "session-" + timestamp
+        if (realSessionId && !realSessionId.startsWith("session-")) {
+          s.linkPlan(payload.filename, realSessionId, pid);
+        } else {
+          // Defer until SessionStart resolves the tab to a real session UUID
+          pendingPlanLinksRef.current.set(payload.tab_id, payload.filename);
+        }
         if (pid) s.openPlanTab(payload.filename, title, pid);
       })
     );
@@ -751,12 +803,13 @@ export function useClaudeWatcher() {
           // Find the session title from open tabs or fall back to session ID prefix
           const { tabsByProject } = useSessionStore.getState();
           const projectTabs = tabsByProject[projectId] ?? [];
-          const sessionTab = projectTabs.find(
+          const cliTab = projectTabs.find(
             (t) =>
-              t.sessionId === payload.session_id ||
-              t.resolvedSessionId === payload.session_id
+              (t.sessionId === payload.session_id || t.resolvedSessionId === payload.session_id) &&
+              (!t.type || t.type === "terminal")
           );
-          const sessionTitle = sessionTab?.title ?? payload.session_id.slice(0, 8);
+          if (!cliTab) return; // no open CLI window for this session → skip notification
+          const sessionTitle = cliTab.title ?? payload.session_id.slice(0, 8);
           useNotificationStore.getState().addCompletionNotification({
             sessionId: payload.session_id,
             projectId,
@@ -772,11 +825,12 @@ export function useClaudeWatcher() {
     );
 
     return () => {
-      // Clear any pending close timers
+      // Clear any pending close timers and deferred plan links
       for (const { timer } of pendingCloseRef.current.values()) {
         clearTimeout(timer);
       }
       pendingCloseRef.current.clear();
+      pendingPlanLinksRef.current.clear();
       unlisteners.forEach((unlisten) => {
         unlisten.then((f) => f());
       });

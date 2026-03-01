@@ -57,11 +57,13 @@ fn next_counter(dir: &Path, session_id: &str) -> u32 {
     max + 1
 }
 
-/// Write a new summary file and return its filename (e.g. `abc-summary-001.md`).
+/// Write a new summary file under a `summaries/` subdirectory and return its filename.
 pub fn save_summary(project_sessions_dir: &Path, session_id: &str, content: &str) -> Result<String> {
-    let counter = next_counter(project_sessions_dir, session_id);
+    let dir = project_sessions_dir.join("summaries");
+    std::fs::create_dir_all(&dir)?;
+    let counter = next_counter(&dir, session_id);
     let filename = format!("{}-summary-{:03}.md", session_id, counter);
-    let path = project_sessions_dir.join(&filename);
+    let path = dir.join(&filename);
     std::fs::write(&path, content)?;
     Ok(filename)
 }

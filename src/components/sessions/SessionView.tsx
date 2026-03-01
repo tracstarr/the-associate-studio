@@ -22,16 +22,19 @@ export function SessionView({ tab, projectId }: { tab: SessionTab; projectId: st
 
   const knownSessions = useSessionStore((s) => s.knownSessions);
   const openSummaryTab = useSessionStore((s) => s.openSummaryTab);
+  const isSubAgent = tab.id.startsWith("subagent:");
   const isActive =
     (tab.sessionId ? knownSessions[tab.sessionId] : false) ||
     (tab.resolvedSessionId ? knownSessions[tab.resolvedSessionId] : false);
 
   const encodedProjectDir = pathToProjectId(tab.projectDir);
 
+  // tab.filePath is set for subagent sessions (direct path override); otherwise derive from sessionId
   const sessionPath =
-    homeDir && tab.sessionId
+    tab.filePath ||
+    (homeDir && tab.sessionId
       ? `${homeDir}/.claude/projects/${encodedProjectDir}/${tab.sessionId}.jsonl`
-      : "";
+      : "");
 
   const { data: transcriptResult, isLoading } = useTranscript(sessionPath, 0);
   const { data: summaries } = useSummaries(encodedProjectDir, tab.sessionId ?? "");
@@ -86,20 +89,22 @@ export function SessionView({ tab, projectId }: { tab: SessionTab; projectId: st
             )}
           </div>
         </div>
-        {isActive ? (
-          <div className="shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg border border-[var(--color-status-success)] text-[var(--color-status-success)] text-sm">
-            <Zap size={14} />
-            Running
-          </div>
-        ) : (
-          <button
-            onClick={handleResume}
-            className="shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--color-accent-primary)] text-white text-sm font-medium hover:opacity-90 transition-all duration-200"
-            title="Resume Session (Ctrl+R)"
-          >
-            <Play size={14} fill="currentColor" />
-            Resume Session
-          </button>
+        {!isSubAgent && (
+          isActive ? (
+            <div className="shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg border border-[var(--color-status-success)] text-[var(--color-status-success)] text-sm">
+              <Zap size={14} />
+              Running
+            </div>
+          ) : (
+            <button
+              onClick={handleResume}
+              className="shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--color-accent-primary)] text-white text-sm font-medium hover:opacity-90 transition-all duration-200"
+              title="Resume Session (Ctrl+R)"
+            >
+              <Play size={14} fill="currentColor" />
+              Resume Session
+            </button>
+          )
         )}
       </div>
 

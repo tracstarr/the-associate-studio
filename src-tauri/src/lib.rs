@@ -58,6 +58,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::sessions::cmd_load_sessions,
+            commands::sessions::cmd_load_subagent_sessions,
             commands::sessions::cmd_load_transcript,
             commands::sessions::cmd_delete_session,
             commands::teams::cmd_load_teams,
@@ -147,6 +148,9 @@ pub fn run() {
             commands::files::cmd_list_dir,
             commands::summaries::cmd_load_summaries,
             commands::summaries::cmd_read_summary,
+            commands::task_snapshots::cmd_load_task_snapshots,
+            commands::plan_links::cmd_load_plan_links,
+            commands::plan_links::cmd_save_plan_links,
             commands::claude_config::cmd_load_extensions,
             commands::notes::cmd_load_global_notes,
             commands::notes::cmd_load_project_notes,

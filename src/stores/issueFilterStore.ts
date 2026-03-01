@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { load } from "@tauri-apps/plugin-store";
+import { getProjectSettings, setProjectSettings } from "@/lib/tauri";
 
 /** Serializable filter state for a single project. */
 export interface ProjectIssueFilters {
@@ -23,48 +23,46 @@ export const DEFAULT_ISSUE_FILTERS: ProjectIssueFilters = {
 };
 
 interface IssueFilterStore {
-  /** Per-project filter state, keyed by project ID. */
+  /** Per-project filter state, keyed by project path. */
   filters: Record<string, ProjectIssueFilters>;
 
   /** Patch one or more filter fields for a project and persist. */
-  setFilters: (projectId: string, patch: Partial<ProjectIssueFilters>) => void;
+  setFilters: (projectPath: string, patch: Partial<ProjectIssueFilters>) => void;
 
-  /** Load persisted filters from disk. */
-  loadFromDisk: () => Promise<void>;
+  /** Load persisted filters for a specific project from its ide-settings.json. */
+  loadFiltersForProject: (projectPath: string) => Promise<void>;
 }
 
 let persistTimer: ReturnType<typeof setTimeout> | null = null;
 
-function persistFilters(filters: Record<string, ProjectIssueFilters>) {
-  if (persistTimer) clearTimeout(persistTimer);
-  persistTimer = setTimeout(async () => {
-    try {
-      const store = await load("settings.json", { autoSave: false, defaults: {} });
-      await store.set("issueFilters", filters);
-      await store.save();
-    } catch { /* not in Tauri context */ }
-  }, 200);
-}
-
 export const useIssueFilterStore = create<IssueFilterStore>((set) => ({
   filters: {},
 
-  setFilters: (projectId, patch) => {
+  setFilters: (projectPath, patch) => {
     set((s) => {
-      const prev = s.filters[projectId] ?? { ...DEFAULT_ISSUE_FILTERS };
-      const next = { ...prev, ...patch };
-      const filters = { ...s.filters, [projectId]: next };
-      persistFilters(filters);
+      const next = { ...(s.filters[projectPath] ?? DEFAULT_ISSUE_FILTERS), ...patch };
+      const filters = { ...s.filters, [projectPath]: next };
+      if (persistTimer) clearTimeout(persistTimer);
+      persistTimer = setTimeout(async () => {
+        try {
+          const existing = await getProjectSettings(projectPath);
+          await setProjectSettings(projectPath, { ...existing, issueFilters: next });
+        } catch { /* not in Tauri context */ }
+      }, 200);
       return { filters };
     });
   },
 
-  loadFromDisk: async () => {
+  loadFiltersForProject: async (projectPath) => {
     try {
-      const store = await load("settings.json", { autoSave: false, defaults: {} });
-      const saved = await store.get<Record<string, ProjectIssueFilters>>("issueFilters");
-      if (saved && typeof saved === "object") {
-        set({ filters: saved });
+      const settings = await getProjectSettings(projectPath);
+      if (settings.issueFilters) {
+        set((s) => ({
+          filters: {
+            ...s.filters,
+            [projectPath]: { ...DEFAULT_ISSUE_FILTERS, ...settings.issueFilters },
+          },
+        }));
       }
     } catch { /* not in Tauri context */ }
   },
