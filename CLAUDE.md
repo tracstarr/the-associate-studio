@@ -103,8 +103,14 @@ npm run tauri build      # release build
 | | `commands/summaries.rs` | Load/read session completion summaries |
 | | `commands/files.rs` | Directory listing for file browser |
 | | `commands/notes.rs` | Load/save/delete notes from `~/.claude/theassociate/notes/` (global) and `~/.claude/theassociate/projects/{encoded}/notes/` (per-project) |
-| Data layer | `data/` module | File I/O + parsing for each domain: `sessions`, `transcripts`, `teams`, `tasks`, `inboxes`, `todos`, `plans`, `notes`, `summaries`, `projects`, `git`, `hook_state`, `watcher_state`, `path_encoding` |
-| Models | `models/` module | Serde structs: `session`, `transcript`, `team`, `task`, `inbox`, `todo`, `plan`, `note`, `summary`, `git`, `hook_event` |
+| | `commands/plan_links.rs` | Load/save plan-filename→session-UUID mapping per project (`plan-links.json`) |
+| | `commands/task_snapshots.rs` | Load historical task snapshots for a team/project |
+| | `commands/workflows.rs` | List GitHub workflow files, trigger runs, poll run status/logs via `gh` CLI |
+| | `commands/remote_run.rs` | Trigger remote GitHub Actions run from issue tab; detect workflow file, poll status |
+| | `commands/app_info.rs` | `cmd_get_app_version` — returns app version string from Tauri package info |
+| | `commands/claude_config.rs` | Discover Claude extensions (MCP servers etc.) from `.claude/` config |
+| Data layer | `data/` module | File I/O + parsing for each domain: `sessions`, `transcripts`, `teams`, `tasks`, `inboxes`, `todos`, `plans`, `notes`, `summaries`, `projects`, `git`, `hook_state`, `watcher_state`, `path_encoding`, `task_snapshots` |
+| Models | `models/` module | Serde structs: `session`, `transcript`, `team`, `task`, `inbox`, `todo`, `plan`, `note`, `summary`, `git`, `hook_event`, `task_snapshot` |
 | Watcher | `watcher/claude_watcher.rs` | Watches `~/.claude/` dirs (teams, tasks, projects, todos, plans, notes, theassociate); emits Tauri events on file changes; parses `hook-events.jsonl` for session/subagent lifecycle |
 | Git watcher | `watcher/git_watcher.rs` | Watches `.git/HEAD` for active project; emits `git-branch-changed` when branch switches; managed state replaced when project changes |
 
@@ -120,7 +126,7 @@ npm run tauri build      # release build
 | PRs & Issues | `components/issues/` | GitHub PR list, issue list + create issue (bottom panel tabs) |
 | Dashboard | `components/dashboard/` | NeuralFieldOverlay — mission control overlay (Ctrl+Shift+Space) |
 | Projects | `components/projects/` | Project switcher dropdown; session tree view with expandable nodes showing linked plans and summaries |
-| Context | `components/context/` | Right panel context viewer (CLAUDE.md, memory files); `PlansPanel` resolves plans to real session IDs and shows linked summaries |
+| Context | `components/context/` | Right panel context viewer (CLAUDE.md, memory files); `PlansPanel` resolves plans to real session IDs and shows linked summaries; `TaskHistoryPanel` shows historical task snapshots for active team |
 | Plans | `components/plan/` | Markdown plan editor (right panel) |
 | Notifications | `components/notifications/` | Claude question notification badges |
 | Settings | `components/settings/` | Settings tab (font, integrations) |
@@ -128,6 +134,7 @@ npm run tauri build      # release build
 | Files | `components/files/` | File browser sidebar view; `FileEditorTab` has Monaco selection → "Add to note" button |
 | README | `components/readme/` | README viewer/editor tab |
 | Notes | `components/notes/` | `NotesPanel` (orchestrator), `NotesList` (scoped list), `NoteEditor` (markdown editor + file refs), `CreateIssueModal` (shared issue creation dialog) |
+| Workflows | `components/workflows/` | `WorkflowsPanel` — list GitHub Actions workflow files, trigger remote runs, poll run status (bottom panel tab) |
 
 ## Storage rules
 

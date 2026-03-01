@@ -28,7 +28,6 @@
   /* Accent colors (gold + purple) */
   --color-accent-primary: #D4A853;
   --color-accent-secondary: #BC8CFF;
-  --color-accent-tertiary: #E8C97A;
 
   /* Status colors */
   --color-status-success: #4ACA62;
@@ -36,37 +35,15 @@
   --color-status-warning: #E0A82E;
   --color-status-info: #D4A853;
 
-  /* Agent status colors */
-  --color-agent-running: #4ACA62;
-  --color-agent-idle: #E0A82E;
-  --color-agent-completed: #B0B0C0;
-  --color-agent-error: #F85149;
-  --color-agent-pending: #7A7A92;
-
-  /* Session status colors */
-  --color-session-running: #4ACA62;
-  --color-session-idle: #E0A82E;
-  --color-session-completed: #B0B0C0;
-  --color-session-error: #F85149;
-
-  /* Git diff colors (warmer backgrounds, lightened) */
+  /* Git diff colors */
   --color-diff-add-bg: #1C3428;
-  --color-diff-add-text: #4ACA62;
-  --color-diff-add-highlight: #265840;
   --color-diff-remove-bg: #3A1C20;
-  --color-diff-remove-text: #F85149;
-  --color-diff-remove-highlight: #6A2830;
-  --color-diff-modified-bg: #382C14;
-  --color-diff-modified-text: #E0A82E;
-  --color-diff-hunk-header: #32323D;
-  --color-diff-hunk-text: #BC8CFF;
 
   /* Activity bar colors */
   --color-actbar-bg: #1E1E26;
   --color-actbar-icon-default: #7A7A92;
   --color-actbar-icon-active: #F5F5F8;
   --color-actbar-indicator: #D4A853;
-  --color-actbar-badge: #F85149;
 
   /* Font families */
   --font-mono: "Cascadia Code", "JetBrains Mono", "Fira Code", monospace;

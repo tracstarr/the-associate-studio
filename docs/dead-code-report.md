@@ -1,146 +1,87 @@
 # Dead Code Report
-Generated: 2026-02-23
+Generated: 2026-02-28
 
-## Unused TypeScript Exports
+## What Was Cleaned Up (since 2026-02-23 report)
 
-### Barrel Index Files (Never Imported)
+All items below were present in the previous report and have since been removed:
 
-All five barrel `index.ts` files exist but are **never imported** by any consumer. Components are always imported directly from their source files (e.g., `from "@/components/git/GitStatusPanel"` instead of `from "@/components/git"`).
-
-- `src/components/context/index.ts` — exports `ContextPanel`, `TeamsRightPanel`, `PlansPanel`
-- `src/components/git/index.ts` — exports `GitStatusPanel`, `DiffViewer`
-- `src/components/issues/index.ts` — exports `PRListPanel`, `IssueListPanel`
-- `src/components/sessions/index.ts` — exports `SessionsList`, `TeamsPanel`, `InboxPanel`
-- `src/components/terminal/index.ts` — exports `TerminalView`
-
-### Dead Components (Exported But Never Rendered)
-
-| Component | File | Notes |
-|-----------|------|-------|
-| `SessionsList` | `src/components/sessions/SessionsList.tsx` | Comment on line 1 says "no longer rendered — replaced by ProjectSwitcher". Only exists in its own file + barrel index. |
-| `TeamsPanel` | `src/components/sessions/TeamsPanel.tsx` | Only exists in its own file + barrel index. Never imported by any layout/shell. |
-| `InboxPanel` | `src/components/sessions/InboxPanel.tsx` | Only exists in its own file + barrel index. Never imported by any layout/shell. |
-| `SettingsPanel` | `src/components/shell/SettingsPanel.tsx` | Exported but **never imported** anywhere. Appears to be a predecessor of `SettingsTab.tsx` which is actively used. ~600 lines of dead code. |
-
-### Dead `lib/cn.ts` File
-
-`src/lib/cn.ts` exports a `cn()` function identical to the one in `src/lib/utils.ts`. No file imports from `@/lib/cn` or `./cn`. The entire file is dead.
-
-### Dead Wrapper Functions in `src/lib/tauri.ts`
-
-These wrapper functions are defined but never imported. `TerminalView.tsx` calls `invoke()` directly instead of using the wrappers:
-
-| Function | Line |
-|----------|------|
-| `ptySpawn()` | 366 |
-| `ptyWrite()` | 370 |
-| `ptyKill()` | 374 |
-| `ptyList()` | 378 |
-
-### Dead Types in `src/lib/tauri.ts`
-
-These types are defined in `tauri.ts` but never imported by any other file:
-
-| Type | Line |
+| Item | Type |
 |------|------|
-| `WorktreeInfo` | 122 |
-| `TodoItem` | 76 |
-| `TodoFile` | 82 |
-| `TranscriptItemKind` | 105 |
-| `GitFileSection` | 132 |
+| 5 barrel `index.ts` files (context, git, issues, sessions, terminal) | Dead exports |
+| `SessionsList.tsx`, `TeamsPanel.tsx`, `InboxPanel.tsx`, `SettingsPanel.tsx` | Dead components |
+| `src/lib/cn.ts` | Duplicate utility file |
+| `ptySpawn()`, `ptyWrite()`, `ptyKill()`, `ptyList()` wrappers in `tauri.ts` | Dead wrappers |
+| `useSendInboxMessage()` in `useClaudeData.ts` | Dead hook |
+| `@tanstack/react-virtual`, `class-variance-authority` npm packages | Unused dependencies |
+| `uuid` Rust crate | Unused Cargo dependency |
+| `JsonlEnvelope::session_id` `#[allow(dead_code)]` field | Dead struct field |
+| `pty_list` Tauri command | Registered but never invoked |
 
-### Dead Hook in `src/hooks/useClaudeData.ts`
+---
 
-| Hook | Line | Notes |
-|------|------|-------|
-| `useSendInboxMessage()` | 65 | Defined but never imported by any component |
+## Remaining Dead Code
 
-## Unused Rust Code
+### Unreferenced CSS Theme Variables
 
-### `#[allow(dead_code)]` Attributes
+These variables are defined in `src/index.css` `@theme` but are never referenced as Tailwind utility classes in any `.tsx` file, and never called via `var()` anywhere in `src/`:
 
-| File | Line | Field |
-|------|------|-------|
-| `src-tauri/src/data/sessions.rs` | 33 | `JsonlEnvelope::session_id` — field deserialized but never read |
+| Variable | Line | Notes |
+|----------|------|-------|
+| `--color-accent-tertiary` | 31 | `accent-tertiary` class unused; tertiary accent handled by `accent-secondary` in practice |
+| `--color-agent-running` | 40 | `agent-running` class unused |
+| `--color-agent-idle` | 41 | `agent-idle` class unused |
+| `--color-agent-completed` | 42 | `agent-completed` class unused |
+| `--color-agent-error` | 43 | `agent-error` class unused |
+| `--color-agent-pending` | 44 | `agent-pending` class unused |
+| `--color-session-running` | 47 | `session-running` class unused |
+| `--color-session-idle` | 48 | `session-idle` class unused |
+| `--color-session-completed` | 49 | `session-completed` class unused |
+| `--color-session-error` | 50 | `session-error` class unused |
+| `--color-diff-add-text` | 54 | DiffViewer uses `text-status-success` instead |
+| `--color-diff-add-highlight` | 55 | Unused |
+| `--color-diff-remove-text` | 57 | DiffViewer uses `text-status-error` instead |
+| `--color-diff-remove-highlight` | 58 | Unused |
+| `--color-diff-modified-bg` | 59 | Unused |
+| `--color-diff-modified-text` | 60 | Unused |
+| `--color-diff-hunk-header` | 61 | DiffViewer uses `bg-bg-raised` instead |
+| `--color-diff-hunk-text` | 62 | DiffViewer uses `text-accent-secondary` instead |
+| `--color-actbar-badge` | 69 | `actbar-badge` class unused; badges use `bg-status-error` directly |
 
-### Unused Cargo Dependency
+**Note on `--font-ui`:** Used via `var(--font-ui)` in the `body` rule in `index.css`. Not a Tailwind class, but actively referenced — keep it.
 
-| Crate | Cargo.toml | Notes |
-|-------|-----------|-------|
-| `uuid` | Line 26 | `uuid::Uuid` is never referenced anywhere in the Rust source. Zero imports, zero uses. |
+**Note on active diff variables:** `--color-diff-add-bg` (line 53) and `--color-diff-remove-bg` (line 56) ARE used as Tailwind classes (`bg-diff-add-bg`, `bg-diff-remove-bg`) in `DiffViewer.tsx` — do not remove these.
 
-## Potentially Unused npm Dependencies
+---
 
-### Confirmed Unused (zero imports in `src/`)
+## Previously Misreported as Dead (False Positives)
 
-| Package | package.json |
-|---------|-------------|
-| `@tanstack/react-virtual` | Line 15 |
-| `class-variance-authority` | Line 24 |
+The 2026-02-23 report incorrectly flagged these TypeScript types as dead. They are actively used:
 
-### Likely Unused Frontend Bindings (Rust plugins registered but JS never imported)
+| Type | Where used |
+|------|-----------|
+| `TodoItem` | Return type component of `TodoFile`; used via `loadTodos()` |
+| `TodoFile` | Return type of `loadTodos()` wrapper |
+| `WorktreeInfo` | Return type of `listWorktrees()` |
+| `TranscriptItemKind` | Union type member of `TranscriptItem` interface |
+| `GitFileSection` | Member of `GitFileEntry` interface |
+
+---
+
+## Likely Unused npm Plugin Bindings (carry-over, needs verification)
 
 | Package | Notes |
 |---------|-------|
-| `@tauri-apps/plugin-fs` | Rust plugin registered in `lib.rs` but the JS package is never imported. All file I/O goes through custom Tauri commands. |
-| `@tauri-apps/plugin-shell` | Rust plugin registered in `lib.rs` but the JS package is never imported. Shell operations go through custom PTY commands. |
+| `@tauri-apps/plugin-fs` | Rust plugin registered in `lib.rs`, JS package never imported in `src/`. All file I/O uses custom Tauri commands. |
+| `@tauri-apps/plugin-shell` | Rust plugin registered in `lib.rs`, JS package never imported in `src/`. Shell operations use PTY commands. |
 
-**Note:** Tauri plugins require both Rust and JS sides. If the frontend JS is truly never called, the npm package can be removed (keep the Rust plugin for its backend functionality). Verify before removing.
+**Note:** The Rust plugin registrations are needed for their backend functionality. Only the npm packages may be removable; verify no indirect usage before removing.
 
-## Tauri Commands: Registered but Not Called from Frontend
-
-All commands registered in `src-tauri/src/lib.rs` are invoked from the frontend, either through `src/lib/tauri.ts` wrappers or direct `invoke()` calls. However:
-
-| Command | Notes |
-|---------|-------|
-| `pty_list` | Registered in `lib.rs:60`, wrapper `ptyList()` defined in `tauri.ts:378`, but **never actually invoked** from any `.tsx` file. The wrapper itself is also dead code (see above). |
-
-## Tauri Commands: Called but Not Registered
-
-No orphaned calls found. All `invoke()` calls in the frontend match registered commands.
-
-## Dead CSS
-
-### CSS Theme Variables Defined but Never Referenced in Components
-
-These CSS custom properties are defined in `src/index.css` `@theme` block but are **only** found in `index.css` itself — never referenced by any Tailwind class in any `.tsx` file:
-
-| Variable | Line | Tailwind Class |
-|----------|------|---------------|
-| `--color-text-inverse` | 22 | `text-inverse` |
-| `--color-accent-tertiary` | 28 | `accent-tertiary` |
-| `--color-agent-running` | 36 | `agent-running` |
-| `--color-agent-idle` | 37 | `agent-idle` |
-| `--color-agent-completed` | 38 | `agent-completed` |
-| `--color-agent-error` | 39 | `agent-error` |
-| `--color-agent-pending` | 40 | `agent-pending` |
-| `--color-session-running` | 43 | `session-running` |
-| `--color-session-idle` | 44 | `session-idle` |
-| `--color-session-completed` | 45 | `session-completed` |
-| `--color-session-error` | 46 | `session-error` |
-| `--color-diff-add-highlight` | 51 | `diff-add-highlight` |
-| `--color-diff-remove-highlight` | 55 | `diff-remove-highlight` |
-| `--color-diff-modified-bg` | 56 | `diff-modified-bg` |
-| `--color-diff-modified-text` | 57 | `diff-modified-text` |
-| `--color-actbar-badge` | 65 | `actbar-badge` |
-| `--font-ui` | 69 | `font-ui` (only used in `body` rule in `index.css` via `var()`, never as a Tailwind utility class) |
-
-**Note:** `--font-ui` is used in the `body` CSS rule in `index.css`, so it is technically referenced — but only within `index.css` itself, not via Tailwind classes.
+---
 
 ## Summary
 
 | Category | Count |
 |----------|-------|
-| Dead barrel index files | 5 |
-| Dead components (never rendered) | 4 |
-| Dead utility file (`cn.ts`) | 1 |
-| Dead wrapper functions (`tauri.ts` PTY) | 4 |
-| Dead TypeScript types | 5 |
-| Dead React hooks | 1 |
-| Rust `#[allow(dead_code)]` fields | 1 |
-| Unused Cargo crate (`uuid`) | 1 |
-| Unused npm packages (confirmed) | 2 |
-| Likely unused npm packages (plugin-fs, plugin-shell JS bindings) | 2 |
-| Registered but never-invoked Tauri command | 1 |
-| Unreferenced CSS theme variables | 16 |
-| **Total dead code items** | **43** |
+| Unreferenced CSS theme variables | 19 |
+| Likely unused npm plugin bindings (JS side only) | 2 |
+| **Total remaining dead code items** | **21** |
