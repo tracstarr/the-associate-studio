@@ -13,7 +13,7 @@ import { useSessionStore } from "@/stores/sessionStore";
 import { useOutputStore } from "@/stores/outputStore";
 import { useGitAction } from "@/hooks/useGitAction";
 import type { GitFileEntry, FileEntry } from "@/lib/tauri";
-import { createWorktree, setWorktreeCopy, claudeGitAction, listDir, gitPull, gitCreateBranch, checkRemoteRunWorkflow, checkScheduledWorkflow, writeFile } from "@/lib/tauri";
+import { createWorktree, setWorktreeCopy, claudeGitAction, listDir, gitPull, gitCreateBranch, checkRemoteRunWorkflow, checkScheduledWorkflow, writeFile, ensureScheduledLabels } from "@/lib/tauri";
 import { REMOTE_RUN_YAML_CONTENT } from "@/lib/remoteRunYaml";
 import { SCHEDULED_REMOTE_RUN_YAML_CONTENT } from "@/lib/scheduledRemoteRunYaml";
 import { UntrackedContextMenu } from "./UntrackedContextMenu";
@@ -142,7 +142,9 @@ export function GitStatusPanel() {
       }
       await writeFile(`${activeProjectDir}/.github/workflows/scheduled-remote-run.yml`, SCHEDULED_REMOTE_RUN_YAML_CONTENT);
       setScheduledInstalled(true);
-      setScheduledInstallMsg({ ok: true, text: "Installed — commit & push to activate. Add 'scheduled-run' label to issues." });
+      // Best-effort: create the three required labels in the GitHub repo.
+      ensureScheduledLabels(activeProjectDir).catch(() => {});
+      setScheduledInstallMsg({ ok: true, text: "Installed — commit & push to activate. Labels scheduled-run / scheduled-running / scheduled-complete created." });
       if (!workflowInstalled) setShowSecretsModal(true);
     } catch (e) {
       setScheduledInstallMsg({ ok: false, text: String(e) });

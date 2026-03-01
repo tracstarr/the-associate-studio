@@ -217,6 +217,44 @@ pub async fn cmd_list_repo_secrets(cwd: String) -> Result<Vec<String>, String> {
     Ok(names)
 }
 
+/// Creates (or updates) the three labels used by the scheduled remote run workflow.
+/// Uses `--force` so the command is idempotent — safe to call even if labels already exist.
+#[tauri::command]
+pub async fn cmd_ensure_scheduled_labels(cwd: String) -> Result<(), String> {
+    let labels = [
+        ("scheduled-run",      "0075ca", "Queued for scheduled Claude remote run"),
+        ("scheduled-running",  "e4e669", "Claude remote run in progress"),
+        ("scheduled-complete", "0e8a16", "Claude remote run completed"),
+    ];
+
+    let dir = PathBuf::from(&cwd);
+
+    for (name, color, description) in &labels {
+        let dir2 = dir.clone();
+        let name = name.to_string();
+        let color = color.to_string();
+        let description = description.to_string();
+
+        tokio::task::spawn_blocking(move || {
+            silent_command("gh")
+                .args([
+                    "label", "create", &name,
+                    "--color", &color,
+                    "--description", &description,
+                    "--force",
+                ])
+                .current_dir(&dir2)
+                .output()
+        })
+        .await
+        .map_err(|e| format!("Task error: {}", e))?
+        .map_err(|e| format!("Failed to run gh: {}", e))?;
+        // Ignore non-zero exit (e.g. not a GitHub repo) — labels are best-effort.
+    }
+
+    Ok(())
+}
+
 /// Sets a single GitHub Actions secret by piping the value via stdin (avoids secret appearing in args).
 #[tauri::command]
 pub async fn cmd_set_repo_secret(cwd: String, name: String, value: String) -> Result<(), String> {
