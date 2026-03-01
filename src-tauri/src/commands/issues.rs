@@ -1263,8 +1263,6 @@ pub async fn cmd_create_github_issue(
             &title,
             "--body",
             &body,
-            "--json",
-            "number,url,title",
         ])
         .current_dir(&cwd)
         .output()
@@ -1275,24 +1273,22 @@ pub async fn cmd_create_github_issue(
         return Err(format!("gh issue create failed: {}", stderr));
     }
 
-    let stdout = String::from_utf8_lossy(&output.stdout);
+    // gh issue create prints the issue URL to stdout, e.g.:
+    // https://github.com/owner/repo/issues/123
+    let url = String::from_utf8_lossy(&output.stdout).trim().to_string();
 
-    #[derive(Deserialize)]
-    struct GhCreated {
-        number: u64,
-        url: String,
-        title: String,
-    }
-
-    let created: GhCreated = serde_json::from_str(&stdout)
-        .map_err(|e| format!("Failed to parse gh output: {}", e))?;
+    let number = url
+        .rsplit('/')
+        .next()
+        .and_then(|s| s.parse::<u64>().ok())
+        .ok_or_else(|| format!("Failed to parse issue number from gh output: {}", url))?;
 
     Ok(IssueRef {
         id: make_issue_ref_id(),
         provider: "github".to_string(),
-        key: created.number.to_string(),
-        url: created.url,
-        title: created.title,
+        key: number.to_string(),
+        url,
+        title,
     })
 }
 
