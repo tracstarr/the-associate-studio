@@ -913,6 +913,11 @@ export function setRepoSecret(cwd: string, name: string, value: string): Promise
   return invoke("cmd_set_repo_secret", { cwd, name, value });
 }
 
+/** Creates (or updates) the three labels used by the scheduled remote run workflow. Idempotent. */
+export function ensureScheduledLabels(cwd: string): Promise<void> {
+  return invoke("cmd_ensure_scheduled_labels", { cwd });
+}
+
 // ---- App Info ----
 
 export function getAppVersion(): Promise<string> {

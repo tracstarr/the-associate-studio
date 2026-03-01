@@ -162,6 +162,7 @@ pub fn run() {
             commands::remote_run::cmd_get_remote_run_status,
             commands::remote_run::cmd_list_repo_secrets,
             commands::remote_run::cmd_set_repo_secret,
+            commands::remote_run::cmd_ensure_scheduled_labels,
             commands::workflows::cmd_list_workflow_files,
             commands::workflows::cmd_list_workflow_runs,
             commands::workflows::cmd_get_workflow_run_detail,
